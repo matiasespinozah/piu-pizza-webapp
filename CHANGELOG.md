@@ -8,9 +8,12 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-11-03
+
 ### Agregado
 
-- Infraestructura Firebase en el proyecto `piu-pizza-cl` (`us-central1`): app web registrada, Cloud Firestore (Standard) y despliegue en App Hosting desde `main`.
+- Versión de humo desplegada en Firebase App Hosting: backend `piu-pizza-webapp` (`us-central1`, Node 24), con lanzamientos automáticos desde `main`. URL: https://piu-pizza-webapp--piu-pizza-cl.us-central1.hosted.app
+- Infraestructura Firebase en el proyecto `piu-pizza-cl` (`us-central1`): app web "PIU Pizza Web", Cloud Firestore (Standard), Cloud Storage (`piu-pizza-cl.firebasestorage.app`) y Authentication con email/contraseña y Google.
 - `apphosting.yaml` con `minInstances: 0`, `maxInstances: 10`, 1 vCPU, 512 MiB y la config web en `NEXT_PUBLIC_FIREBASE_*`.
 - `firebase.json`, `.firebaserc`, `firestore.rules` y `storage.rules` (deny by default) y `firestore.indexes.json`.
 - SDKs `firebase` (cliente, `src/lib/firebase/client.ts`) y `firebase-admin` (servidor, `src/server/firebase/admin.ts`, con `server-only`).
@@ -20,6 +23,11 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 - `.agents/rules/firebase-security.md`: sin emuladores, infraestructura solo con Firebase CLI, reglas publicadas solo desde el repo.
 - `pnpm-workspace.yaml` declara los scripts de instalación permitidos (exigido por pnpm 11).
+- Proveedores de Auth definidos: email/contraseña y Google, sin enlace por email ni SMS. Nombre y teléfono se pedirán como datos de perfil. Actualizados `cost-control.md`, `firebase-security.md`, `docs/ux/ideas-niusushi.md`, el diagrama y el informe de costos.
+
+### Seguridad
+
+- Reglas de Firestore y Storage publicadas en modo deny-by-default.
 
 ## [0.1.0] - 2026-11-03
 
@@ -60,5 +68,6 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 - Assets e íconos de ejemplo de create-next-app, la fuente Geist, el modo oscuro de shadcn/ui y la dependencia `next-themes`.
 
-[Sin publicar]: https://github.com/matiasespinozah/piu-pizza-webapp/compare/v0.1.0...HEAD
+[Sin publicar]: https://github.com/matiasespinozah/piu-pizza-webapp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/matiasespinozah/piu-pizza-webapp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/matiasespinozah/piu-pizza-webapp/releases/tag/v0.1.0

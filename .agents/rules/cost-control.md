@@ -31,7 +31,8 @@ Detalle y estimaciones: `docs/costos/PIU-costos-firebase.pdf`. Este archivo cont
 - Un solo database (el gratuito). No crear databases extra.
 
 ## Reglas de Auth
-- Proveedores: email/contraseña, Google y enlace por email. **Phone/SMS prohibido** salvo decisión del dueño.
+- Proveedores habilitados: **email/contraseña** y **Google**. Sin enlace por email. **Phone/SMS prohibido** salvo decisión del dueño (cobra por mensaje).
+- El teléfono y el nombre del cliente se piden como **datos de perfil** al registrarse (guardados en Firestore), no como método de login: verificar el teléfono por SMS tiene costo.
 - Permitir comprar como invitado si aplica, para no convertir cada visitante en MAU.
 
 ## Reglas de logs y observabilidad

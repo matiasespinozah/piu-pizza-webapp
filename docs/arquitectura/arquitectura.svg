@@ -87,7 +87,7 @@
 <g filter="url(#sh)"><rect x="1010" y="230" width="500" height="140" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
 <circle cx="1044" cy="266" r="20" fill="#2B341F"/><circle cx="1044" cy="262" r="4.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1036 275 C1036 268 1052 268 1052 275" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="1076" y="262" class="t">Firebase Authentication</text>
-<text x="1076" y="281" class="s">Email, Google y enlace por email · sin SMS</text>
+<text x="1076" y="281" class="s">Email y contraseña · Google · sin SMS</text>
 <text x="1030" y="312" class="b">Web SDK para login → cookie de sesión httpOnly</text>
 <text x="1030" y="331" class="b">verificada en el servidor con el Admin SDK.</text>
 <g><rect x="1385.0" y="336" width="113.0" height="22" rx="11" fill="#2B341F"/><text x="1441.5" y="351" text-anchor="middle" class="cost">$ SOBRE 50K MAU</text></g>

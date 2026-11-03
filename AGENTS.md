@@ -22,7 +22,7 @@ Sitio web de la pizzería PIÙ. Este archivo sigue el estándar [AGENTS.md](http
 |---|---|
 | Framework | **Next.js 16** (App Router, `cacheComponents: true`, Turbopack) |
 | UI | React 19, TypeScript estricto, **Tailwind CSS v4**, **shadcn/ui + Radix** adaptados a la marca, íconos **lucide-react** |
-| Hosting | **Firebase App Hosting** (Cloud Run + Cloud CDN), región `us-central1`, despliegue automático desde `main` |
+| Hosting | **Firebase App Hosting** (Cloud Run + Cloud CDN), backend `piu-pizza-webapp`, región `us-central1`, despliegue automático desde `main` → https://piu-pizza-webapp--piu-pizza-cl.us-central1.hosted.app |
 | Backend | Firebase **Auth**, **Cloud Firestore** (Standard), **Cloud Storage** — proyecto `piu-pizza-cl`, todo en `us-central1` |
 | Node.js | **24.x** (`engines` en `package.json`, `.nvmrc`) |
 | Paquetes | **pnpm** (no usar npm ni yarn) |

@@ -21,7 +21,7 @@ Antes de implementar cualquier idea, revisar [`AGENTS.md`](../../AGENTS.md) y la
 | 7 | Selección destacada al inicio del menú | Medio | Bajo | Ninguno |
 | 8 | Categorías en tabs fijos | Medio | Bajo | Ninguno |
 | 9 | Menú lateral corto y orientado a acciones | Bajo | Bajo | Ninguno |
-| 10 | Login simple y opcional (Google o link por email) | Medio | Medio | Solo MAU de quienes lo usan |
+| 10 | Login simple y opcional (Google o email y contraseña) | Medio | Medio | Solo MAU de quienes lo usan |
 | 11 | Barra de pedido fija abajo *(mejora propia)* | Alto | Bajo | Ninguno |
 | 12 | Checkout como invitado *(mejora propia)* | Alto | Medio | Reduce MAU |
 
@@ -48,7 +48,7 @@ Antes de implementar cualquier idea, revisar [`AGENTS.md`](../../AGENTS.md) y la
 |---|---|---|
 | a. Memoria del dispositivo | Al confirmar, se guarda **qué** se pidió (ids de producto, tamaño, extras; nunca precios) en `localStorage` **y** en una cookie que pone el servidor, de un año. Safari borra lo que guarda JavaScript si el sitio no se visita en 7 días; la cookie del servidor no tiene ese límite. | Vuelve desde el mismo celular (el caso más común) |
 | b. Link en la confirmación | El email/WhatsApp de confirmación incluye `/repetir/<token>`. El token es largo, aleatorio y firmado en el servidor; nunca el número de pedido ni el teléfono. La página muestra **solo los productos**, no la dirección ni el teléfono. | Cambió de celular, pide desde el computador |
-| c. Cuenta opcional | En "Pedido confirmado": "¿Guardamos tus pedidos? Entra con Google o te mandamos un link a tu email". El pedido recién hecho queda en su historial. | Quiere historial y favoritos |
+| c. Cuenta opcional | En "Pedido confirmado": "¿Guardamos tus pedidos? Crea tu cuenta con Google o con email y contraseña". El pedido recién hecho queda en su historial. | Quiere historial y favoritos |
 
 **Reglas**
 - Al repetir, el carro se arma con los **precios y la disponibilidad actuales**. Si un producto ya no existe, se avisa ("La Diavola no está disponible hoy") y se arma el resto.
@@ -118,7 +118,7 @@ Antes de implementar cualquier idea, revisar [`AGENTS.md`](../../AGENTS.md) y la
 
 **Qué hace Niu:** email o "Ingresar con Google", nada más.
 
-**Implementación sugerida:** Firebase Auth con Google y link por email (sin contraseña). Sin SMS (`cost-control.md`). Se ofrece **después** del pedido, nunca antes. Ver la idea 12 y `firebase-security.md` para la cookie de sesión.
+**Implementación sugerida:** Firebase Auth con **Google** y **email y contraseña** (los dos proveedores habilitados en el proyecto). El registro pide además nombre y teléfono como datos de perfil, también a quienes entran con Google. Sin SMS (`cost-control.md`). Se ofrece **después** del pedido, nunca antes. Ver la idea 12 y `firebase-security.md` para la cookie de sesión.
 
 ---
 

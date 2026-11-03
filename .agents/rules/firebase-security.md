@@ -21,7 +21,8 @@ Proyecto Firebase: **`piu-pizza-cl`** (plan Blaze). Todo en `us-central1`. Infra
 - En el servidor, verificar la cookie con `verifySessionCookie(cookie, true)` (chequea revocación) en el DAL, no en el layout.
 - Roles (`admin`, `staff`) con **custom claims** asignados desde el servidor, nunca un campo `role` editable por el usuario en Firestore.
 - Proteger rutas en `proxy.ts` solo como primera barrera (redirect); la autorización real va en el DAL/Server Action.
-- Habilitar protección contra enumeración de emails y limitar proveedores a los usados. Sin Phone Auth.
+- Proveedores habilitados en `piu-pizza-cl`: **email/contraseña** y **Google**. Sin enlace por email ni Phone Auth.
+- Habilitar protección contra enumeración de emails. Datos extra del cliente (nombre, teléfono) van en un documento de perfil propio (`users/{uid}`), protegido por reglas, nunca en custom claims.
 
 ## Firestore Security Rules
 - **Deny by default**. Empezar con:
