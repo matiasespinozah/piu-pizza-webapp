@@ -13,7 +13,8 @@ pnpm dev        # http://localhost:3000
 
 ## Ramas, CI y despliegue
 
-- **`develop`:** rama de trabajo. GitHub Actions (`.github/workflows/ci.yml`) corre lint, tipos, changelog/versiones y build en cada push y PR.
+- **`feature/*` y `feat/*`:** ramas de trabajo, creadas desde `develop`. El CI corre en cada push.
+- **`develop`:** integración. GitHub Actions (`.github/workflows/ci.yml`) corre lint, tipos, changelog/versiones y build en cada push y PR.
 - **`main`:** producción. Solo se actualiza mergeando `develop` con el CI en verde.
 
 ## Despliegue
