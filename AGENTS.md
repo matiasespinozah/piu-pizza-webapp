@@ -58,7 +58,7 @@ Muestrario de componentes: `http://localhost:3000/ui` (solo en desarrollo).
 | `develop` | Rama de trabajo. Cada push y cada PR hacia `develop` corre **CI** (`.github/workflows/ci.yml`): lint, tipos, changelog/versiones y build |
 | `main` | **Producción.** Cada push despliega solo en App Hosting. Solo se actualiza mergeando `develop` con el CI en verde |
 
-Flujo: rama de trabajo → PR a `develop` (CI) → PR de `develop` a `main` (CI + check "PR a main solo desde develop") → merge = despliegue.
+Flujo: rama `feature/<nombre>` o `feat/<nombre>` desde `develop` (CI en cada push) → PR a `develop` (CI) → PR de `develop` a `main` (CI + check "PR a main solo desde develop") → merge = despliegue.
 
 GitHub lo impone con rulesets: en `develop` y `main` no se puede hacer push directo, force push ni borrar la rama; todo entra por PR con los checks en verde, y a `main` solo desde `develop`.
 
