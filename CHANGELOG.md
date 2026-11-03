@@ -6,9 +6,10 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rules/changelog.md).
 
-## [Sin publicar]
+## [0.1.0]
 
 ### Agregado
+
 - Documento `docs/ux/ideas-niusushi.md` con ideas de usabilidad tomadas de niusushi.cl e ideas de implementación para PIÙ (por revisar, no implementado).
 - Regla obligatoria **mobile first** (`.agents/rules/mobile-first.md`), cargada en `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor y Copilot.
 - `viewport` en el layout raíz (`device-width`, `viewportFit: "cover"`, `themeColor` crema) y utilidades `pb-safe`, `pt-safe`, `px-safe` para safe areas.
@@ -33,10 +34,13 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 - Documentación en `docs/`: informe de costos de Firebase (`docs/costos/PIU-costos-firebase.pdf`) y diagrama de arquitectura (`docs/arquitectura/`).
 
 ### Cambiado
+
 - `Button` (`sm`, `icon-sm`) y `Select` (`sm`) miden 44 px en móvil y se compactan a 40 px solo desde `md:`.
 
 ### Seguridad
+
 - Headers HTTP por defecto: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY` y `Permissions-Policy`; `poweredByHeader` desactivado.
 
 ### Eliminado
+
 - Assets e íconos de ejemplo de create-next-app, la fuente Geist, el modo oscuro de shadcn/ui y la dependencia `next-themes`.
