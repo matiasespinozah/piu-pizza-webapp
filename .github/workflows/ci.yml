@@ -1,13 +1,16 @@
-# Calidad de código en la rama develop: lint, tipos, changelog/versiones y build.
-# Producción (main) se despliega sola con Firebase App Hosting; este workflow
-# valida antes, en develop. Reglas: AGENTS.md y .agents/rules/.
+# Calidad de código: lint, tipos, changelog/versiones y build.
+# - Push y PR a develop: valida el trabajo diario.
+# - PR a main: valida de nuevo y exige que el PR venga de develop.
+# Producción (main) se despliega sola con Firebase App Hosting al mergear.
+# Los nombres de los jobs son los checks obligatorios de los rulesets de GitHub:
+# no cambiarlos sin actualizar los rulesets. Reglas: AGENTS.md y .agents/rules/.
 name: CI
 
 on:
   push:
     branches: [develop]
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
 
 permissions:
   contents: read
@@ -20,6 +23,24 @@ env:
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
+  main-guard:
+    name: PR a main solo desde develop
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verificar rama de origen
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REF" != "develop" ] || [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "::error::Solo se puede mergear a main desde develop de este repositorio (origen: $HEAD_REPO:$HEAD_REF)."
+            exit 1
+          fi
+          echo "OK: PR desde develop."
+
   quality:
     name: Lint, tipos, changelog y build
     runs-on: ubuntu-latest

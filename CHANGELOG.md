@@ -12,6 +12,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 - CI en GitHub Actions para la rama `develop` (`.github/workflows/ci.yml`): lint, tipos, changelog/versiones alineadas y build, en cada push y PR.
 - Rama `develop` como rama de trabajo; `main` queda solo para producción.
+- El CI también corre en PRs hacia `main`, con el job **"PR a main solo desde develop"**, que falla si el PR no viene de `develop`. Ambos jobs son checks obligatorios en los rulesets de GitHub.
 - Script `pnpm typecheck` (`next typegen && tsc --noEmit`: genera los tipos de rutas de Next antes de chequear, necesario en un clon limpio como el CI).
 - Modo CI en `scripts/check-changelog.mjs` (`CHANGELOG_BASE`): en un PR exige entrada en el CHANGELOG respecto de la rama base.
 
