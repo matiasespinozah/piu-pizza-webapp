@@ -1,3 +1,10 @@
+# pnpm 11 exige declarar qué dependencias pueden correr scripts de instalación.
+# Si aparece una nueva en "Ignored build scripts", decidir aquí (true/false):
+# un paquete sin declarar hace fallar `pnpm install` (también en Cloud Build).
 allowBuilds:
+  # Next.js usa los binarios precompilados de @img/sharp-*; no necesita compilar.
   sharp: false
   unrs-resolver: false
+  # Usamos configuración explícita de Firebase (NEXT_PUBLIC_FIREBASE_*), no la autoconfiguración.
+  "@firebase/util": false
+  protobufjs: false

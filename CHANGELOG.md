@@ -6,7 +6,22 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rules/changelog.md).
 
-## [0.1.0]
+## [Sin publicar]
+
+### Agregado
+
+- Infraestructura Firebase en el proyecto `piu-pizza-cl` (`us-central1`): app web registrada, Cloud Firestore (Standard) y despliegue en App Hosting desde `main`.
+- `apphosting.yaml` con `minInstances: 0`, `maxInstances: 10`, 1 vCPU, 512 MiB y la config web en `NEXT_PUBLIC_FIREBASE_*`.
+- `firebase.json`, `.firebaserc`, `firestore.rules` y `storage.rules` (deny by default) y `firestore.indexes.json`.
+- SDKs `firebase` (cliente, `src/lib/firebase/client.ts`) y `firebase-admin` (servidor, `src/server/firebase/admin.ts`, con `server-only`).
+- `.env.example` y `.nvmrc`; `engines.node` en `24.x`.
+
+### Cambiado
+
+- `.agents/rules/firebase-security.md`: sin emuladores, infraestructura solo con Firebase CLI, reglas publicadas solo desde el repo.
+- `pnpm-workspace.yaml` declara los scripts de instalación permitidos (exigido por pnpm 11).
+
+## [0.1.0] - 2026-11-03
 
 ### Agregado
 
@@ -26,7 +41,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 - Muestrario interno de componentes en `/ui` (solo en desarrollo; 404 en producción).
 - Tokens de marca en `globals.css` mapeados a los tokens semánticos de shadcn/ui, escala de radios y sombras de `DESIGN.md`.
 - Carga automática de reglas para agentes de IA: `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/*.mdc` y `.github/copilot-instructions.md`, todos apuntando a `AGENTS.md` y `.agents/rules/`.
-- Este `CHANGELOG.md`, la regla `.agents/rules/changelog.md` y un hook de pre-commit que exige actualizarlo.
+- Este `CHANGELOG.md`, la regla `.agents/rules/changelog.md` y un hook de pre-commit que exige actualizarlo y que la versión de `package.json` coincida con la última versión publicada del changelog.
 - Proyecto base Next.js 16.4 (App Router, Cache Components, Turbopack), React 19, TypeScript, Tailwind CSS v4 y pnpm.
 - Fuentes Anybody y Roboto Mono vía `next/font`.
 - `DESIGN.md` con el sistema de diseño de la marca.
@@ -44,3 +59,6 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Eliminado
 
 - Assets e íconos de ejemplo de create-next-app, la fuente Geist, el modo oscuro de shadcn/ui y la dependencia `next-themes`.
+
+[Sin publicar]: https://github.com/matiasespinozah/piu-pizza-webapp/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/matiasespinozah/piu-pizza-webapp/releases/tag/v0.1.0

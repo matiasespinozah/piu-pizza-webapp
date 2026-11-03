@@ -1,0 +1,28 @@
+# Firebase App Hosting — configuración del backend de producción.
+# Docs: https://firebase.google.com/docs/app-hosting/configure
+# Reglas de costo: .agents/rules/cost-control.md (no cambiar minInstances sin aprobación).
+
+runConfig:
+  # 0 = sin instancias ociosas (se paga solo por uso). Costo: arranque en frío de 1–2 s.
+  minInstances: 0
+  # Techo ante tráfico anómalo o bots. Subir solo si las métricas lo justifican.
+  maxInstances: 10
+  cpu: 1
+  memoryMiB: 512
+  concurrency: 80
+
+env:
+  # Configuración web de Firebase. NO es secreta (la protegen las Security Rules y App Check).
+  # Los secretos reales van con `secret:` (Secret Manager), nunca con prefijo NEXT_PUBLIC_.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyAtlMZnZcLyvMwX7AtUaoEswEenkBJGAy4
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: piu-pizza-cl.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: piu-pizza-cl
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: piu-pizza-cl.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "864707447905"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:864707447905:web:a64297850b8873793d6e20"

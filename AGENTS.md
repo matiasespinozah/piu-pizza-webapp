@@ -22,11 +22,21 @@ Sitio web de la pizzería PIÙ. Este archivo sigue el estándar [AGENTS.md](http
 |---|---|
 | Framework | **Next.js 16** (App Router, `cacheComponents: true`, Turbopack) |
 | UI | React 19, TypeScript estricto, **Tailwind CSS v4**, **shadcn/ui + Radix** adaptados a la marca, íconos **lucide-react** |
-| Hosting (planificado) | **Firebase App Hosting** (Cloud Run + Cloud CDN), región `us-central1` |
-| Backend (planificado) | Firebase **Auth**, **Cloud Firestore** (Standard), **Cloud Storage** — todo en `us-central1` |
+| Hosting | **Firebase App Hosting** (Cloud Run + Cloud CDN), región `us-central1`, despliegue automático desde `main` |
+| Backend | Firebase **Auth**, **Cloud Firestore** (Standard), **Cloud Storage** — proyecto `piu-pizza-cl`, todo en `us-central1` |
+| Node.js | **24.x** (`engines` en `package.json`, `.nvmrc`) |
 | Paquetes | **pnpm** (no usar npm ni yarn) |
 
-Firebase **todavía no está instalado**. No agregues SDKs, `firebase.json`, `apphosting.yaml` ni credenciales hasta que se pida explícitamente.
+Infraestructura: **solo Firebase CLI** (`firebase …`) y la consola web. Sin `gcloud` y sin emuladores.
+
+| Archivo | Qué es |
+|---|---|
+| `apphosting.yaml` | Config del backend de App Hosting (`runConfig`, variables). Cambiar `minInstances` requiere aprobación |
+| `firebase.json` / `.firebaserc` | Proyecto `piu-pizza-cl`, rutas de reglas e índices |
+| `firestore.rules`, `storage.rules`, `firestore.indexes.json` | Reglas e índices; se publican con `firebase deploy --only firestore,storage` |
+| `src/lib/firebase/client.ts` | Web SDK (navegador) |
+| `src/server/firebase/admin.ts` | Admin SDK (solo servidor) |
+| `.env.example` | Config web para `.env.local` en desarrollo |
 
 ## Comandos
 
@@ -84,7 +94,7 @@ public/                ← solo assets estáticos pequeños (logo, favicon, OG)
 10. **Reglas de seguridad deny-by-default** en Firestore y Storage; nunca `allow read, write: if true`.
 11. **Secretos solo en Secret Manager / variables de entorno del servidor.** Nunca `NEXT_PUBLIC_` para algo secreto, nunca commitear `.env*`.
 12. **Validar todo input del cliente en el servidor** (zod) y verificar auth/rol dentro de cada Server Action.
-13. **Todo cambio actualiza `CHANGELOG.md`** bajo `## [Sin publicar]`, en el mismo commit. El hook de pre-commit lo exige; nunca usar `--no-verify`.
+13. **Todo cambio actualiza `CHANGELOG.md`** bajo `## [Sin publicar]`, en el mismo commit. La versión de `package.json` y la última versión del CHANGELOG van **siempre alineadas**. El hook de pre-commit lo exige; nunca usar `--no-verify`.
 
 ## Definición de terminado
 

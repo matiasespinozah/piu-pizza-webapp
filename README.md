@@ -5,9 +5,17 @@ Sitio web de PIÙ. Next.js 16 + Tailwind v4, pensado para desplegarse en Firebas
 ## Empezar
 
 ```bash
+fnm use        # Node 24 (ver .nvmrc)
 pnpm install
+cp .env.example .env.local
 pnpm dev        # http://localhost:3000
 ```
+
+## Despliegue
+
+- **Producción:** Firebase App Hosting, proyecto `piu-pizza-cl`, región `us-central1`. Cada push a `main` despliega automáticamente.
+- **Reglas de Firestore y Storage:** `firebase deploy --only firestore,storage` (no se despliegan con el push).
+- Configuración del backend: `apphosting.yaml`.
 
 `pnpm install` activa el hook de pre-commit (`.githooks/`) que exige actualizar `CHANGELOG.md` en cada commit.
 
@@ -25,4 +33,4 @@ pnpm dev        # http://localhost:3000
 
 ## Estado
 
-Solo la base del proyecto. Firebase, GitHub y el despliegue todavía no están configurados.
+Base del proyecto desplegada en Firebase App Hosting (versión de humo). Sin funcionalidades de negocio todavía.

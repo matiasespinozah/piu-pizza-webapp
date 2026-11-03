@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// Deny by default. Ver .agents/rules/firebase-security.md antes de abrir cualquier ruta.
+// - Lecturas públicas (menú, locales): `allow read` + `allow write: if false`; las escrituras
+//   van por el Admin SDK desde Server Actions de admin (el Admin SDK ignora estas reglas).
+// - Datos de usuario: solo el dueño, validando campos con request.resource.data.
+// - Nunca `allow read, write: if true`.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

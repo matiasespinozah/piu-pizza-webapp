@@ -1,6 +1,6 @@
 # Seguridad con Firebase
 
-Firebase todavía no está instalado. Cuando se integre, seguir estas reglas sin excepción.
+Proyecto Firebase: **`piu-pizza-cl`** (plan Blaze). Todo en `us-central1`. Infraestructura administrada **solo con Firebase CLI** (`firebase …`) y la consola web; no se usa `gcloud`.
 
 ## Modelo de confianza
 - **El cliente no es confiable.** Todo lo que viene del navegador se valida en el servidor (zod) y en las Security Rules.
@@ -52,8 +52,10 @@ Firebase todavía no está instalado. Cuando se integre, seguir estas reglas sin
 - Leer `node_modules/next/dist/docs/01-app/02-guides/data-security.md` antes de crear acciones.
 
 ## Desarrollo local
-- Usar **Firebase Emulator Suite** (Auth, Firestore, Storage); nunca apuntar el entorno local a producción.
-- Las Security Rules viven versionadas en el repo (`firestore.rules`, `storage.rules`) y se prueban con `@firebase/rules-unit-testing`.
+- **No se usan emuladores** (decisión del proyecto). En local, `pnpm dev` apunta al proyecto real `piu-pizza-cl` con la config de `.env.local` (copiar de `.env.example`).
+- Por eso: **nunca** escribir datos de prueba en colecciones reales ni correr scripts de escritura contra producción sin revisarlos. Usar documentos con prefijo `_test` y borrarlos después.
+- Si más adelante se necesita un entorno aislado, crear un proyecto aparte (`piu-pizza-cl-dev`), no emuladores.
+- Las Security Rules viven versionadas en el repo (`firestore.rules`, `storage.rules`) y se publican **solo** con `firebase deploy --only firestore,storage`. Nunca editarlas en la consola: el repo es la fuente de verdad.
 
 ## Prohibido
 - Commitear `serviceAccount*.json`, `.env*`, tokens o claves.
