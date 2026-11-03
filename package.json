@@ -10,8 +10,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prepare": "git config core.hooksPath .githooks || true",
-    "changelog:check": "node scripts/check-changelog.mjs"
+    "typecheck": "tsc --noEmit",
+    "changelog:check": "node scripts/check-changelog.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

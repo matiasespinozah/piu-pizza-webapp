@@ -3,6 +3,9 @@
 //  1. Si hay cambios staged, CHANGELOG.md debe estar entre ellos.
 //  2. La versión de package.json debe ser igual a la última versión publicada del CHANGELOG.
 //  3. Si cambia la versión en uno de los dos archivos, ambos deben ir en el mismo commit.
+//
+// Modo CI: con CHANGELOG_BASE=<ref> (p. ej. origin/develop) compara HEAD contra esa base
+// en vez de usar lo staged. Lo usa .github/workflows/ci.yml.
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
@@ -12,18 +15,26 @@ const fail = (lines) => {
   process.exit(1);
 };
 
-// Lee el contenido que se va a commitear (index); si no está staged, el del disco.
-const staged = sh("git diff --cached --name-only --diff-filter=ACMRD").split("\n").map((f) => f.trim()).filter(Boolean);
+const base = process.env.CHANGELOG_BASE?.trim() || null;
+
+// Archivos cambiados: lo staged (pre-commit) o el diff base...HEAD (CI).
+const staged = sh(
+  base ? `git diff --name-only --diff-filter=ACMRD ${base}...HEAD` : "git diff --cached --name-only --diff-filter=ACMRD"
+)
+  .split("\n")
+  .map((f) => f.trim())
+  .filter(Boolean);
+// Contenido a validar: el del index (pre-commit) o el del disco (= HEAD en CI).
 const read = (file) => {
   try {
-    return staged.includes(file) ? sh(`git show :${file}`) : readFileSync(file, "utf8");
+    return !base && staged.includes(file) ? sh(`git show :${file}`) : readFileSync(file, "utf8");
   } catch {
     return readFileSync(file, "utf8");
   }
 };
 const readHead = (file) => {
   try {
-    return sh(`git show HEAD:${file}`);
+    return sh(`git show ${base ? sh(`git merge-base ${base} HEAD`).trim() : "HEAD"}:${file}`);
   } catch {
     return null;
   }

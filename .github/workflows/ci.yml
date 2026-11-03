@@ -1,0 +1,69 @@
+# Calidad de código en la rama develop: lint, tipos, changelog/versiones y build.
+# Producción (main) se despliega sola con Firebase App Hosting; este workflow
+# valida antes, en develop. Reglas: AGENTS.md y .agents/rules/.
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  quality:
+    name: Lint, tipos, changelog y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # necesario para comparar contra la rama base
+
+      - name: Instalar pnpm (versión de packageManager)
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node (versión de .nvmrc)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tipos
+        run: pnpm typecheck
+
+      - name: Changelog y versiones alineadas
+        run: pnpm changelog:check
+        env:
+          # En PRs exige entrada en CHANGELOG.md respecto de la rama base.
+          CHANGELOG_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+
+      - name: Cache de build de Next.js
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**', 'next.config.ts') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Build
+        run: |
+          cp .env.example .env.local
+          pnpm build

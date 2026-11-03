@@ -8,6 +8,13 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ## [Sin publicar]
 
+### Agregado
+
+- CI en GitHub Actions para la rama `develop` (`.github/workflows/ci.yml`): lint, tipos, changelog/versiones alineadas y build, en cada push y PR.
+- Rama `develop` como rama de trabajo; `main` queda solo para producción.
+- Script `pnpm typecheck`.
+- Modo CI en `scripts/check-changelog.mjs` (`CHANGELOG_BASE`): en un PR exige entrada en el CHANGELOG respecto de la rama base.
+
 ## [0.2.0] - 2026-11-03
 
 ### Agregado
