@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "changelog:check": "node scripts/check-changelog.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },
