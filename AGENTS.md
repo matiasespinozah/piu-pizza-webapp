@@ -45,10 +45,22 @@ pnpm install       # instalar dependencias
 pnpm dev           # servidor local (http://localhost:3000)
 pnpm build         # build de producción — debe pasar antes de dar algo por terminado
 pnpm lint          # ESLint
-pnpm exec tsc --noEmit   # chequeo de tipos
+pnpm typecheck     # chequeo de tipos
+pnpm changelog:check  # changelog y versiones alineadas
 ```
 
 Muestrario de componentes: `http://localhost:3000/ui` (solo en desarrollo).
+
+## Ramas y despliegue
+
+| Rama | Qué pasa |
+|---|---|
+| `develop` | Rama de trabajo. Cada push y cada PR hacia `develop` corre **CI** (`.github/workflows/ci.yml`): lint, tipos, changelog/versiones y build |
+| `main` | **Producción.** Cada push despliega solo en App Hosting. Solo se actualiza mergeando `develop` con el CI en verde |
+
+Flujo: rama `feature/<nombre>` o `feat/<nombre>` desde `develop` (CI en cada push) → PR a `develop` (CI) → PR de `develop` a `main` (CI + check "PR a main solo desde develop") → merge = despliegue.
+
+GitHub lo impone con rulesets: en `develop` y `main` no se puede hacer push directo, force push ni borrar la rama; todo entra por PR con los checks en verde, y a `main` solo desde `develop`.
 
 ## Estructura
 
@@ -98,7 +110,7 @@ public/                ← solo assets estáticos pequeños (logo, favicon, OG)
 
 ## Definición de terminado
 
-- `pnpm lint`, `pnpm exec tsc --noEmit` y `pnpm build` pasan sin errores.
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan sin errores (el CI de `develop` corre lo mismo).
 - La UI respeta `DESIGN.md` (colores, Anybody, radios, espaciado) y pasa el checklist de `.agents/rules/mobile-first.md` (revisada primero a 375 px).
 - Componentes nuevos o variantes nuevas aparecen en el muestrario `/ui`.
 - No se agregaron lecturas/escrituras sin caché, listeners ni imágenes sin optimizar.

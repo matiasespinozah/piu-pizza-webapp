@@ -11,6 +11,12 @@ cp .env.example .env.local
 pnpm dev        # http://localhost:3000
 ```
 
+## Ramas, CI y despliegue
+
+- **`feature/*` y `feat/*`:** ramas de trabajo, creadas desde `develop`. El CI corre en cada push.
+- **`develop`:** integración. GitHub Actions (`.github/workflows/ci.yml`) corre lint, tipos, changelog/versiones y build en cada push y PR.
+- **`main`:** producción. Solo se actualiza mergeando `develop` con el CI en verde.
+
 ## Despliegue
 
 - **Producción:** Firebase App Hosting, proyecto `piu-pizza-cl`, backend `piu-pizza-webapp`, región `us-central1`. Cada push a `main` despliega automáticamente.

@@ -36,4 +36,4 @@
 - Instalar con `pnpm add`. Fijar versiones mayores.
 
 ## Verificación
-Antes de dar una tarea por terminada: `pnpm lint && pnpm exec tsc --noEmit && pnpm build`.
+Antes de dar una tarea por terminada: `pnpm lint && pnpm typecheck && pnpm build`. El CI de `develop` corre lo mismo y además `pnpm changelog:check`.
