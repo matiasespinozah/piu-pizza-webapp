@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PIÙ — Pizza & Dolce
 
-## Getting Started
+Sitio web de PIÙ. Next.js 16 + Tailwind v4, pensado para desplegarse en Firebase App Hosting (Auth, Firestore y Storage en `us-central1`).
 
-First, run the development server:
+## Empezar
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`pnpm install` activa el hook de pre-commit (`.githooks/`) que exige actualizar `CHANGELOG.md` en cada commit.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Documentación
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Archivo | Contenido |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | Guía para agentes de IA: stack, comandos, reglas clave |
+| [`.agents/rules/`](.agents/rules/) | Reglas de arquitectura, código, diseño, costos, imágenes y seguridad |
+| [`DESIGN.md`](DESIGN.md) | Sistema de diseño de la marca |
+| [`CHANGELOG.md`](CHANGELOG.md) | Historial de cambios (obligatorio en cada commit) |
+| [`docs/arquitectura/`](docs/arquitectura/) | Diagrama de arquitectura en Firebase |
+| [`docs/costos/`](docs/costos/) | Análisis de costos y estimaciones por volumen de usuarios |
+| [`docs/ux/`](docs/ux/) | Referencias e ideas de usabilidad por revisar (p. ej. `ideas-niusushi.md`) |
 
-## Learn More
+## Estado
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Solo la base del proyecto. Firebase, GitHub y el despliegue todavía no están configurados.

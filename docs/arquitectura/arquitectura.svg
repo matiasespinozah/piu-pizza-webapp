@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1060" width="1600" height="1060" font-family="Anybody, 'Helvetica Neue', Arial, sans-serif">
+<defs>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400;500;600;700;800;900&amp;family=Roboto+Mono:wght@500;600;700&amp;display=swap');
+.h1{font-size:34px;font-weight:900;fill:#2B341F;letter-spacing:-0.5px}
+.h2{font-size:15px;font-weight:500;fill:rgba(43,52,31,0.66)}
+.eyebrow{font-family:'Roboto Mono',monospace;font-size:11.5px;font-weight:600;letter-spacing:2px;fill:rgba(43,52,31,0.66)}
+.t{font-size:16px;font-weight:800;fill:#2B341F}
+.s{font-size:12.5px;font-weight:500;fill:rgba(43,52,31,0.66)}
+.b{font-size:12.5px;font-weight:500;fill:rgba(43,52,31,0.85)}
+.chip{font-family:'Roboto Mono',monospace;font-size:11px;font-weight:600;fill:#2B341F}
+.lbl{font-family:'Roboto Mono',monospace;font-size:11px;font-weight:600;fill:#2B341F;paint-order:stroke;stroke:#E8E9D9;stroke-width:5px;stroke-linejoin:round}
+.cost{font-family:'Roboto Mono',monospace;font-size:10.5px;font-weight:700;fill:#E8E9D9}
+.n{font-family:'Roboto Mono',monospace;font-size:11.5px;font-weight:700;fill:#2B341F}
+.frame{font-family:'Roboto Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:1.5px;fill:#2B341F}
+</style>
+<marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2B341F"/></marker>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#2B341F" flood-opacity="0.07"/></filter>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="1.2" r="1.2" fill="rgba(43,52,31,0.07)"/></pattern>
+</defs>
+<rect width="1600" height="1060" fill="#E8E9D9"/>
+<rect width="1600" height="1060" fill="url(#dots)"/>
+
+<text x="40" y="52" class="eyebrow">PIÙ · PIZZA &amp; DOLCE — INFRAESTRUCTURA</text>
+<text x="40" y="92" class="h1">Arquitectura en Firebase</text>
+<text x="40" y="120" class="h2">Next.js 16 sobre Firebase App Hosting · Auth · Cloud Firestore · Cloud Storage · todo en us-central1</text>
+<rect x="330" y="150" width="1240" height="620" rx="18" fill="none" stroke="rgba(43,52,31,0.40)" stroke-width="1.4" stroke-dasharray="6 6"/>
+<rect x="352" y="140" width="330" height="22" fill="#E8E9D9"/>
+<text x="362" y="156" class="frame">GOOGLE CLOUD · REGIÓN us-central1 (IOWA)</text>
+<rect x="360" y="190" width="580" height="550" rx="16" fill="rgba(43,52,31,0.025)" stroke="#2B341F" stroke-width="1.6"/>
+<rect x="376" y="180" width="232" height="22" rx="11" fill="#2B341F"/>
+<text x="492" y="195.5" text-anchor="middle" class="cost" style="font-size:11px;letter-spacing:1.2px">FIREBASE APP HOSTING</text>
+<rect x="980" y="190" width="560" height="550" rx="16" fill="rgba(43,52,31,0.025)" stroke="#2B341F" stroke-width="1.6"/>
+<rect x="996" y="180" width="252" height="22" rx="11" fill="#2B341F"/>
+<text x="1122" y="195.5" text-anchor="middle" class="cost" style="font-size:11px;letter-spacing:1.2px">FIREBASE · SERVICIOS DE DATOS</text>
+<g filter="url(#sh)"><rect x="40" y="200" width="250" height="150" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="74" cy="236" r="20" fill="#2B341F"/><rect x="64" y="228" width="15" height="11" rx="1.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="77" y="233" width="7" height="12" rx="1.5" fill="#2B341F" stroke="#E8E9D9" stroke-width="2"/><path d="M62 242 H75" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="106" y="232" class="t">Clientes</text>
+<text x="106" y="251" class="s">Móvil y escritorio</text>
+<text x="60" y="282" class="b">Ven el menú, locales y</text>
+<text x="60" y="301" class="b">promociones. Inician sesión</text>
+<text x="60" y="320" class="b">solo si es necesario.</text>
+<g filter="url(#sh)"><rect x="40" y="400" width="250" height="150" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="74" cy="436" r="20" fill="#2B341F"/><circle cx="74" cy="432" r="4.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M66 445 C66 438 82 438 82 445" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="106" y="432" class="t">Equipo PIÙ</text>
+<text x="106" y="451" class="s">Panel de administración</text>
+<text x="60" y="482" class="b">Edita menú, precios y fotos.</text>
+<text x="60" y="501" class="b">Rol admin vía custom claims.</text>
+<text x="60" y="520" class="b"></text>
+<g filter="url(#sh)"><rect x="40" y="800" width="250" height="190" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="74" cy="836" r="20" fill="#2B341F"/><text x="74" y="842" text-anchor="middle" font-size="17" font-weight="800" fill="#E8E9D9">$</text>
+<text x="106" y="832" class="t">Cloud Billing</text>
+<text x="106" y="851" class="s">Presupuesto y alertas</text>
+<text x="60" y="882" class="b">Alertas al 50% · 90% · 100%</text>
+<text x="60" y="901" class="b">de USD $10/mes.</text>
+<text x="60" y="920" class="b">Avisan, no cortan el servicio.</text>
+<text x="60" y="939" class="b">Revisión semanal del uso.</text>
+<g filter="url(#sh)"><rect x="390" y="230" width="250" height="140" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="424" cy="266" r="20" fill="#2B341F"/><circle cx="424" cy="266" r="10" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="424" cy="266" rx="4.5" ry="10" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="414" y1="266" x2="434" y2="266" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="456" y="262" class="t">Cloud CDN</text>
+<text x="456" y="281" class="s">Caché global en el borde</text>
+<text x="410" y="312" class="b">HTML prerenderizado, /_next/static</text>
+<text x="410" y="331" class="b">e imágenes optimizadas.</text>
+<g><rect x="508.4" y="336" width="119.6" height="22" rx="11" fill="#2B341F"/><text x="568.2" y="351" text-anchor="middle" class="cost">$ ANCHO DE BANDA</text></g>
+<g filter="url(#sh)"><rect x="670" y="230" width="240" height="140" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="704" cy="266" r="20" fill="#2B341F"/><circle cx="700" cy="266" r="5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M705 266 H714 M711 266 V271 M708 266 V270" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="736" y="262" class="t">Secret Manager</text>
+<text x="736" y="281" class="s">Credenciales del servidor</text>
+<text x="690" y="312" class="b">Claves de servicio y de</text>
+<text x="690" y="331" class="b">terceros. Nunca en el cliente.</text>
+<g filter="url(#sh)"><rect x="390" y="420" width="520" height="200" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="424" cy="456" r="20" fill="#2B341F"/><path d="M418 447 L433 456 L418 465 Z" fill="#E8E9D9"/>
+<text x="456" y="452" class="t">Cloud Run · Next.js 16</text>
+<text x="456" y="471" class="s">SSR + Cache Components · minInstances 0 · maxInstances 10</text>
+<g><rect x="765.2" y="586" width="132.8" height="22" rx="11" fill="#2B341F"/><text x="831.6" y="601" text-anchor="middle" class="cost">$ CPU / INSTANCIAS</text></g>
+<rect x="410" y="498" width="141.0" height="26" rx="13" fill="rgba(43,52,31,0.035)" stroke="rgba(43,52,31,0.18)"/><text x="480.5" y="515.5" text-anchor="middle" class="chip">Server Components</text>
+<rect x="559.0" y="498" width="120.0" height="26" rx="13" fill="rgba(43,52,31,0.035)" stroke="rgba(43,52,31,0.18)"/><text x="619.0" y="515.5" text-anchor="middle" class="chip">Server Actions</text>
+<rect x="687.0" y="498" width="120.0" height="26" rx="13" fill="rgba(43,52,31,0.035)" stroke="rgba(43,52,31,0.18)"/><text x="747.0" y="515.5" text-anchor="middle" class="chip">Route Handlers</text>
+<rect x="410" y="532" width="239.0" height="26" rx="13" fill="rgba(43,52,31,0.035)" stroke="rgba(43,52,31,0.18)"/><text x="529.5" y="549.5" text-anchor="middle" class="chip">Data Access Layer · "use cache"</text>
+<rect x="657.0" y="532" width="127.0" height="26" rx="13" fill="rgba(43,52,31,0.035)" stroke="rgba(43,52,31,0.18)"/><text x="720.5" y="549.5" text-anchor="middle" class="chip">Image Optimizer</text>
+<rect x="792.0" y="532" width="85.0" height="26" rx="13" fill="rgba(43,52,31,0.035)" stroke="rgba(43,52,31,0.18)"/><text x="834.5" y="549.5" text-anchor="middle" class="chip">Admin SDK</text>
+<text x="410" y="592" class="b">Valida input (zod), verifica sesión y rol en cada acción.</text>
+<g filter="url(#sh)"><rect x="390" y="650" width="520" height="70" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="424" cy="686" r="20" fill="#2B341F"/><path d="M416 694 V687 M421.5 694 V679 M427 694 V684 M432.5 694 V677" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="456" y="682" class="t">Cloud Logging · Monitoring</text>
+<text x="456" y="701" class="s">Logs estructurados · 50 GiB/mes gratis · retención 30 días</text>
+<g filter="url(#sh)"><rect x="1010" y="230" width="500" height="140" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="1044" cy="266" r="20" fill="#2B341F"/><circle cx="1044" cy="262" r="4.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1036 275 C1036 268 1052 268 1052 275" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1076" y="262" class="t">Firebase Authentication</text>
+<text x="1076" y="281" class="s">Email, Google y enlace por email · sin SMS</text>
+<text x="1030" y="312" class="b">Web SDK para login → cookie de sesión httpOnly</text>
+<text x="1030" y="331" class="b">verificada en el servidor con el Admin SDK.</text>
+<g><rect x="1385.0" y="336" width="113.0" height="22" rx="11" fill="#2B341F"/><text x="1441.5" y="351" text-anchor="middle" class="cost">$ SOBRE 50K MAU</text></g>
+<g filter="url(#sh)"><rect x="1010" y="395" width="500" height="140" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="1044" cy="431" r="20" fill="#2B341F"/><path d="M1035 422 L1044 418 L1053 422 L1044 426 Z" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1035 429 L1044 433 L1053 429" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1035 436 L1044 440 L1053 436" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1076" y="427" class="t">Cloud Firestore · Standard</text>
+<text x="1076" y="446" class="s">Base de datos única (cuota gratuita) · us-central1</text>
+<text x="1030" y="477" class="b">Menú, locales, pedidos. Lecturas siempre cacheadas,</text>
+<text x="1030" y="496" class="b">con limit() y sin listeners en páginas públicas.</text>
+<g><rect x="1418.0" y="501" width="80.0" height="22" rx="11" fill="#2B341F"/><text x="1458.0" y="516" text-anchor="middle" class="cost">$ LECTURAS</text></g>
+<g filter="url(#sh)"><rect x="1010" y="560" width="500" height="120" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="1044" cy="596" r="20" fill="#2B341F"/><path d="M1035 590 L1038 605 H1050 L1053 590 Z" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="1044" cy="590" rx="9" ry="2.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1076" y="592" class="t">Cloud Storage</text>
+<text x="1076" y="611" class="s">Bucket *.firebasestorage.app · us-central1</text>
+<text x="1030" y="642" class="b">Fotos de producto WebP/AVIF ≤ 150 KB, rutas versionadas.</text>
+<rect x="1010" y="694" width="500" height="34" rx="10" fill="#2B341F"/>
+<circle cx="1032" cy="711" r="12" fill="#2B341F"/><path d="M1032 701 L1040 705 V712 C1040 717 1036 720 1032 722 C1028 720 1024 717 1024 712 V705 Z" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1028.5 711 L1031.5 714 L1036 708" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1052" y="715.5" class="cost" style="font-size:11.5px">SECURITY RULES DENY-BY-DEFAULT · APP CHECK (reCAPTCHA)</text>
+<rect x="330" y="800" width="1240" height="190" rx="18" fill="rgba(43,52,31,0.03)" stroke="rgba(43,52,31,0.18)"/>
+<text x="352" y="826" class="frame">DESPLIEGUE CONTINUO · git push main</text>
+<g filter="url(#sh)"><rect x="352" y="846" width="240" height="120" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="386" cy="882" r="20" fill="#2B341F"/><circle cx="381" cy="874" r="2.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="381" cy="890" r="2.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="879" r="2.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M381 876.5 V887.5 M392 881.5 C392 887 381 884 381 887.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="418" y="878" class="t">GitHub</text>
+<text x="418" y="897" class="s">Rama main</text>
+<text x="372" y="928" class="b">Push → build automático.</text>
+<g filter="url(#sh)"><rect x="608" y="846" width="240" height="120" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="642" cy="882" r="20" fill="#2B341F"/><rect x="631" y="877.5" width="11" height="9" rx="4.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="642" y="877.5" width="11" height="9" rx="4.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="674" y="878" class="t">Developer Connect</text>
+<text x="674" y="897" class="s">Conexión al repo</text>
+<text x="628" y="928" class="b">Webhook seguro a GCP.</text>
+<g filter="url(#sh)"><rect x="864" y="846" width="240" height="120" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="898" cy="882" r="20" fill="#2B341F"/><circle cx="898" cy="882" r="4" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="905.0" y1="882.0" x2="908.0" y2="882.0" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="902.9" y1="886.9" x2="905.1" y2="889.1" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="898.0" y1="889.0" x2="898.0" y2="892.0" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="893.1" y1="886.9" x2="890.9" y2="889.1" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="891.0" y1="882.0" x2="888.0" y2="882.0" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="893.1" y1="877.1" x2="890.9" y2="874.9" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="898.0" y1="875.0" x2="898.0" y2="872.0" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="902.9" y1="877.1" x2="905.1" y2="874.9" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="898" cy="882" r="7.5" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="930" y="878" class="t">Cloud Build</text>
+<text x="930" y="897" class="s">pnpm build</text>
+<text x="884" y="928" class="b">2.500 min/mes gratis.</text>
+<g filter="url(#sh)"><rect x="1120" y="846" width="240" height="120" rx="12" fill="#F4F4EA" stroke="rgba(43,52,31,0.18)" stroke-width="1"/></g>
+<circle cx="1154" cy="882" r="20" fill="#2B341F"/><path d="M1154 872 L1163 877 V887 L1154 892 L1145 887 V877 Z M1145 877 L1154 882 L1163 877 M1154 882 V892" stroke="#E8E9D9" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1186" y="878" class="t">Artifact Registry</text>
+<text x="1186" y="897" class="s">Imagen del contenedor</text>
+<text x="1140" y="928" class="b">Política de limpieza.</text>
+<rect x="1376" y="846" width="174" height="120" rx="12" fill="none" stroke="rgba(43,52,31,0.40)" stroke-dasharray="4 4"/>
+<text x="1392" y="876" class="t">Rollout</text>
+<text x="1392" y="900" class="b">Nueva revisión</text>
+<text x="1392" y="919" class="b">sin downtime,</text>
+<text x="1392" y="938" class="b">rollback en 1 clic.</text>
+<path d="M290 262 C340 262 340 290 386 290" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<circle cx="338" cy="276" r="11" fill="#E8E9D9" stroke="#2B341F" stroke-width="1.5"/><text x="338" y="280.5" text-anchor="middle" class="n">1</text>
+<path d="M290 470 C345 470 345 330 386 330" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M515 370 V416" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<rect x="524.0" y="386" width="39.2" height="17" rx="4" fill="#E8E9D9"/>
+<text x="530" y="398" text-anchor="start" class="lbl">MISS</text>
+<circle cx="500" cy="394" r="11" fill="#E8E9D9" stroke="#2B341F" stroke-width="1.5"/><text x="500" y="398.5" text-anchor="middle" class="n">2</text>
+<path d="M790 370 V416" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<rect x="796.0" y="386" width="66.4" height="17" rx="4" fill="#E8E9D9"/>
+<text x="802" y="398" text-anchor="start" class="lbl">SECRETOS</text>
+<path d="M910 470 C950 470 950 320 1006 320" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<circle cx="960" cy="395" r="11" fill="#E8E9D9" stroke="#2B341F" stroke-width="1.5"/><text x="960" y="399.5" text-anchor="middle" class="n">4</text>
+<path d="M910 520 C955 520 955 465 1006 465" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<circle cx="975" cy="470" r="11" fill="#E8E9D9" stroke="#2B341F" stroke-width="1.5"/><text x="975" y="474.5" text-anchor="middle" class="n">3</text>
+<path d="M910 580 C955 580 955 620 1006 620" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<circle cx="975" cy="620" r="11" fill="#E8E9D9" stroke="#2B341F" stroke-width="1.5"/><text x="975" y="624.5" text-anchor="middle" class="n">5</text>
+<path d="M640 620 V646" fill="none" stroke="#2B341F" stroke-width="1.8"  stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M165 200 V168 H1260 V226" fill="none" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="7 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<rect x="718.8" y="160" width="202.4" height="17" rx="4" fill="#E8E9D9"/>
+<text x="820" y="172" text-anchor="middle" class="lbl">LOGIN CON WEB SDK → ID TOKEN</text>
+<path d="M592 906 H604" fill="none" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="2 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M848 906 H860" fill="none" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="2 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M1104 906 H1116" fill="none" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="2 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M1360 906 H1372" fill="none" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="2 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<path d="M1240 846 V786 H860 V624" fill="none" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="2 5" stroke-linecap="round" marker-end="url(#ah)"/>
+<rect x="1023.6" y="778" width="52.8" height="17" rx="4" fill="#E8E9D9"/>
+<text x="1050" y="790" text-anchor="middle" class="lbl">DEPLOY</text>
+<path d="M40 1030 H80" stroke="#2B341F" stroke-width="1.8" marker-end="url(#ah)"/><text x="90" y="1034" class="b">Request / datos</text>
+<path d="M230 1030 H270" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#ah)"/><text x="280" y="1034" class="b">Autenticación</text>
+<path d="M410 1030 H450" stroke="#2B341F" stroke-width="1.8" stroke-dasharray="2 5" stroke-linecap="round" marker-end="url(#ah)"/><text x="460" y="1034" class="b">Despliegue</text>
+<rect x="570" y="1019" width="26" height="22" rx="11" fill="#2B341F"/><text x="583" y="1034" text-anchor="middle" class="cost">$</text><text x="606" y="1034" class="b">Punto de costo a vigilar</text>
+<circle cx="800" cy="1030" r="11" fill="#E8E9D9" stroke="#2B341F" stroke-width="1.5"/><text x="800" y="1034.5" text-anchor="middle" class="n">1</text>
+<text x="818" y="1034" class="b">Request → CDN · 2 Miss → Cloud Run · 3 Firestore (Admin SDK) · 4 Sesión · 5 Imagen origen</text>
+</svg>
