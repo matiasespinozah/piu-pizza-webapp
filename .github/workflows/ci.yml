@@ -12,6 +12,8 @@ on:
     branches: [develop, "feature/**", "feat/**"]
   pull_request:
     branches: [develop, main]
+    # `edited` vuelve a correr los checks si se cambia la rama base del PR.
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
