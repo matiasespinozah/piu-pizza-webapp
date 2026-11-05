@@ -11,6 +11,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Página `/carta` (solo frontend, datos locales): encabezado editorial, buscador sin acentos, categorías deslizables con estado «En preparación» para las que aún no tienen productos, y filas de carta con la ilustración PIÙ como imagen predeterminada.
+- Catálogo local en `src/lib/catalog/` (`Category`, `Product`, `CatalogDataSource`): única fuente de los tres productos para la Home y `/carta`. Puntos de integración futura en `docs/arquitectura/catalogo.md`.
 - Tarjetas de **Sugerencias del chef** rediseñadas: imagen arriba con `ProductImage` (ilustración PIÙ mientras no haya foto), etiqueta numerada, nombre, descripción y precio.
 - Imagen predeterminada `not_image.png` para productos sin fotografía, con `ProductImage` reutilizable. Las fotos reales se recortan; la ilustración se muestra completa sobre fondo crema.
 - Home cinematográfica en `/`: fotografía de la mesa, navegación y secciones editoriales. El titular lleva una ola tricolor que vuelve al marfil y se detiene si se pide menos movimiento.
@@ -33,6 +35,15 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 - El CI también corre en PRs hacia `main`, con el job **"PR a main solo desde develop"**, que falla si el PR no viene de `develop`. Ambos jobs son checks obligatorios en los rulesets de GitHub.
 - Script `pnpm typecheck` (`next typegen && tsc --noEmit`: genera los tipos de rutas de Next antes de chequear, necesario en un clon limpio como el CI).
 - Modo CI en `scripts/check-changelog.mjs` (`CHANGELOG_BASE`): en un PR exige entrada en el CHANGELOG respecto de la rama base.
+
+### Cambiado
+
+- Home, «Descubre nuestra carta»: tarjetas de categoría con imagen (foto de un producto o la ilustración predeterminada), nombre y estado («Ver sabores» / «Próximamente»), leídas del catálogo local. Se muestran 3 y el resto aparece con «Mostrar más categorías», ahora un botón terracota como «Reservar» (`accent`), con la cantidad de categorías ocultas en una píldora. Al pulsar «Mostrar menos» la vista vuelve suavemente al inicio de las categorías (instantáneo con movimiento reducido). Cada una enlaza a `/carta#categoria`, que abre esa categoría. Se elimina `src/lib/menu.ts`, que quedó sin uso.
+- Filas de la carta con estructura fija (miniatura, nombre, precio): el precio queda siempre arriba a la derecha y la descripción usa todo el ancho, sin importar el largo del texto.
+- El botón flotante de WhatsApp se oculta suavemente mientras se desliza la página y reaparece con un efecto «pop» al detenerse (sin escala con movimiento reducido). En móvil es un 5 % más pequeño.
+- En `/carta`, al tocar un producto se abre una ficha ampliada con imagen grande, nombre, precio y descripción (`ProductDetailDialog`). `ProductImage` admite la proporción `4/3`.
+- «Ver la carta», «Explorar carta completa» y el enlace Carta del header y del footer llevan a `/carta`. El header tiene una variante sólida para páginas internas.
+- `src/lib/menu.ts` ya no duplica productos: «Sugerencias del chef» lee del catálogo local.
 
 ## [0.2.0] - 2026-11-03
 
