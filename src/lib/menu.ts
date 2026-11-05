@@ -20,6 +20,8 @@ type MenuProduct = {
   price: number
   category: MenuCategoryId
   chefPick: boolean
+  /** Ruta local de la fotografía. Si falta, `ProductImage` usa la ilustración predeterminada. */
+  image?: string | null
 }
 
 const menuCategories: readonly MenuCategory[] = [
