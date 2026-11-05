@@ -1,15 +1,31 @@
-import { cn } from "cn"
+import Link from "next/link"
 
-import { ComingSoonButton } from "@/components/features/coming-soon-button"
+import { CategoryShowcase, type ShowcaseCategory } from "@/components/features/home/category-showcase"
 import { Reveal } from "@/components/features/home/reveal"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Container, Section } from "@/components/ui/layout"
-import { formatCLP } from "@/components/ui/price"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
-import { getCatalogPizzas, menuCategories } from "@/lib/menu"
+import { catalogDataSource } from "@/lib/catalog/catalog-data-source"
 
-function MenuSection() {
-  const catalogPizzas = getCatalogPizzas()
+async function MenuSection() {
+  const [categories, products] = await Promise.all([
+    catalogDataSource.getCategories(),
+    catalogDataSource.getProducts(),
+  ])
+
+  // Categorías con productos primero; la imagen sale del primer producto de cada una.
+  const showcase: ShowcaseCategory[] = categories
+    .map((category) => {
+      const items = products.filter((product) => product.categoryId === category.id)
+      return {
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        hasProducts: items.length > 0,
+        imageUrl: items.find((item) => item.imageUrl)?.imageUrl,
+      }
+    })
+    .toSorted((a, b) => Number(b.hasProducts) - Number(a.hasProducts))
 
   return (
     <Section id="carta" spacing="lg" surface="raised" className="scroll-mt-24">
@@ -23,70 +39,15 @@ function MenuSection() {
         </Reveal>
       </Container>
 
-      {catalogPizzas.length > 0 ? (
-        <Reveal>
-          <ul className="home-rail mx-auto mt-10 flex max-w-[1200px] snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-4 sm:scroll-px-6 sm:px-6 lg:grid lg:grid-cols-2 lg:gap-8 lg:overflow-visible lg:px-8 lg:pb-0">
-            {catalogPizzas.map((pizza) => (
-              <li key={pizza.id} className="w-[min(19.5rem,78vw)] shrink-0 snap-start lg:w-auto lg:min-w-0">
-                <Card variant="default" size="feature" className="h-full">
-                  <CardHeader>
-                    <CardTitle>{pizza.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-olive-strong">{pizza.description}</CardDescription>
-                  </CardContent>
-                  <CardFooter className="border-t border-olive-line pt-4">
-                    <p className="font-label text-xl font-bold tabular-nums tracking-[0.02em] text-terracotta">
-                      {formatCLP(pizza.price)}
-                    </p>
-                  </CardFooter>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
-      ) : null}
-
-      <div className="mx-auto mt-14 max-w-[1200px] px-4 sm:px-6 lg:mt-20 lg:px-8">
-        <Reveal>
-          <Eyebrow className="text-terracotta">Categorías</Eyebrow>
-        </Reveal>
-        <ul className="home-rail mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-12 lg:gap-8 lg:overflow-visible lg:pb-0">
-          {menuCategories.map((category, index) => (
-            <li
-              key={category.id}
-              className={cn(
-                "w-[min(17.5rem,76vw)] shrink-0 snap-start lg:w-auto lg:min-w-0",
-                index === 0 ? "lg:col-span-7" : "lg:col-span-5 lg:mt-10"
-              )}
-            >
-              <Reveal>
-                <article className="flex h-full flex-col border-t border-olive pt-5">
-                  <p className="font-label text-xs font-semibold tracking-[0.16em] text-olive-muted uppercase">
-                    {category.kicker}
-                  </p>
-                  <h3 className="mt-4 font-heading text-[clamp(2.5rem,7vw,4.25rem)] leading-none font-extrabold tracking-[-0.035em]">
-                    {category.name}
-                  </h3>
-                  <p className="mt-4 max-w-sm text-base leading-6 text-olive-strong">{category.description}</p>
-                </article>
-              </Reveal>
-            </li>
-          ))}
-        </ul>
+      <div className="mx-auto mt-10 max-w-[1200px] px-4 sm:px-6 lg:mt-14 lg:px-8">
+        <CategoryShowcase categories={showcase} />
       </div>
 
       <Container>
-        <Reveal className="mt-12 lg:mt-16">
-          <ComingSoonButton
-            title="Carta"
-            message="La carta en línea estará disponible próximamente."
-            variant="primary"
-            size="lg"
-            className="w-full sm:w-auto"
-          >
-            Explorar carta completa
-          </ComingSoonButton>
+        <Reveal className="mt-10 lg:mt-14">
+          <Button asChild variant="primary" size="lg" className="w-full sm:w-auto">
+            <Link href="/carta">Explorar carta completa</Link>
+          </Button>
         </Reveal>
       </Container>
     </Section>

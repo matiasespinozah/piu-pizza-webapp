@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { HeartIcon, MenuIcon, ShoppingBagIcon, UserIcon } from "lucide-react"
 
+import { ProductImage } from "@/components/features/menu/product-image"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -213,6 +214,35 @@ export default function UiShowcasePage() {
                   </CardHeader>
                 </Card>
               </Stack>
+            </div>
+          </Block>
+
+          <Block title="Imagen de producto">
+            <div className="grid max-w-3xl items-start gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <ProductImage src="/logos/logopiu.png" name="Americana" sizes="(max-width: 640px) 50vw, 220px" />
+                <Caption className="mt-2">Fotografía válida</Caption>
+              </div>
+              <div>
+                <ProductImage src={null} name="Pollo Espinaca" sizes="(max-width: 640px) 50vw, 220px" />
+                <Caption className="mt-2">Sin fotografía</Caption>
+              </div>
+              <div>
+                <ProductImage src="   " name="Caramel Funghi" sizes="(max-width: 640px) 50vw, 220px" />
+                <Caption className="mt-2">Cadena vacía</Caption>
+              </div>
+              <div>
+                <ProductImage src="/no-existe.webp" name="Margarita" sizes="(max-width: 640px) 50vw, 220px" />
+                <Caption className="mt-2">Archivo inexistente</Caption>
+              </div>
+              <div>
+                <ProductImage
+                  src="https://example.com/no-permitida.jpg"
+                  name="Calabresa"
+                  sizes="(max-width: 640px) 50vw, 220px"
+                />
+                <Caption className="mt-2">URL remota no permitida</Caption>
+              </div>
             </div>
           </Block>
 

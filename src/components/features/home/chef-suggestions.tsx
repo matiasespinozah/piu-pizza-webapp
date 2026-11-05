@@ -1,42 +1,51 @@
 import { Reveal } from "@/components/features/home/reveal"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { ProductImage } from "@/components/features/menu/product-image"
 import { Container, Section } from "@/components/ui/layout"
 import { formatCLP } from "@/components/ui/price"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
-import { getChefSuggestions, type MenuProduct } from "@/lib/menu"
+import { catalogDataSource } from "@/lib/catalog/catalog-data-source"
+import { CHEF_CATEGORY_ID } from "@/lib/catalog/data"
+import type { Product } from "@/lib/catalog/types"
 
-function SuggestionCard({ suggestion, index }: { suggestion: MenuProduct; index: number }) {
+function SuggestionCard({ suggestion, index }: { suggestion: Product; index: number }) {
   const order = String(index + 1).padStart(2, "0")
 
   return (
-    <Card variant="raised" size="feature" className="h-full shadow-tactile">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <Badge variant="outline">{order} · Chef</Badge>
-          <span
-            aria-hidden
-            className="font-heading text-[2.75rem] leading-none font-black tracking-[-0.06em] text-olive-line lg:text-[3.25rem]"
-          >
-            {suggestion.name.slice(0, 1)}
-          </span>
+    <article className="group/card flex h-full flex-col overflow-hidden rounded-2xl border border-olive-line bg-surface-raised shadow-tactile transition-shadow duration-300 hover:shadow-lift">
+      <div className="relative p-3 pb-0">
+        <ProductImage
+          src={suggestion.imageUrl}
+          name={suggestion.name}
+          ratio="1/1"
+          sizes="(max-width: 1024px) 78vw, 380px"
+          className="bg-cream"
+        />
+        <span className="absolute top-6 left-6 inline-flex h-7 items-center rounded-4xl bg-olive px-3 font-label text-[0.6875rem] font-semibold tracking-[0.14em] text-cream uppercase">
+          {order} · Chef
+        </span>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3 px-5 pt-5 pb-5 sm:px-6 sm:pb-6">
+        <h3 className="font-heading text-[1.65rem] leading-[1.1] font-extrabold tracking-[-0.02em] text-olive lg:text-[1.85rem]">
+          {suggestion.name}
+        </h3>
+        <p className="text-[0.9375rem] leading-[1.5] text-olive-strong">{suggestion.description}</p>
+
+        <div className="mt-auto flex items-end justify-between gap-4 border-t border-olive-line pt-4">
+          <p className="font-label text-[0.6875rem] font-semibold tracking-[0.16em] text-olive-muted uppercase">
+            Pizza artesanal
+          </p>
+          <p className="font-label text-xl font-bold tabular-nums tracking-[0.02em] text-terracotta">
+            {formatCLP(suggestion.priceClp)}
+          </p>
         </div>
-        <CardTitle className="mt-2 text-[1.65rem] lg:text-[1.85rem]">{suggestion.name}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardDescription className="max-w-[22rem] text-olive-strong">{suggestion.description}</CardDescription>
-      </CardContent>
-      <CardFooter className="border-t border-olive-line pt-4">
-        <p className="font-label text-xl font-bold tabular-nums tracking-[0.02em] text-terracotta">
-          {formatCLP(suggestion.price)}
-        </p>
-      </CardFooter>
-    </Card>
+      </div>
+    </article>
   )
 }
 
-function ChefSuggestions() {
-  const suggestions = getChefSuggestions()
+async function ChefSuggestions() {
+  const suggestions = await catalogDataSource.getProductsByCategory(CHEF_CATEGORY_ID)
 
   return (
     <Section

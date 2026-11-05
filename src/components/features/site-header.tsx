@@ -21,7 +21,7 @@ import { textLinkVariants } from "@/components/ui/text-link"
 
 const links = [
   { href: "/#inicio", id: "inicio", label: "Inicio" },
-  { href: "/#carta", id: "carta", label: "Carta" },
+  { href: "/carta", id: "carta", label: "Carta" },
   { href: "/#esencia", id: "esencia", label: "Nosotros" },
   { href: "/#reservas", id: "reservas", label: "Reservas" },
 ] as const
@@ -30,11 +30,20 @@ const sectionOrder = ["inicio", "carta", "esencia", "reservas"] as const
 
 const reserveMessage = "La reserva en línea estará disponible próximamente."
 
-function SiteHeader() {
+type SiteHeaderProps = {
+  /** `home` sigue el scroll de las secciones; `carta` es una página interna con barra sólida. */
+  page?: "home" | "carta"
+}
+
+function SiteHeader({ page = "home" }: SiteHeaderProps) {
   const [scrolled, setScrolled] = React.useState(false)
-  const [active, setActive] = React.useState<(typeof sectionOrder)[number]>("inicio")
+  const [homeActive, setActive] = React.useState<(typeof sectionOrder)[number]>("inicio")
+  const solid = page !== "home"
+  const active = solid ? page : homeActive
 
   React.useEffect(() => {
+    if (solid) return
+
     const onScroll = () => {
       setScrolled(window.scrollY > 12)
       const mark = window.scrollY + 96
@@ -48,12 +57,13 @@ function SiteHeader() {
     onScroll()
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
-  }, [])
+  }, [solid])
 
   return (
     <header
       data-scrolled={scrolled ? "" : undefined}
-      className="group fixed inset-x-0 top-0 z-40 bg-cream pt-safe text-olive md:bg-transparent md:text-cream md:shadow-none md:transition-[background-color,box-shadow,color] md:duration-300 md:data-[scrolled]:bg-olive md:data-[scrolled]:shadow-tactile motion-reduce:transition-none"
+      data-solid={solid ? "" : undefined}
+      className="group fixed inset-x-0 top-0 z-40 bg-cream pt-safe text-olive data-[solid]:border-b data-[solid]:border-olive-line md:bg-transparent md:text-cream md:shadow-none md:transition-[background-color,box-shadow,color] md:duration-300 md:data-[scrolled]:bg-olive md:data-[scrolled]:shadow-tactile md:data-[solid]:border-transparent md:data-[solid]:bg-olive md:data-[solid]:shadow-tactile motion-reduce:transition-none"
     >
       <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-3 px-5 transition-[height] duration-300 motion-reduce:transition-none sm:px-6 md:h-16 md:group-data-[scrolled]:h-14 lg:gap-6 lg:px-8">
         <Link

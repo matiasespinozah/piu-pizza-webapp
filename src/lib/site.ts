@@ -36,7 +36,7 @@ const openingHours = [
 
 const footerNav = [
   { href: "/#inicio", label: "Inicio" },
-  { href: "/#carta", label: "Carta" },
+  { href: "/carta", label: "Carta" },
   { href: "/#reservas", label: "Reservas" },
   { href: "/#esencia", label: "Nosotros" },
 ] as const
