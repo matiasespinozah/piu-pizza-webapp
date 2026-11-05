@@ -162,6 +162,23 @@
   }
 }
 
+.home-rail {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-color: color-mix(in srgb, var(--brand-olive) 28%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 1024px) {
+  .home-rail {
+    scrollbar-width: none;
+  }
+
+  .home-rail::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-mobile-shot,
   .hero-frame,

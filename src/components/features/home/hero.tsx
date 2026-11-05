@@ -6,7 +6,6 @@ import { CalendarIcon, ChevronDownIcon, UtensilsCrossedIcon } from "lucide-react
 import comida from "@/assets/home/comida.webp"
 import { ComingSoonButton } from "@/components/features/coming-soon-button"
 import { Button } from "@/components/ui/button"
-import { Eyebrow } from "@/components/ui/typography"
 
 /**
  * Titular solo del hero. El resto del sitio sigue en Anybody (DESIGN.md §3).
@@ -24,12 +23,7 @@ function Hero() {
     <section id="inicio" className="relative scroll-mt-0 bg-olive md:min-h-[88svh] md:overflow-hidden">
       <div className="relative z-10 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+3.75rem)] pb-8 md:min-h-[88svh] md:justify-center md:px-8 md:pt-24 md:pb-14">
         <div className="flex w-full flex-col md:max-w-[34rem] md:translate-x-[4vw] lg:translate-x-[5vw]">
-          <div className="hero-rise hero-rise-1 flex items-center gap-3">
-            <span className="h-px w-7 bg-terracotta-soft" aria-hidden />
-            <Eyebrow className="text-terracotta-soft">Pizza & Dolce</Eyebrow>
-          </div>
-
-          <div className="hero-rise hero-rise-2 mt-3 hidden md:block">
+          <div className="hero-rise hero-rise-2 hidden md:block">
             <p className="font-heading text-[clamp(2.75rem,10vw,5.5rem)] leading-[0.84] font-black tracking-[-0.04em] text-cream">
               PIÙ
             </p>
@@ -93,7 +87,7 @@ function Hero() {
       </div>
 
       <Link
-        href="/#esencia"
+        href="/#sugerencias"
         className="hero-cue absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[calc(2rem+4vw)] z-10 hidden size-11 items-center justify-center text-cream outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream md:inline-flex lg:left-[calc(2rem+5vw)]"
         aria-label="Bajar a la siguiente sección"
       >

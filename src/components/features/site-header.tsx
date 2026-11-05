@@ -7,6 +7,7 @@ import { cn } from "cn"
 
 import { ComingSoonButton } from "@/components/features/coming-soon-button"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/ui/logo"
 import {
   Sheet,
   SheetClose,
@@ -21,11 +22,11 @@ import { textLinkVariants } from "@/components/ui/text-link"
 const links = [
   { href: "/#inicio", id: "inicio", label: "Inicio" },
   { href: "/#carta", id: "carta", label: "Carta" },
-  { href: "/#reservas", id: "reservas", label: "Reservas" },
   { href: "/#esencia", id: "esencia", label: "Nosotros" },
+  { href: "/#reservas", id: "reservas", label: "Reservas" },
 ] as const
 
-const sectionOrder = ["inicio", "esencia", "carta", "reservas"] as const
+const sectionOrder = ["inicio", "carta", "esencia", "reservas"] as const
 
 const reserveMessage = "La reserva en línea estará disponible próximamente."
 
@@ -57,10 +58,10 @@ function SiteHeader() {
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-3 px-6 transition-[height] duration-300 motion-reduce:transition-none md:h-16 md:group-data-[scrolled]:h-14 lg:gap-6 lg:px-8">
         <Link
           href="/#inicio"
-          className="font-heading text-[1.65rem] leading-none font-black tracking-[-0.045em] text-cream outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream"
+          className="inline-flex shrink-0 rounded-xl outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream"
         >
-          PIÙ
-          <span className="sr-only">, ir al inicio</span>
+          <Logo size={40} alt="" className="size-9 md:size-10" />
+          <span className="sr-only">PIÙ, ir al inicio</span>
         </Link>
 
         <nav aria-label="Principal" className="ms-auto hidden items-center gap-1 lg:gap-2 md:flex">

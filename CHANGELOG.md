@@ -14,6 +14,11 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 - Home cinematográfica en `/`: fotografía de la mesa, navegación y secciones editoriales. El titular lleva una ola tricolor que vuelve al marfil y se detiene si se pide menos movimiento.
 - Hero a `88svh`, con la marca PIÙ proporcionada al titular, botones de la misma altura y barra más sobria al desplazar.
 - Hero móvil en dos zonas: bloque oliva con marca y copy, y fotografía gastronómica debajo, sin texto sobre la pizza. El escritorio no cambia.
+- Sección **Sugerencias del chef** en la Home: vitrina tipográfica de tres pizzas, carrusel en móvil y grilla en escritorio.
+- Home reordenada: Hero, sugerencias del chef, carta, terraza y salón, reserva. El salón queda preparado para su fotografía. El catálogo local vive en `src/lib/menu.ts`.
+- Footer oliva con horarios, Instagram, TikTok y un WhatsApp flotante con aviso «¿Necesitas ayuda?».
+- Logos de Instagram y TikTok del footer tomados de `public/logos`, en cuadrado redondeado y sin borde.
+- Logo oficial de PIÙ en el header. En el Hero, el texto PIÙ / Pizza & Dolce solo aparece en escritorio, sin el eyebrow repetido.
 - CI en GitHub Actions para la rama `develop` (`.github/workflows/ci.yml`): lint, tipos, changelog/versiones alineadas y build, en cada push y PR.
 - Rama `develop` como rama de trabajo; `main` queda solo para producción.
 - El CI también corre en cada push a ramas `feature/**` y `feat/**`, exigiendo la entrada del CHANGELOG respecto de `develop`.

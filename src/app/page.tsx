@@ -1,10 +1,12 @@
 import type { Metadata } from "next"
 
+import { ChefSuggestions } from "@/components/features/home/chef-suggestions"
 import { EssenceSection } from "@/components/features/home/essence-section"
 import { Hero } from "@/components/features/home/hero"
 import { MenuSection } from "@/components/features/home/menu-section"
 import { ReserveSection } from "@/components/features/home/reserve-section"
-import { SiteFooter } from "@/components/features/site-footer"
+import { FloatingWhatsApp } from "@/components/features/layout/floating-whatsapp"
+import { SiteFooter } from "@/components/features/layout/site-footer"
 import { SiteHeader } from "@/components/features/site-header"
 
 import "./home.css"
@@ -24,11 +26,13 @@ export default function Home() {
   return (
     <div className="bg-cream">
       <SiteHeader />
+      <FloatingWhatsApp />
       <div className="overflow-x-clip">
         <main>
           <Hero />
-          <EssenceSection />
+          <ChefSuggestions />
           <MenuSection />
+          <EssenceSection />
           <ReserveSection />
         </main>
         <SiteFooter />
