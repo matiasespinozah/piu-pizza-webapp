@@ -3,6 +3,7 @@ import Link from "next/link"
 import { cn } from "cn"
 
 import { CopyrightYear } from "@/components/features/layout/copyright-year"
+import { Logo } from "@/components/ui/logo"
 import { Container } from "@/components/ui/layout"
 import { textLinkVariants } from "@/components/ui/text-link"
 import { footerNav, openingHours, socialLinks } from "@/lib/site"
@@ -12,16 +13,24 @@ function SiteFooter() {
     <footer className="bg-olive text-cream">
       <Container className="grid gap-12 py-16 sm:py-20 lg:grid-cols-3 lg:gap-16 lg:py-24">
         <div>
-          <p className="font-heading text-[2.75rem] leading-none font-black tracking-[-0.045em]">PIÙ</p>
-          <p className="mt-3 font-label text-xs font-semibold tracking-[0.16em] text-terracotta-soft uppercase">
-            Pizza & Dolce
-          </p>
-          <p className="mt-6 max-w-[16rem] text-base leading-6 text-cream/85 italic">
-            Buena comida, mejores momentos.
-          </p>
+          <Link
+            href="/#inicio"
+            className="inline-flex rounded-xl outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream md:hidden"
+          >
+            <Logo size={88} className="size-[5.5rem]" />
+          </Link>
+          <div className="hidden md:block">
+            <p className="font-heading text-[2.75rem] leading-none font-black tracking-[-0.045em]">PIÙ</p>
+            <p className="mt-3 font-label text-xs font-semibold tracking-[0.16em] text-terracotta-soft uppercase">
+              Pizza & Dolce
+            </p>
+            <p className="mt-6 max-w-[16rem] text-base leading-6 text-cream/85 italic">
+              Buena comida, mejores momentos.
+            </p>
+          </div>
         </div>
 
-        <nav aria-label="Pie de página" className="flex flex-col">
+        <nav aria-label="Pie de página" className="hidden flex-col md:flex">
           <p className="font-label text-xs font-semibold tracking-[0.16em] text-terracotta-soft uppercase">
             Explorar
           </p>

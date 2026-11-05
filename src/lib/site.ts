@@ -1,3 +1,16 @@
+const venue = {
+  name: "PIÙ Pizza & Dolce",
+  street: "Primera Transversal 2595",
+  locality: "Maipú, Región Metropolitana",
+  country: "Chile",
+  mapsQuery: "Primera Transversal 2595, Maipú, Chile",
+} as const
+
+const mapsEmbedUrl =
+  "https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1sPrimera+Transversal+2595,+Maip%C3%BA,+Chile!6i15!3m1!1ses!5m1!1ses"
+
+const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.mapsQuery)}`
+
 const whatsappMessage = "Hola, tengo una consulta sobre PIÙ Pizza & Dolce."
 
 const whatsappHref = `https://wa.me/56928873619?text=${encodeURIComponent(whatsappMessage)}`
@@ -16,8 +29,8 @@ const socialLinks = [
 ] as const
 
 const openingHours = [
-  { days: "Lunes a jueves", hours: "17:00 – 22:00 hrs." },
-  { days: "Viernes y sábado", hours: "13:00 – 23:00 hrs." },
+  { days: "Lunes a jueves", hours: "17:00–22:00 hrs." },
+  { days: "Viernes y sábado", hours: "13:00–23:00 hrs." },
   { days: "Domingo", hours: "Cerrado" },
 ] as const
 
@@ -28,4 +41,13 @@ const footerNav = [
   { href: "/#esencia", label: "Nosotros" },
 ] as const
 
-export { footerNav, openingHours, socialLinks, whatsappHref, whatsappMessage }
+export {
+  directionsUrl,
+  footerNav,
+  mapsEmbedUrl,
+  openingHours,
+  socialLinks,
+  venue,
+  whatsappHref,
+  whatsappMessage,
+}

@@ -53,14 +53,14 @@ function SiteHeader() {
   return (
     <header
       data-scrolled={scrolled ? "" : undefined}
-      className="group fixed inset-x-0 top-0 z-40 bg-olive pt-safe text-cream md:bg-transparent md:shadow-none md:transition-[background-color,box-shadow] md:duration-300 md:data-[scrolled]:bg-olive md:data-[scrolled]:shadow-tactile motion-reduce:transition-none"
+      className="group fixed inset-x-0 top-0 z-40 bg-cream pt-safe text-olive md:bg-transparent md:text-cream md:shadow-none md:transition-[background-color,box-shadow,color] md:duration-300 md:data-[scrolled]:bg-olive md:data-[scrolled]:shadow-tactile motion-reduce:transition-none"
     >
-      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-3 px-6 transition-[height] duration-300 motion-reduce:transition-none md:h-16 md:group-data-[scrolled]:h-14 lg:gap-6 lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-3 px-5 transition-[height] duration-300 motion-reduce:transition-none sm:px-6 md:h-16 md:group-data-[scrolled]:h-14 lg:gap-6 lg:px-8">
         <Link
           href="/#inicio"
-          className="inline-flex shrink-0 rounded-xl outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream"
+          className="inline-flex shrink-0 rounded-xl outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-olive md:focus-visible:outline-cream"
         >
-          <Logo size={40} alt="" className="size-9 md:size-10" />
+          <Logo size={56} alt="" className="size-[3.25rem] md:size-11" />
           <span className="sr-only">PIÙ, ir al inicio</span>
         </Link>
 
@@ -95,7 +95,7 @@ function SiteHeader() {
             <Button
               variant="ghost"
               size="icon"
-              className="ms-auto text-cream hover:bg-[color-mix(in_srgb,var(--brand-cream),transparent_88%)] hover:text-cream focus-visible:outline-cream md:hidden"
+              className="ms-auto text-olive hover:bg-olive-hover hover:text-olive focus-visible:outline-olive md:hidden"
               aria-label="Abrir menú"
             >
               <MenuIcon />

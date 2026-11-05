@@ -1,7 +1,7 @@
 /*
  * Home cinematográfica.
- * Móvil: zona oliva + fotografía en flujo, sin texto sobre la comida.
- * Escritorio: velo oliva sobre la foto de la mesa.
+ * Móvil: fotografía a sangre; velo solo detrás del titular para dejar la pizza clara.
+ * Escritorio: velo oliva a la izquierda sobre PiuComida.
  */
 
 .hero-scrim {
@@ -16,8 +16,21 @@
     );
 }
 
-.hero-mobile-blend {
-  background: linear-gradient(180deg, var(--brand-olive) 0%, transparent 22%);
+.hero-mobile-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(22, 27, 16, 0.64) 0%,
+    rgba(22, 27, 16, 0.5) 20%,
+    rgba(22, 27, 16, 0.32) 36%,
+    rgba(22, 27, 16, 0.1) 52%,
+    transparent 66%
+  );
+}
+
+body:has([data-slot="sheet-overlay"][data-state="open"]) .wa-fab,
+body:has([data-slot="dialog-overlay"][data-state="open"]) .wa-fab {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes hero-fade {

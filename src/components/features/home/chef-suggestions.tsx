@@ -39,7 +39,12 @@ function ChefSuggestions() {
   const suggestions = getChefSuggestions()
 
   return (
-    <Section id="sugerencias" aria-labelledby="sugerencias-heading" spacing="lg" className="scroll-mt-24 bg-cream">
+    <Section
+      id="sugerencias"
+      aria-labelledby="sugerencias-heading"
+      spacing="none"
+      className="scroll-mt-24 bg-cream pt-10 pb-16 sm:pt-16 sm:pb-24 lg:py-36"
+    >
       <Container>
         <Reveal className="flex max-w-[38rem] flex-col gap-5">
           <Eyebrow className="text-terracotta">Selección PIÙ</Eyebrow>

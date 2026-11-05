@@ -92,7 +92,7 @@ function FloatingWhatsApp() {
   }, [clearTimers])
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-30 flex flex-col items-end gap-2 sm:right-6">
+    <div className="wa-fab pointer-events-none fixed right-3 bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] z-30 flex flex-col items-end gap-2 transition-opacity duration-150 md:right-6 md:bottom-[max(1.25rem,env(safe-area-inset-bottom))]">
       {bubble ? (
         <div
           role="status"
@@ -116,10 +116,10 @@ function FloatingWhatsApp() {
         rel="noopener noreferrer"
         aria-label="Escribir a PIÙ por WhatsApp"
         onClick={hideBubble}
-        className="pointer-events-auto inline-flex size-14 items-center justify-center rounded-full text-white shadow-lift outline-none transition-[transform,filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-olive motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500"
+        className="pointer-events-auto inline-flex size-12 items-center justify-center rounded-full text-white shadow-lift outline-none transition-[transform,filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-olive motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500 md:size-14"
         style={{ backgroundColor: "#25D366" }}
       >
-        <WhatsAppGlyph className="size-7" />
+        <WhatsAppGlyph className="size-6 md:size-7" />
       </a>
     </div>
   )
