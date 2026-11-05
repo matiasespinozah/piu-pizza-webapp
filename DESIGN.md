@@ -26,6 +26,8 @@ El fondo principal es un **crema verdoso** (`#E8E9D9`), y el texto, las formas y
 |---|---|---|
 | `--brand-olive` | `#2B341F` | Logo, titulares, textos, botones principales, iconos |
 | `--brand-cream` | `#E8E9D9` | Fondo general y texto de botones oscuros |
+| `--brand-terracotta` | `#9C422F` | Acción principal sobre fotografía (reservar). Texto crema. Contraste 5.28:1 |
+| `--terracotta-soft` | `#E7B5A2` | Solo etiquetas pequeñas sobre el velo oscuro del hero |
 
 ### Colores de soporte (derivados; no son nuevos colores de marca)
 | Token | Valor | Uso |
@@ -164,6 +166,12 @@ body {
 - Headline corto y audaz en Anybody 900, texto oliva sobre fondo crema.
 - Una gran fotografía de pizza o dolce; CTA principal y secundario discretos.
 - Espacios amplios; permitir composiciones asimétricas que no comprometan legibilidad.
+
+**Hero fotográfico (portada)**
+- La foto va a sangre. El texto crema se apoya a la izquierda. El velo es oliva oscuro (`rgba(22, 27, 16, …)`), más denso donde hay texto y abierto hacia la cocina: no es un degradado multicolor ni negro puro.
+- La marca `PIÙ` puede crecer por encima de la escala display, solo en esa portada.
+- El titular editorial usa Fraunces italic (un solo peso, vía `next/font`). El resto de la interfaz sigue en Anybody.
+- CTA principal: terracota. CTA secundario: borde crema. No tapar el logo circular que ya está en la fotografía.
 
 **Menú / Catálogo de productos**
 - Separar Pizza y Dolce con titulares claros.

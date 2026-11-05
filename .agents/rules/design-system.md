@@ -8,6 +8,7 @@
 |---|---|---|
 | Fondo general | `bg-background` / `bg-cream` | `#E8E9D9` |
 | Texto, botones, iconos | `text-foreground` / `bg-primary` / `text-olive` | `#2B341F` |
+| Acción sobre foto | `bg-terracotta` / `text-terracotta-soft` | `#9C422F` / `#E7B5A2` |
 | Párrafo principal | `text-olive-strong` | olivo 85% |
 | Metadatos | `text-muted-foreground` / `text-olive-muted` | olivo 66% |
 | Bordes de inputs | `border-input` / `border-olive-soft` | olivo 40% |
@@ -35,7 +36,7 @@ Los tokens semánticos de shadcn (`primary`, `muted`, `border`, …) están mape
 
 | Componente | Archivo | Notas |
 |---|---|---|
-| `Button` | `button.tsx` | `primary` · `secondary` · `tertiary` (flecha) · `ghost` · `link`; tamaños `sm` `md` `lg` `icon` `icon-sm`; `loading`; `asChild` para envolver `<Link>` |
+| `Button` | `button.tsx` | `primary` · `secondary` · `tertiary` (flecha) · `ghost` · `link` · `accent` (terracota) · `onPhoto` (borde crema); tamaños `sm` `md` `lg` `icon` `icon-sm`; `loading`; `asChild` para envolver `<Link>` |
 | `TextLink` | `text-link.tsx` | Envuelve `next/link`. `inline` · `nav` (usa `aria-current="page"`) · `standalone`; `external` |
 | `Heading`, `Display`, `Text`, `Lead`, `Caption`, `Eyebrow` | `typography.tsx` | `as` = nivel semántico, `size` = tamaño visual |
 | `Price`, `formatCLP` | `price.tsx` | Entero en CLP; `compareAt` solo si hay rebaja real |

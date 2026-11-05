@@ -6,7 +6,6 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rules/changelog.md).
 
-otro sin publicar 
 
 ## [Sin publicar]
 
