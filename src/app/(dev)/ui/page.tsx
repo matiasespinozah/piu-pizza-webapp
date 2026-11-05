@@ -111,6 +111,10 @@ export default function UiShowcasePage() {
                 <Button variant="ghost">Ghost</Button>
                 <Button variant="link">Link</Button>
               </div>
+              <div className="flex flex-wrap items-center gap-3 rounded-xl bg-olive p-4">
+                <Button variant="accent">Terracota</Button>
+                <Button variant="onPhoto">Sobre foto</Button>
+              </div>
               <div className="flex flex-wrap items-center gap-3">
                 <Button size="sm">Pequeño</Button>
                 <Button size="md">Mediano</Button>
