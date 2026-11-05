@@ -91,8 +91,27 @@ function FloatingWhatsApp() {
     }
   }, [clearTimers])
 
+  // Se oculta mientras la persona desliza y reaparece con un "pop" al detenerse.
+  const [scrolling, setScrolling] = React.useState(false)
+  React.useEffect(() => {
+    let timer = 0
+    function onScroll() {
+      setScrolling(true)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => setScrolling(false), 220)
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener("scroll", onScroll)
+    }
+  }, [])
+
   return (
-    <div className="wa-fab pointer-events-none fixed right-3 bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] z-30 flex flex-col items-end gap-2 transition-opacity duration-150 md:right-6 md:bottom-[max(1.25rem,env(safe-area-inset-bottom))]">
+    <div
+      data-scrolling={scrolling ? "" : undefined}
+      className="wa-fab pointer-events-none fixed right-3 bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] z-30 flex origin-bottom-right flex-col items-end gap-2 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] data-[scrolling]:scale-50 data-[scrolling]:opacity-0 data-[scrolling]:duration-200 data-[scrolling]:ease-out data-[scrolling]:*:pointer-events-none motion-reduce:transition-opacity motion-reduce:data-[scrolling]:scale-100 md:right-6 md:bottom-[max(1.25rem,env(safe-area-inset-bottom))]"
+    >
       {bubble ? (
         <div
           role="status"
@@ -116,10 +135,10 @@ function FloatingWhatsApp() {
         rel="noopener noreferrer"
         aria-label="Escribir a PIÙ por WhatsApp"
         onClick={hideBubble}
-        className="pointer-events-auto inline-flex size-12 items-center justify-center rounded-full text-white shadow-lift outline-none transition-[transform,filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-olive motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500 md:size-14"
+        className="pointer-events-auto inline-flex size-[2.85rem] items-center justify-center rounded-full text-white shadow-lift outline-none transition-[transform,filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-olive motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500 md:size-14"
         style={{ backgroundColor: "#25D366" }}
       >
-        <WhatsAppGlyph className="size-6 md:size-7" />
+        <WhatsAppGlyph className="size-[1.425rem] md:size-7" />
       </a>
     </div>
   )

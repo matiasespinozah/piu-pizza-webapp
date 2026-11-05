@@ -3,16 +3,18 @@ import { ProductImage } from "@/components/features/menu/product-image"
 import { Container, Section } from "@/components/ui/layout"
 import { formatCLP } from "@/components/ui/price"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
-import { getChefSuggestions, type MenuProduct } from "@/lib/menu"
+import { catalogDataSource } from "@/lib/catalog/catalog-data-source"
+import { CHEF_CATEGORY_ID } from "@/lib/catalog/data"
+import type { Product } from "@/lib/catalog/types"
 
-function SuggestionCard({ suggestion, index }: { suggestion: MenuProduct; index: number }) {
+function SuggestionCard({ suggestion, index }: { suggestion: Product; index: number }) {
   const order = String(index + 1).padStart(2, "0")
 
   return (
     <article className="group/card flex h-full flex-col overflow-hidden rounded-2xl border border-olive-line bg-surface-raised shadow-tactile transition-shadow duration-300 hover:shadow-lift">
       <div className="relative p-3 pb-0">
         <ProductImage
-          src={suggestion.image}
+          src={suggestion.imageUrl}
           name={suggestion.name}
           ratio="1/1"
           sizes="(max-width: 1024px) 78vw, 380px"
@@ -34,7 +36,7 @@ function SuggestionCard({ suggestion, index }: { suggestion: MenuProduct; index:
             Pizza artesanal
           </p>
           <p className="font-label text-xl font-bold tabular-nums tracking-[0.02em] text-terracotta">
-            {formatCLP(suggestion.price)}
+            {formatCLP(suggestion.priceClp)}
           </p>
         </div>
       </div>
@@ -42,8 +44,8 @@ function SuggestionCard({ suggestion, index }: { suggestion: MenuProduct; index:
   )
 }
 
-function ChefSuggestions() {
-  const suggestions = getChefSuggestions()
+async function ChefSuggestions() {
+  const suggestions = await catalogDataSource.getProductsByCategory(CHEF_CATEGORY_ID)
 
   return (
     <Section

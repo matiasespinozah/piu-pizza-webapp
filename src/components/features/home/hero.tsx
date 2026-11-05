@@ -99,10 +99,10 @@ function Hero() {
               variant="link"
               className="min-h-11 px-1 text-cream decoration-terracotta-soft hover:decoration-cream md:hidden"
             >
-              <Link href="/#carta">Ver la carta</Link>
+              <Link href="/carta">Ver la carta</Link>
             </Button>
             <Button asChild variant="onPhoto" size="lg" className="hidden md:inline-flex">
-              <Link href="/#carta">
+              <Link href="/carta">
                 <UtensilsCrossedIcon aria-hidden />
                 Ver la carta
               </Link>
