@@ -1,27 +1,23 @@
 /*
  * Home cinematográfica.
- * El velo es oliva casi negro, no un degradado de color: protege el texto
- * y deja la cocina cálida hacia el centro, donde está el logo del mesón.
+ * Móvil: zona oliva + fotografía en flujo, sin texto sobre la comida.
+ * Escritorio: velo oliva sobre la foto de la mesa.
  */
 
 .hero-scrim {
   background:
-    linear-gradient(180deg, rgba(22, 27, 16, 0.62) 0%, rgba(22, 27, 16, 0.28) 22%, transparent 42%),
-    linear-gradient(180deg, rgba(22, 27, 16, 0.55) 0%, rgba(22, 27, 16, 0.22) 34%, transparent 62%);
+    linear-gradient(180deg, rgba(22, 27, 16, 0.42) 0%, transparent 22%),
+    linear-gradient(
+      90deg,
+      rgba(22, 27, 16, 0.68) 0%,
+      rgba(22, 27, 16, 0.34) 22%,
+      rgba(22, 27, 16, 0.08) 42%,
+      transparent 62%
+    );
 }
 
-@media (min-width: 1024px) {
-  .hero-scrim {
-    background:
-      linear-gradient(180deg, rgba(22, 27, 16, 0.58) 0%, transparent 26%),
-      linear-gradient(
-        90deg,
-        rgba(22, 27, 16, 0.78) 0%,
-        rgba(22, 27, 16, 0.5) 24%,
-        rgba(22, 27, 16, 0.16) 46%,
-        transparent 68%
-      );
-  }
+.hero-mobile-blend {
+  background: linear-gradient(180deg, var(--brand-olive) 0%, transparent 22%);
 }
 
 @keyframes hero-fade {
@@ -36,7 +32,7 @@
 @keyframes hero-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -46,19 +42,10 @@
 
 @keyframes hero-parallax {
   from {
-    transform: scale(1.05) translate3d(0, 0, 0);
+    transform: scale(1.06) translate3d(0, 0, 0);
   }
   to {
-    transform: scale(1) translate3d(0, -3%, 0);
-  }
-}
-
-@keyframes hero-frame {
-  from {
-    clip-path: inset(0 round 0);
-  }
-  to {
-    clip-path: inset(12px 12px 0 12px round 16px);
+    transform: scale(1.06) translate3d(0, -2%, 0);
   }
 }
 
@@ -71,8 +58,9 @@
   }
 }
 
-.hero-photo {
-  animation: hero-fade 800ms ease both;
+.hero-mobile-shot {
+  animation: hero-fade 900ms ease both;
+  animation-delay: 180ms;
 }
 
 .hero-rise {
@@ -110,19 +98,15 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: scroll()) {
-    .hero-photo {
-      animation:
-        hero-fade 800ms ease both,
-        hero-parallax linear both;
-      animation-timeline: auto, scroll(root);
-      animation-range: normal, 0svh 80svh;
-    }
-
-    .hero-frame {
-      animation: hero-frame linear both;
-      animation-timeline: scroll(root);
-      animation-range: 28svh 78svh;
+  @media (min-width: 768px) {
+    @supports (animation-timeline: scroll()) {
+      .hero-mobile-shot {
+        animation:
+          hero-fade 800ms ease both,
+          hero-parallax linear both;
+        animation-timeline: auto, scroll(root);
+        animation-range: normal, 0svh 80svh;
+      }
     }
   }
 
@@ -179,7 +163,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-photo,
+  .hero-mobile-shot,
   .hero-frame,
   .hero-rise,
   .hero-cue,

@@ -43,9 +43,9 @@ const buttonVariants = cva(
           "bg-transparent text-foreground hover:bg-olive-hover aria-expanded:bg-olive-hover",
         link: "h-auto! px-0! text-foreground underline underline-offset-4 decoration-olive-soft hover:decoration-foreground",
         accent:
-          "bg-terracotta text-cream shadow-tactile hover:bg-[color-mix(in_srgb,var(--brand-terracotta),white_10%)] focus-visible:outline-cream",
+          "bg-terracotta text-cream shadow-tactile hover:bg-[color-mix(in_srgb,var(--brand-terracotta),white_14%)] focus-visible:outline-cream",
         onPhoto:
-          "border-[color-mix(in_srgb,var(--brand-cream),transparent_45%)] bg-transparent text-cream hover:border-cream hover:bg-[color-mix(in_srgb,var(--brand-cream),transparent_88%)] focus-visible:outline-cream",
+          "border-[color-mix(in_srgb,var(--brand-cream),transparent_25%)] bg-transparent text-cream hover:border-cream hover:bg-[color-mix(in_srgb,var(--brand-cream),transparent_88%)] focus-visible:outline-cream",
         // Alias de compatibilidad con shadcn/ui
         default:
           "bg-primary text-primary-foreground shadow-tactile hover:shadow-lift hover:bg-[color-mix(in_srgb,var(--brand-olive),white_8%)]",

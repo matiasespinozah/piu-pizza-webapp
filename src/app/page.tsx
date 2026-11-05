@@ -22,15 +22,17 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div className="overflow-x-clip bg-cream">
+    <div className="bg-cream">
       <SiteHeader />
-      <main>
-        <Hero />
-        <EssenceSection />
-        <MenuSection />
-        <ReserveSection />
-      </main>
-      <SiteFooter />
+      <div className="overflow-x-clip">
+        <main>
+          <Hero />
+          <EssenceSection />
+          <MenuSection />
+          <ReserveSection />
+        </main>
+        <SiteFooter />
+      </div>
     </div>
   )
 }

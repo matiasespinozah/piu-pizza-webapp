@@ -52,18 +52,18 @@ function SiteHeader() {
   return (
     <header
       data-scrolled={scrolled ? "" : undefined}
-      className="group fixed inset-x-0 top-0 z-40 pt-safe text-cream transition-[background-color,box-shadow] duration-300 motion-reduce:transition-none data-[scrolled]:bg-olive data-[scrolled]:shadow-tactile"
+      className="group fixed inset-x-0 top-0 z-40 bg-olive pt-safe text-cream md:bg-transparent md:shadow-none md:transition-[background-color,box-shadow] md:duration-300 md:data-[scrolled]:bg-olive md:data-[scrolled]:shadow-tactile motion-reduce:transition-none"
     >
-      <div className="mx-auto flex w-full max-w-[1440px] items-center gap-4 px-4 py-3.5 transition-[padding] duration-300 motion-reduce:transition-none group-data-[scrolled]:py-2 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-3 px-6 transition-[height] duration-300 motion-reduce:transition-none md:h-16 md:group-data-[scrolled]:h-14 lg:gap-6 lg:px-8">
         <Link
           href="/#inicio"
-          className="font-heading text-[1.75rem] leading-none font-black tracking-[-0.04em] text-cream outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream"
+          className="font-heading text-[1.65rem] leading-none font-black tracking-[-0.045em] text-cream outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream"
         >
           PIÙ
           <span className="sr-only">, ir al inicio</span>
         </Link>
 
-        <nav aria-label="Principal" className="ms-auto hidden items-center gap-1 md:flex">
+        <nav aria-label="Principal" className="ms-auto hidden items-center gap-1 lg:gap-2 md:flex">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -71,7 +71,7 @@ function SiteHeader() {
               aria-current={active === link.id ? "page" : undefined}
               className={cn(
                 textLinkVariants({ variant: "nav" }),
-                "px-3 text-cream decoration-terracotta hover:text-cream focus-visible:outline-cream aria-[current=page]:underline"
+                "px-2.5 text-cream decoration-terracotta underline-offset-[0.7rem] hover:text-cream focus-visible:outline-cream aria-[current=page]:underline"
               )}
             >
               {link.label}
@@ -83,8 +83,8 @@ function SiteHeader() {
           title="Reservas"
           message={reserveMessage}
           variant="accent"
-          size="sm"
-          className="ms-2 hidden md:inline-flex"
+          size="md"
+          className="ms-1 hidden md:inline-flex"
         >
           Reservar
         </ComingSoonButton>
@@ -105,7 +105,7 @@ function SiteHeader() {
               <SheetTitle>PIÙ</SheetTitle>
               <SheetDescription>Pizza & Dolce</SheetDescription>
             </SheetHeader>
-            <nav aria-label="Móvil" className="flex flex-col px-4 pb-2">
+            <nav aria-label="Móvil" className="flex flex-col gap-1 px-3 pb-2">
               {links.map((link) => (
                 <SheetClose asChild key={link.href}>
                   <Link
