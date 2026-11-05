@@ -6,10 +6,24 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rules/changelog.md).
 
+
 ## [Sin publicar]
 
 ### Agregado
 
+- Home cinematográfica en `/`: fotografía de la mesa, navegación y secciones editoriales. El titular lleva una ola tricolor que vuelve al marfil y se detiene si se pide menos movimiento.
+- Hero a `88svh`, con la marca PIÙ proporcionada al titular, botones de la misma altura y barra más sobria al desplazar.
+- Hero móvil en dos zonas: bloque oliva con marca y copy, y fotografía gastronómica debajo, sin texto sobre la pizza. El escritorio no cambia.
+- Hero móvil fotográfico a sangre: barra crema, titular editorial sobre la foto y CTA contenido. El escritorio no cambia.
+- Portada con `PiuComida`: recorte vertical en móvil (pizza abajo, horno al fondo) y encuadre horizontal en escritorio.
+- Ajustes del Home móvil: logo más presente, menos aire hacia Sugerencias del chef, WhatsApp más discreto y titular con mejor contraste.
+- Sección **Sugerencias del chef** en la Home: vitrina tipográfica de tres pizzas, carrusel en móvil y grilla en escritorio.
+- Home reordenada: Hero, sugerencias del chef, carta, terraza y salón, reserva. El salón queda preparado para su fotografía. El catálogo local vive en `src/lib/menu.ts`.
+- Footer oliva con horarios, Instagram, TikTok y un WhatsApp flotante con aviso «¿Necesitas ayuda?».
+- Sección **Ven a encontrarnos** en la Home: dirección, mapa de Primera Transversal 2595 (Maipú) y botón «Cómo llegar». Los horarios quedan solo en el footer.
+- Footer móvil con el logo redondeado; sin frase, sin wordmark de texto y sin el bloque Explorar.
+- Logos de Instagram y TikTok del footer tomados de `public/logos`, en cuadrado redondeado y sin borde.
+- Logo oficial de PIÙ en el header. En el Hero, el texto PIÙ / Pizza & Dolce solo aparece en escritorio, sin el eyebrow repetido.
 - CI en GitHub Actions para la rama `develop` (`.github/workflows/ci.yml`): lint, tipos, changelog/versiones alineadas y build, en cada push y PR.
 - Rama `develop` como rama de trabajo; `main` queda solo para producción.
 - El CI también corre en cada push a ramas `feature/**` y `feat/**`, exigiendo la entrada del CHANGELOG respecto de `develop`.

@@ -17,6 +17,12 @@
   /* Marca */
   --brand-olive: #2b341f;
   --brand-cream: #e8e9d9;
+  /*
+   * Terracota: acento de acción sobre fotografía (DESIGN.md §2).
+   * `--terracotta-soft` solo para texto pequeño sobre el velo oscuro del hero.
+   */
+  --brand-terracotta: #9c422f;
+  --terracotta-soft: #e7b5a2;
 
   /* Derivados del olivo (DESIGN.md §2) */
   --olive-strong: rgba(43, 52, 31, 0.85);
@@ -61,6 +67,8 @@
   /* Colores de marca → bg-olive, text-cream, border-olive-line, … */
   --color-olive: var(--brand-olive);
   --color-cream: var(--brand-cream);
+  --color-terracotta: var(--brand-terracotta);
+  --color-terracotta-soft: var(--terracotta-soft);
   --color-olive-strong: var(--olive-strong);
   --color-olive-muted: var(--olive-muted);
   --color-olive-soft: var(--olive-soft);
