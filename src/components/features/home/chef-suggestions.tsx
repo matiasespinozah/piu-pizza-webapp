@@ -1,22 +1,24 @@
 import Link from "next/link"
 import { ArrowRightIcon } from "lucide-react"
 
-import { ProductImage } from "@/components/features/menu/product-image"
 import { Reveal } from "@/components/features/home/reveal"
+import { ProductImage } from "@/components/features/menu/product-image"
 import { Button } from "@/components/ui/button"
 import { Container, Section } from "@/components/ui/layout"
 import { formatCLP } from "@/components/ui/price"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
-import { getChefSuggestions, type MenuProduct } from "@/lib/menu"
+import { catalogDataSource } from "@/lib/catalog/catalog-data-source"
+import { CHEF_CATEGORY_ID } from "@/lib/catalog/data"
+import type { Product } from "@/lib/catalog/types"
 
-function SuggestionCard({ suggestion, index }: { suggestion: MenuProduct; index: number }) {
+function SuggestionCard({ suggestion, index }: { suggestion: Product; index: number }) {
   const order = String(index + 1).padStart(2, "0")
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-olive-line bg-surface-raised">
       <div className="relative">
         <ProductImage
-          src={suggestion.image}
+          src={suggestion.imageUrl}
           name={suggestion.name}
           ratio="4/3"
           sizes="(max-width: 1024px) 78vw, 380px"
@@ -33,15 +35,15 @@ function SuggestionCard({ suggestion, index }: { suggestion: MenuProduct; index:
         </h3>
         <p className="mt-2 flex-1 text-[0.9375rem] leading-[1.5] text-olive-strong">{suggestion.description}</p>
         <p className="mt-4 font-label text-xl font-bold tracking-[0.02em] text-terracotta tabular-nums">
-          {formatCLP(suggestion.price)}
+          {formatCLP(suggestion.priceClp)}
         </p>
       </div>
     </article>
   )
 }
 
-function ChefSuggestions() {
-  const suggestions = getChefSuggestions()
+async function ChefSuggestions() {
+  const suggestions = await catalogDataSource.getProductsByCategory(CHEF_CATEGORY_ID)
 
   return (
     <Section

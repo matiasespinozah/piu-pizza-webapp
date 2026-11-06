@@ -14,8 +14,8 @@ import {
 const ratioClass = {
   "1/1": "aspect-square",
   "4/5": "aspect-[4/5]",
-  "4/3": "aspect-[4/3]",
   "3/4": "aspect-[3/4]",
+  "4/3": "aspect-[4/3]",
   "16/9": "aspect-video",
 } as const
 
@@ -26,6 +26,8 @@ type ProductImageProps = {
   ratio?: keyof typeof ratioClass
   className?: string
   priority?: boolean
+  /** Miniatura: la ilustración predeterminada usa menos margen interior. */
+  compact?: boolean
 }
 
 function ProductImage(props: ProductImageProps) {
@@ -39,6 +41,7 @@ function ProductImageFrame({
   ratio = "1/1",
   className,
   priority = false,
+  compact = false,
 }: ProductImageProps) {
   const resolved = resolveProductImageSrc(src)
   const [failedSrc, setFailedSrc] = React.useState<string | null>(null)
@@ -55,7 +58,7 @@ function ProductImageFrame({
       {showEmpty ? (
         <div className="size-full bg-cream" role="img" aria-label={alt} />
       ) : (
-        <div className={cn("absolute inset-0", showPlaceholder && "p-5 sm:p-6")}>
+        <div className={cn("absolute inset-0", showPlaceholder && (compact ? "p-1.5" : "p-5 sm:p-6"))}>
           <div className="relative size-full">
             <Image
               src={displaySrc}
