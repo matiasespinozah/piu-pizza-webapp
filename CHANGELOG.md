@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- Reservas en el celular: la fecha y su etiqueta quedan dentro de la pantalla. El control nativo ya no empuja el campo hasta el borde.
 - Reservas: la ilustración de la página usa el dibujo nuevo, con fondo transparente.
 - Reservas: el salón acepta hasta 15 personas y la terraza hasta 20. Si el grupo supera el tope de la zona elegida, el número baja a ese máximo.
 - Reservas en el celular: menos texto, pasos que se pueden tocar para volver («Tu visita», «Horario», «Tus datos») y observaciones marcadas como opcionales. La ilustración de la reserva reemplaza la foto de la terraza. «¿Necesitas ayuda?» solo aparece en Tus datos, y ahí se oculta la burbuja de WhatsApp. La vista previa es una etiqueta corta sobre una tarjeta más clara.

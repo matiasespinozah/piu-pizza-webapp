@@ -1,4 +1,4 @@
-import { MinusIcon, PlusIcon, SofaIcon, SunIcon } from "lucide-react"
+import { CalendarIcon, MinusIcon, PlusIcon, SofaIcon, SunIcon } from "lucide-react"
 import { cn } from "cn"
 
 import { FieldError, FieldLabel } from "@/components/ui/field"
@@ -24,19 +24,24 @@ function ReservationDateStep({ draft, errors, today, onChange }: ReservationDate
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <FieldLabel htmlFor="reservation-date">Fecha</FieldLabel>
-        <Input
-          id="reservation-date"
-          type="date"
-          value={draft.date}
-          min={today || undefined}
-          autoComplete="off"
-          className="mt-2 bg-cream"
-          aria-invalid={errors.date ? true : undefined}
-          aria-describedby={errors.date ? "reservation-date-error" : undefined}
-          onChange={(event) => onChange({ date: event.target.value, preferredTime: "" })}
-        />
+      <div className="min-w-0">
+        <FieldLabel htmlFor="reservation-date" className="max-w-full">
+          Fecha
+        </FieldLabel>
+        <div className="relative mt-2 min-w-0">
+          <Input
+            id="reservation-date"
+            type="date"
+            value={draft.date}
+            min={today || undefined}
+            autoComplete="off"
+            className="reservation-date relative block max-w-full appearance-none bg-cream pr-11"
+            aria-invalid={errors.date ? true : undefined}
+            aria-describedby={errors.date ? "reservation-date-error" : undefined}
+            onChange={(event) => onChange({ date: event.target.value, preferredTime: "" })}
+          />
+          <CalendarIcon aria-hidden className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-olive" />
+        </div>
         <FieldError id="reservation-date-error">{errors.date}</FieldError>
       </div>
 

@@ -81,7 +81,7 @@ function ReservationForm() {
     <form
       data-reservation-form=""
       data-reservation-step={step}
-      className="flex flex-col gap-6"
+      className="flex w-full min-w-0 flex-col gap-6"
       onSubmit={(event) => {
         event.preventDefault()
       }}
@@ -90,7 +90,7 @@ function ReservationForm() {
 
       <section
         aria-labelledby={titleId}
-        className="reservation-step rounded-3xl border border-olive-line bg-surface-raised px-4 py-5 shadow-lift"
+        className="reservation-step min-w-0 rounded-3xl border border-olive-line bg-surface-raised px-4 py-5 shadow-lift"
       >
         <h2 id={titleId} ref={headingRef} tabIndex={-1} className="sr-only">
           {stepTitle[step]}
