@@ -3,11 +3,14 @@ const venue = {
   street: "Primera Transversal 2595",
   locality: "Maipú, Región Metropolitana",
   country: "Chile",
-  mapsQuery: "Primera Transversal 2595, Maipú, Chile",
+  mapsQuery: "Primera Transversal 2595, Maipú, Región Metropolitana, Chile",
 } as const
 
 const mapsEmbedUrl =
-  "https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1sPrimera+Transversal+2595,+Maip%C3%BA,+Chile!6i15!3m1!1ses!5m1!1ses"
+  "https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1sPrimera+Transversal+2595,+Maip%C3%BA,+Regi%C3%B3n+Metropolitana,+Chile!6i15!3m1!1ses!5m1!1ses"
+
+/** Perfil/lugar en Google Maps (nombre + dirección, para que abra la ficha del local). */
+const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`PIÙ Pizza & Dolce, ${venue.mapsQuery}`)}`
 
 const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.mapsQuery)}`
 
@@ -45,6 +48,7 @@ export {
   directionsUrl,
   footerNav,
   mapsEmbedUrl,
+  mapsSearchUrl,
   openingHours,
   socialLinks,
   venue,

@@ -9,6 +9,21 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Portada del Home: `piuportada` en pantallas desde 768 px y `piuportadamobile` en el celular (9:16, la foto entra completa). En pantallas anchas el hero recorta el techo, deja el mesón completo y asoma el inicio de la sección siguiente. El «PIÙ» escrito del hero y la frase «Pizzas artesanales, ingredientes reales…» se quitan. «Ver la carta» usa el verde de «Cómo llegar». En móvil el titular queda arriba y los botones «Reservar una mesa» y «Ver la carta» van separados, del mismo tamaño y centrados bajo el logo. El titular deja ver la cola de la «j». La franja tricolor del titular usa un verde y un rojo más vivos. Van en WebP desde `src/assets/home/`.
+- **Sugerencias del chef**: cada tarjeta lleva la foto del producto (`imageUrl` del catálogo local) o la ilustración `not_image` si no tiene. El botón «Ver carta» usa el terracota de «Reservar».
+- Home más compacta y directa: Hero → Sugerencias del chef → Un lugar para compartir → Tu mesa te espera → Ven a encontrarnos → Footer.
+- Encuadre del Hero estabilizado: el alto de la foto ahora depende del ancho (`aspect-[3/4]` en móvil, `clamp(36rem, 56.25vw, 64rem)` en escritorio) y no de `svh`, para que `object-cover` recorte igual en local y en producción. Los enlaces «Ver la carta» del Hero van a `/carta`.
+- **Sugerencias del chef**: espaciado reducido y botón «Ver carta» hacia `/carta`. Los enlaces Carta del header y del footer también van a `/carta`.
+- **Un lugar para compartir**: encabezado en una fila, foto de la terraza con etiqueta sobre la imagen y panel del salón a la misma altura; sección menos alta.
+- **Tu mesa te espera**: bloque oliva compacto, con el CTA a la derecha en escritorio.
+- **Ven a encontrarnos**: sección y mapa menos altos, dirección enlazada a Google Maps y botón flotante «Abrir en Google Maps» sobre el mapa. Las URL de Maps usan la dirección completa (Primera Transversal 2595, Maipú, Región Metropolitana, Chile).
+
+### Eliminado
+
+- Sección «Descubre nuestra carta» del Home (`MenuSection`): repetía lo que ya cuentan Sugerencias del chef y la página `/carta`.
+
 ### Agregado
 
 - Página `/carta` (solo frontend, datos locales): encabezado editorial, buscador sin acentos, categorías deslizables con estado «En preparación» para las que aún no tienen productos, y filas de carta con la ilustración PIÙ como imagen predeterminada.
