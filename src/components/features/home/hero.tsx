@@ -25,18 +25,20 @@ const heroAlt =
 
 function HeroPhoto() {
   const common = { alt: heroAlt, sizes: "100vw" }
-  const {
-    props: { srcSet: desktop },
-  } = getImageProps({ ...common, src: piuPortada })
-  const { props: rest } = getImageProps({ ...common, src: piuPortadaMobile, priority: true })
+  const { props: desktop } = getImageProps({ ...common, src: piuPortada })
+  const { props: mobile } = getImageProps({ ...common, src: piuPortadaMobile, priority: true })
 
+  // Con el optimizador, getImageProps entrega srcSet. Sin optimizar
+  // (el HTML publicado en App Hosting sirve el archivo estático y srcSet
+  // queda undefined) un <source> sin srcset se descarta: el escritorio
+  // usa la foto vertical y object-cover anclado abajo muestra el suelo.
   return (
     <picture>
-      <source media="(min-width: 768px)" srcSet={desktop} />
+      <source media="(min-width: 768px)" sizes={desktop.sizes} srcSet={desktop.srcSet || desktop.src} />
       <img
-        {...rest}
+        {...mobile}
         alt={heroAlt}
-        className="absolute inset-0 size-full object-cover object-center md:object-[center_bottom]"
+        className="absolute inset-0 size-full object-cover object-[center_67%] md:object-[center_bottom]"
       />
     </picture>
   )
@@ -49,18 +51,17 @@ function Hero() {
       className="relative scroll-mt-0 bg-olive pt-[calc(env(safe-area-inset-top)+4rem)] md:overflow-hidden md:pt-0"
     >
       {/*
-        Encuadre estable: el alto de la foto depende solo del ANCHO (aspect-ratio en
-        móvil, clamp en vw en escritorio), nunca de svh. Con object-cover, un alto
-        según la ventana recorta distinto en cada equipo (local vs producción,
-        barra del navegador, alto del teléfono) y la foto se ve "con zoom".
+        Móvil: el alto sigue el ancho (no el svh) y recorta el suelo.
+        El logo queda justo encima de los botones en cualquier teléfono.
+        Escritorio: el alto sigue el clamp en vw.
       */}
-      <div className="hero-mobile-shot relative aspect-[9/16] w-full overflow-hidden md:absolute md:inset-[-2px] md:aspect-auto">
+      <div className="hero-mobile-shot relative aspect-[941/1120] w-full overflow-hidden md:absolute md:inset-[-2px] md:aspect-auto md:h-auto">
         <HeroPhoto />
         <div className="hero-mobile-overlay pointer-events-none absolute inset-0 md:hidden" aria-hidden />
         <div className="hero-scrim pointer-events-none absolute inset-0 hidden md:block" aria-hidden />
       </div>
 
-      <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] z-10 flex aspect-[9/16] flex-col items-center px-3 pt-6 pb-7 text-center sm:px-5 md:relative md:top-0 md:aspect-auto md:h-[clamp(20rem,46vw,calc(100svh-8rem))] md:items-start md:justify-center md:px-8 md:pt-24 md:pb-14 md:text-left">
+      <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] z-10 flex aspect-[941/1120] flex-col items-center px-3 pt-6 text-center sm:px-5 md:relative md:inset-auto md:aspect-auto md:h-[clamp(20rem,46vw,calc(100svh-8rem))] md:items-start md:justify-center md:px-8 md:pt-24 md:pb-14 md:text-left">
         <div className="flex w-full min-w-0 flex-col items-center md:max-w-[34rem] md:items-start md:translate-x-[4vw] lg:translate-x-[5vw]">
           <div className="hero-rise hero-rise-1 flex items-center justify-center gap-3 md:hidden">
             <span className="h-px w-6 bg-terracotta-soft" aria-hidden />
@@ -80,7 +81,7 @@ function Hero() {
             mejores momentos.
           </h1>
 
-          <div className="hero-rise hero-rise-5 absolute bottom-[10%] left-1/2 flex w-[min(22rem,calc(100%-2rem))] -translate-x-1/2 items-stretch justify-center gap-2 md:static md:inset-auto md:mt-5 md:w-auto md:translate-x-0 md:flex-col md:items-start lg:flex-row lg:items-center lg:gap-3">
+          <div className="hero-rise hero-rise-5 absolute bottom-4 left-1/2 flex w-[min(22rem,calc(100%-2rem))] -translate-x-1/2 items-stretch justify-center gap-2 md:static md:inset-auto md:mt-5 md:w-auto md:translate-x-0 md:flex-col md:items-start lg:flex-row lg:items-center lg:gap-3">
             <ComingSoonButton
               title="Reservas"
               message="La reserva en línea estará disponible próximamente."
