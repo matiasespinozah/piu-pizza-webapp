@@ -11,6 +11,10 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- Reservas: la ilustración de la página usa el dibujo nuevo, con fondo transparente.
+- Reservas: el salón acepta hasta 15 personas y la terraza hasta 20. Si el grupo supera el tope de la zona elegida, el número baja a ese máximo.
+- Reservas en el celular: menos texto, pasos que se pueden tocar para volver («Tu visita», «Horario», «Tus datos») y observaciones marcadas como opcionales. La ilustración de la reserva reemplaza la foto de la terraza. «¿Necesitas ayuda?» solo aparece en Tus datos, y ahí se oculta la burbuja de WhatsApp. La vista previa es una etiqueta corta sobre una tarjeta más clara.
+
 - Hero móvil: la foto vertical recorta el suelo sobrante y deja el horno y el logo circular completos. «Reservar una mesa» y «Ver la carta» vuelven a quedar debajo del logo, no bajo el titular. El escritorio no cambia.
 - Portada del Home: `piuportada` en pantallas desde 768 px y `piuportadamobile` en el celular (9:16, la foto entra completa). En pantallas anchas el hero recorta el techo, deja el mesón completo y asoma el inicio de la sección siguiente. El «PIÙ» escrito del hero y la frase «Pizzas artesanales, ingredientes reales…» se quitan. «Ver la carta» usa el verde de «Cómo llegar». En móvil el titular queda arriba y los botones «Reservar una mesa» y «Ver la carta» van separados, del mismo tamaño y centrados bajo el logo. El titular deja ver la cola de la «j». La franja tricolor del titular usa un verde y un rojo más vivos. Van en WebP desde `src/assets/home/`.
 - **Sugerencias del chef**: cada tarjeta lleva la foto del producto (`imageUrl` del catálogo local) o la ilustración `not_image` si no tiene. El botón «Ver carta» usa el terracota de «Reservar».
@@ -31,6 +35,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Página `/reservas` (solo frontend): tres pasos para pedir fecha, personas, zona, horario y datos de contacto. El envío queda deshabilitado y no se guardan solicitudes. Los botones de reserva de la Home, la barra y el footer llevan a esa página. La conexión futura está descrita en `docs/arquitectura/reservas.md`.
 - Página `/carta` (solo frontend, datos locales): encabezado editorial, buscador sin acentos, categorías deslizables con estado «En preparación» para las que aún no tienen productos, y filas de carta con la ilustración PIÙ como imagen predeterminada.
 - Catálogo local en `src/lib/catalog/` (`Category`, `Product`, `CatalogDataSource`): única fuente de los tres productos para la Home y `/carta`. Puntos de integración futura en `docs/arquitectura/catalogo.md`.
 - Tarjetas de **Sugerencias del chef** rediseñadas: imagen arriba con `ProductImage` (ilustración PIÙ mientras no haya foto), etiqueta numerada, nombre, descripción y precio.
