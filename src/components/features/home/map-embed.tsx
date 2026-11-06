@@ -10,7 +10,7 @@ function MapEmbed({ src, title, className }: MapEmbedProps) {
   return (
     <div
       className={cn(
-        "relative h-[17.5rem] overflow-hidden rounded-xl bg-olive-wash sm:h-[22rem] lg:h-[28rem]",
+        "relative h-[16rem] overflow-hidden rounded-2xl bg-olive-wash sm:h-[20rem] lg:h-[24rem]",
         className
       )}
     >

@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { ChefSuggestions } from "@/components/features/home/chef-suggestions"
 import { EssenceSection } from "@/components/features/home/essence-section"
 import { Hero } from "@/components/features/home/hero"
-import { MenuSection } from "@/components/features/home/menu-section"
 import { ReserveSection } from "@/components/features/home/reserve-section"
 import { VisitSection } from "@/components/features/home/visit-section"
 import { FloatingWhatsApp } from "@/components/features/layout/floating-whatsapp"
@@ -32,7 +31,6 @@ export default function Home() {
         <main>
           <Hero />
           <ChefSuggestions />
-          <MenuSection />
           <EssenceSection />
           <ReserveSection />
           <VisitSection />

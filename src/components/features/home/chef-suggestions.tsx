@@ -1,5 +1,9 @@
+import Link from "next/link"
+import { ArrowRightIcon } from "lucide-react"
+
 import { Reveal } from "@/components/features/home/reveal"
 import { ProductImage } from "@/components/features/menu/product-image"
+import { Button } from "@/components/ui/button"
 import { Container, Section } from "@/components/ui/layout"
 import { formatCLP } from "@/components/ui/price"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
@@ -11,34 +15,28 @@ function SuggestionCard({ suggestion, index }: { suggestion: Product; index: num
   const order = String(index + 1).padStart(2, "0")
 
   return (
-    <article className="group/card flex h-full flex-col overflow-hidden rounded-2xl border border-olive-line bg-surface-raised shadow-tactile transition-shadow duration-300 hover:shadow-lift">
-      <div className="relative p-3 pb-0">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-olive-line bg-surface-raised">
+      <div className="relative">
         <ProductImage
           src={suggestion.imageUrl}
           name={suggestion.name}
-          ratio="1/1"
+          ratio="4/3"
           sizes="(max-width: 1024px) 78vw, 380px"
-          className="bg-cream"
+          className="w-full rounded-none bg-olive-wash"
         />
-        <span className="absolute top-6 left-6 inline-flex h-7 items-center rounded-4xl bg-olive px-3 font-label text-[0.6875rem] font-semibold tracking-[0.14em] text-cream uppercase">
-          {order} · Chef
+        <span className="absolute top-3 left-3 rounded-full bg-cream/90 px-2.5 py-1 font-label text-[0.6875rem] font-semibold tracking-[0.14em] text-olive">
+          {order}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 px-5 pt-5 pb-5 sm:px-6 sm:pb-6">
-        <h3 className="font-heading text-[1.65rem] leading-[1.1] font-extrabold tracking-[-0.02em] text-olive lg:text-[1.85rem]">
+      <div className="flex flex-1 flex-col px-5 pt-4 pb-5">
+        <h3 className="font-heading text-[1.45rem] leading-[1.1] font-extrabold tracking-[-0.02em] text-olive">
           {suggestion.name}
         </h3>
-        <p className="text-[0.9375rem] leading-[1.5] text-olive-strong">{suggestion.description}</p>
-
-        <div className="mt-auto flex items-end justify-between gap-4 border-t border-olive-line pt-4">
-          <p className="font-label text-[0.6875rem] font-semibold tracking-[0.16em] text-olive-muted uppercase">
-            Pizza artesanal
-          </p>
-          <p className="font-label text-xl font-bold tabular-nums tracking-[0.02em] text-terracotta">
-            {formatCLP(suggestion.priceClp)}
-          </p>
-        </div>
+        <p className="mt-2 flex-1 text-[0.9375rem] leading-[1.5] text-olive-strong">{suggestion.description}</p>
+        <p className="mt-4 font-label text-xl font-bold tracking-[0.02em] text-terracotta tabular-nums">
+          {formatCLP(suggestion.priceClp)}
+        </p>
       </div>
     </article>
   )
@@ -52,7 +50,7 @@ async function ChefSuggestions() {
       id="sugerencias"
       aria-labelledby="sugerencias-heading"
       spacing="none"
-      className="scroll-mt-24 bg-cream pt-10 pb-16 sm:pt-16 sm:pb-24 lg:py-36"
+      className="scroll-mt-24 bg-cream pt-10 pb-14 sm:pt-14 sm:pb-20 lg:py-24"
     >
       <Container>
         <Reveal className="flex max-w-[38rem] flex-col gap-5">
@@ -76,6 +74,17 @@ async function ChefSuggestions() {
           ))}
         </ul>
       </Reveal>
+
+      <Container>
+        <Reveal className="mt-10 lg:mt-12">
+          <Button asChild variant="accent" size="lg" className="w-full hover:shadow-lift sm:w-auto">
+            <Link href="/carta">
+              Ver carta
+              <ArrowRightIcon aria-hidden />
+            </Link>
+          </Button>
+        </Reveal>
+      </Container>
     </Section>
   )
 }

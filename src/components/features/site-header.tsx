@@ -26,7 +26,7 @@ const links = [
   { href: "/#reservas", id: "reservas", label: "Reservas" },
 ] as const
 
-const sectionOrder = ["inicio", "carta", "esencia", "reservas"] as const
+const sectionOrder = ["inicio", "esencia", "reservas"] as const
 
 const reserveMessage = "La reserva en línea estará disponible próximamente."
 
