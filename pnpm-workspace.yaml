@@ -8,3 +8,4 @@ allowBuilds:
   # Usamos configuración explícita de Firebase (NEXT_PUBLIC_FIREBASE_*), no la autoconfiguración.
   "@firebase/util": false
   protobufjs: false
+  re2: false

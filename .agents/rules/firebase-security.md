@@ -53,10 +53,11 @@ Proyecto Firebase: **`piu-pizza-cl`** (plan Blaze). Todo en `us-central1`. Infra
 - Leer `node_modules/next/dist/docs/01-app/02-guides/data-security.md` antes de crear acciones.
 
 ## Desarrollo local
-- **No se usan emuladores** (decisión del proyecto). En local, `pnpm dev` apunta al proyecto real `piu-pizza-cl` con la config de `.env.local` (copiar de `.env.example`).
-- Por eso: **nunca** escribir datos de prueba en colecciones reales ni correr scripts de escritura contra producción sin revisarlos. Usar documentos con prefijo `_test` y borrarlos después.
-- Si más adelante se necesita un entorno aislado, crear un proyecto aparte (`piu-pizza-cl-dev`), no emuladores.
-- Las Security Rules viven versionadas en el repo (`firestore.rules`, `storage.rules`) y se publican **solo** con `firebase deploy --only firestore,storage`. Nunca editarlas en la consola: el repo es la fuente de verdad.
+- `pnpm dev` **no** lee ni escribe Firestore. El acceso nace apagado (`src/lib/firebase/access.ts`) hasta `PIU_FIREBASE_DATA=on` o hasta que el proceso apunte al emulador.
+- Las pruebas de reglas usan el emulador con un proyecto `demo-*` (`pnpm test:rules`). Ese proyecto no es `piu-pizza-cl` y no llega a producción.
+- Auth del emulador solo si `FIREBASE_AUTH_EMULATOR_HOST` está definido. App Hosting no define esa variable.
+- **Nunca** escribir datos de prueba en colecciones reales ni correr `scripts/bootstrap-superadmin.mjs` contra producción sin aprobación. La clave de una cuenta de servicio, si hace falta, queda fuera del repo (`GOOGLE_APPLICATION_CREDENTIALS`).
+- Las Security Rules viven versionadas en el repo (`firestore.rules`, `storage.rules`) y se publican **solo** con `firebase deploy --only firestore,storage`, y solo con aprobación. Nunca editarlas en la consola: el repo es la fuente de verdad.
 
 ## Prohibido
 - Commitear `serviceAccount*.json`, `.env*`, tokens o claves.

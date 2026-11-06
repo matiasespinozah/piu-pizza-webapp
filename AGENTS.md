@@ -27,7 +27,7 @@ Sitio web de la pizzería PIÙ. Este archivo sigue el estándar [AGENTS.md](http
 | Node.js | **24.x** (`engines` en `package.json`, `.nvmrc`) |
 | Paquetes | **pnpm** (no usar npm ni yarn) |
 
-Infraestructura: **solo Firebase CLI** (`firebase …`) y la consola web. Sin `gcloud` y sin emuladores.
+Infraestructura: **solo Firebase CLI** (`firebase …`) y la consola web. Sin `gcloud`. Los emuladores se usan solo para probar reglas y Auth en local; `pnpm dev` no escribe en la base real.
 
 | Archivo | Qué es |
 |---|---|

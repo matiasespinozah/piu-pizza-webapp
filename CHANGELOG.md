@@ -9,6 +9,10 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ## [Sin publicar]
 
+### Agregado
+
+- Fundación Firebase, sin reservas reales ni catálogo importado: modelo de datos, reglas que niegan las reservas al navegador, Auth de personal por custom claims y acceso a Firestore apagado salvo emulador o aprobación. Documentado en `docs/arquitectura/firebase.md`.
+
 ### Cambiado
 
 - Reservas en el celular: la fecha y su etiqueta quedan dentro de la pantalla. El control nativo ya no empuja el campo hasta el borde.
