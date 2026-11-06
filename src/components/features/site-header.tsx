@@ -5,8 +5,7 @@ import Link from "next/link"
 import { MenuIcon } from "lucide-react"
 import { cn } from "cn"
 
-import { ComingSoonButton } from "@/components/features/coming-soon-button"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Logo } from "@/components/ui/logo"
 import {
   Sheet,
@@ -23,16 +22,14 @@ const links = [
   { href: "/#inicio", id: "inicio", label: "Inicio" },
   { href: "/carta", id: "carta", label: "Carta" },
   { href: "/#esencia", id: "esencia", label: "Nosotros" },
-  { href: "/#reservas", id: "reservas", label: "Reservas" },
+  { href: "/reservas", id: "reservas", label: "Reservas" },
 ] as const
 
-const sectionOrder = ["inicio", "esencia", "reservas"] as const
-
-const reserveMessage = "La reserva en línea estará disponible próximamente."
+const sectionOrder = ["inicio", "esencia"] as const
 
 type SiteHeaderProps = {
-  /** `home` sigue el scroll de las secciones; `carta` es una página interna con barra sólida. */
-  page?: "home" | "carta"
+  /** `home` sigue el scroll de las secciones; el resto usa la barra sólida. */
+  page?: "home" | "carta" | "reservas"
 }
 
 function SiteHeader({ page = "home" }: SiteHeaderProps) {
@@ -90,15 +87,9 @@ function SiteHeader({ page = "home" }: SiteHeaderProps) {
           ))}
         </nav>
 
-        <ComingSoonButton
-          title="Reservas"
-          message={reserveMessage}
-          variant="accent"
-          size="md"
-          className="ms-1 hidden md:inline-flex"
-        >
-          Reservar
-        </ComingSoonButton>
+        <Button asChild variant="accent" size="md" className="ms-1 hidden md:inline-flex">
+          <Link href="/reservas">Reservar</Link>
+        </Button>
 
         <Sheet>
           <SheetTrigger asChild>
@@ -133,9 +124,11 @@ function SiteHeader({ page = "home" }: SiteHeaderProps) {
               ))}
             </nav>
             <div className="px-4 pb-4">
-              <ComingSoonButton title="Reservas" message={reserveMessage} variant="accent" className="w-full">
-                Reservar una mesa
-              </ComingSoonButton>
+              <SheetClose asChild>
+                <Link href="/reservas" className={cn(buttonVariants({ variant: "accent", size: "md" }), "w-full")}>
+                  Reservar una mesa
+                </Link>
+              </SheetClose>
             </div>
           </SheetContent>
         </Sheet>

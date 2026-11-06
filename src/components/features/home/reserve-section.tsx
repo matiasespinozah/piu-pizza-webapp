@@ -1,7 +1,8 @@
+import Link from "next/link"
 import { CalendarIcon } from "lucide-react"
 
-import { ComingSoonButton } from "@/components/features/coming-soon-button"
 import { Reveal } from "@/components/features/home/reveal"
+import { Button } from "@/components/ui/button"
 import { Container, Section } from "@/components/ui/layout"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
 
@@ -17,16 +18,12 @@ function ReserveSection() {
             </Heading>
             <Text className="mt-3 max-w-md text-cream">Elige cuándo venir y nosotros nos encargamos del resto.</Text>
           </div>
-          <ComingSoonButton
-            title="Reservas"
-            message="La reserva en línea estará disponible próximamente."
-            variant="accent"
-            size="lg"
-            className="w-full shrink-0 sm:w-auto"
-          >
-            <CalendarIcon aria-hidden />
-            Reservar una mesa
-          </ComingSoonButton>
+          <Button asChild variant="accent" size="lg" className="w-full shrink-0 sm:w-auto">
+            <Link href="/reservas">
+              <CalendarIcon aria-hidden />
+              Reservar una mesa
+            </Link>
+          </Button>
         </Reveal>
       </Container>
     </Section>
