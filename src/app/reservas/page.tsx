@@ -27,7 +27,7 @@ export default function ReservasPage() {
       <FloatingWhatsApp />
       <div className="overflow-x-clip">
         <main className="pt-[calc(env(safe-area-inset-top)+4.5rem)] pb-10 md:pb-16">
-          <Container className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(20rem,36rem)] lg:items-start lg:justify-center lg:gap-16 lg:py-6">
+          <Container className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(20rem,36rem)] lg:items-start lg:justify-center lg:gap-16 lg:py-6">
             <ReservationHeader />
             <ReservationForm />
           </Container>
