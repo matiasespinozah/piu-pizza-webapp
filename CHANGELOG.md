@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- Hero móvil: la foto vertical recorta el suelo sobrante y deja el horno y el logo circular completos. «Reservar una mesa» y «Ver la carta» vuelven a quedar debajo del logo, no bajo el titular. El escritorio no cambia.
 - Portada del Home: `piuportada` en pantallas desde 768 px y `piuportadamobile` en el celular (9:16, la foto entra completa). En pantallas anchas el hero recorta el techo, deja el mesón completo y asoma el inicio de la sección siguiente. El «PIÙ» escrito del hero y la frase «Pizzas artesanales, ingredientes reales…» se quitan. «Ver la carta» usa el verde de «Cómo llegar». En móvil el titular queda arriba y los botones «Reservar una mesa» y «Ver la carta» van separados, del mismo tamaño y centrados bajo el logo. El titular deja ver la cola de la «j». La franja tricolor del titular usa un verde y un rojo más vivos. Van en WebP desde `src/assets/home/`.
 - **Sugerencias del chef**: cada tarjeta lleva la foto del producto (`imageUrl` del catálogo local) o la ilustración `not_image` si no tiene. El botón «Ver carta» usa el terracota de «Reservar».
 - Home más compacta y directa: Hero → Sugerencias del chef → Un lugar para compartir → Tu mesa te espera → Ven a encontrarnos → Footer.
@@ -23,6 +24,10 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Eliminado
 
 - Sección «Descubre nuestra carta» del Home (`MenuSection`): repetía lo que ya cuentan Sugerencias del chef y la página `/carta`.
+
+### Corregido
+
+- En el Hero de escritorio, el build de producción dejaba el `<source>` de la foto horizontal sin `srcset`. El navegador usaba la foto vertical y, con el recorte hacia abajo, se veía el suelo en lugar del horno y el logo. En desarrollo el `srcset` sí existía, por eso el encuadre solo fallaba al publicar.
 
 ### Agregado
 
