@@ -21,12 +21,12 @@ import { textLinkVariants } from "@/components/ui/text-link"
 
 const links = [
   { href: "/#inicio", id: "inicio", label: "Inicio" },
-  { href: "/#carta", id: "carta", label: "Carta" },
+  { href: "/carta", id: "carta", label: "Carta" },
   { href: "/#esencia", id: "esencia", label: "Nosotros" },
   { href: "/#reservas", id: "reservas", label: "Reservas" },
 ] as const
 
-const sectionOrder = ["inicio", "carta", "esencia", "reservas"] as const
+const sectionOrder = ["inicio", "esencia", "reservas"] as const
 
 const reserveMessage = "La reserva en línea estará disponible próximamente."
 
