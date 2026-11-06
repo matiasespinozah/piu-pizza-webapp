@@ -5,7 +5,6 @@ import { CalendarIcon, ChevronDownIcon, UtensilsCrossedIcon } from "lucide-react
 
 import piuPortadaMobile from "@/assets/home/piu-portada-mobile.webp"
 import piuPortada from "@/assets/home/piu-portada.webp"
-import { ComingSoonButton } from "@/components/features/coming-soon-button"
 import { Button } from "@/components/ui/button"
 import { Eyebrow } from "@/components/ui/typography"
 
@@ -82,16 +81,17 @@ function Hero() {
           </h1>
 
           <div className="hero-rise hero-rise-5 absolute bottom-4 left-1/2 flex w-[min(22rem,calc(100%-2rem))] -translate-x-1/2 items-stretch justify-center gap-2 md:static md:inset-auto md:mt-5 md:w-auto md:translate-x-0 md:flex-col md:items-start lg:flex-row lg:items-center lg:gap-3">
-            <ComingSoonButton
-              title="Reservas"
-              message="La reserva en línea estará disponible próximamente."
+            <Button
+              asChild
               variant="accent"
               size="md"
               className="h-11 min-w-0 flex-1 rounded-lg px-2 text-[0.75rem] shadow-tactile min-[380px]:px-3 min-[380px]:text-[0.8125rem] md:h-12 md:w-auto md:flex-none md:px-6 md:text-base"
             >
-              <CalendarIcon aria-hidden />
-              Reservar una mesa
-            </ComingSoonButton>
+              <Link href="/reservas">
+                <CalendarIcon aria-hidden />
+                Reservar una mesa
+              </Link>
+            </Button>
             <Button
               asChild
               variant="primary"
