@@ -1,20 +1,48 @@
-# Reservas — puente hacia el backend
+# Reservas
 
-La página `/reservas` solo recorre el formulario. No guarda solicitudes, no confirma mesas y no llama a Firebase. La colección y las reglas ya están descritas en `docs/arquitectura/firebase.md`; el envío sigue desactivado.
+La página `/reservas` pide una mesa. Guardar la solicitud y administrarla ocurre en el servidor. El visitante no elige mesa y el envío no la confirma.
 
-## Qué existe hoy
+## Qué está encendido
 
-- Configuración local en `src/lib/reservations/configuration.ts`.
-- Horarios de atención en `src/lib/reservations/schedule.ts`, calculados en `America/Santiago`.
-- Validación en el navegador (`validation.ts`). No reemplaza la validación del servidor.
-- El botón «Enviar solicitud» permanece deshabilitado.
-- «Reservar por WhatsApp» abre un mensaje genérico. No adjunta los datos del formulario.
+Nada en producción. Hacen falta las dos variables, y ninguna está en `apphosting.yaml`:
 
-## Cómo se conectará después
+- `PIU_RESERVATIONS_WRITES=on`
+- `PIU_FIREBASE_DATA=on` en el proyecto real, o `FIRESTORE_EMULATOR_HOST` en el emulador
 
-1. Una Server Action en `src/server/actions/` recibe el `ReservationRequest`, lo valida de nuevo con la misma lógica y verifica que la fecha siga siendo válida en Chile.
-2. El DAL en `src/server/dal/reservations.ts` escribe la solicitud en Firestore con estado `pending`. La comprobación de cupo y las reservas simultáneas ocurren ahí, no en el navegador.
-3. El personal confirma, rechaza o propone otro horario. Esos estados ya están nombrados en `ReservationStatus`.
-4. La consulta del cliente no puede depender de un RUT ni de un código corto adivinable. Hará falta un enlace o identificador que no exponga el teléfono ni el nombre a cualquiera que lo pruebe.
+Con el emulador, además, `GCLOUD_PROJECT` no puede ser `piu-pizza-cl`. Las pruebas usan `demo-piu-pizza`.
 
-El formulario ya aplica el tope de personas: 15 en salón y 20 en terraza. Anticipación, último ingreso y sectores de fumadores siguen en la configuración sin aplicarse.
+Si falta el permiso, `POST /api/reservations` responde 503 y el formulario no dice que la solicitud fue recibida. El enlace de WhatsApp sigue en el último paso.
+
+## Solicitud pública
+
+`POST /api/reservations` acepta fecha, hora, personas, zona, nombre, celular, observaciones y una clave de idempotencia. Rechaza `status`, mesas y cualquier otro campo.
+
+El documento queda en `reservations/{clave}` con estado `pending`. La misma clave y los mismos datos devuelven la misma solicitud. La misma clave con otros datos responde 409 y no pisa el original. Otra clave, aunque sea la misma persona, es otra solicitud.
+
+Un contador en `reservationRate` limita 8 solicitudes por hora y por origen, sin guardar la dirección. El tope vive en Firestore, así que vale con varias instancias.
+
+La respuesta pública trae la referencia `PIU-…`, la fecha, la hora, las personas y la zona. No trae el celular. Esa referencia no abre la solicitud: la consulta del cliente queda para el hito siguiente, con un token que todavía no se entrega.
+
+## Panel
+
+`/admin/reservas` lista de a 20, con filtro por fecha, estado, zona, pendientes, hoy, próximas y atención. El celular y las observaciones están en el detalle. Cada cambio pide la revisión que el servidor guardó; si otro trabajador ya la cambió, la operación responde 409.
+
+Confirmar, rechazar, proponer otro horario, cancelar, marcar llegada y finalizar pasan por `PATCH /api/admin/reservations/[id]`. Ese PATCH exige la cookie `piu_session` y el mismo encabezado del ingreso. El historial queda en `reservations/{id}/events` dentro de la misma transacción. El personal no puede editarlo.
+
+## Cupo
+
+Una solicitud pendiente no aparta mesa. La mesa se escribe en `reservationHolds/{fecha}_{zona}` solo al confirmar, en la misma transacción que el estado.
+
+Hoy no se confirma en producción: no hay puestos por mesa, ni duración, ni mesas que se puedan juntar, ni el cupo que se deja para quien llega sin reserva. Esos datos están en `pendingOwnerDecisions` y siguen en null. Una configuración de prueba (`fixture: true`) solo vale con el emulador. En el proyecto real hace falta `productionReady: true`, y ese valor no se carga desde aquí.
+
+Mientras tanto, el personal puede recibir, rechazar, proponer y cancelar. Confirmar responde que falta la configuración y la solicitud sigue pendiente.
+
+No se suman mesas para un grupo grande. Si ninguna mesa alcanza, la confirmación no se hace.
+
+## Horario
+
+`America/Santiago`. Lunes a jueves 17:00–22:00. Viernes y sábado 13:00–23:00. Domingo cerrado. Los horarios del formulario llegan hasta el intervalo anterior al cierre. La anticipación de 1 o 2 horas, y la del fin de semana, siguen sin una hora definida, así que el servidor no la inventa ni la exige.
+
+## Qué no hace
+
+No manda WhatsApp, correo ni SMS. «Llamar» abre el teléfono del trabajador. No dice que el cliente fue avisado. No hay pagos, Fudo ni consulta pública en `/reservas/estado`.

@@ -59,9 +59,27 @@ async function readStaffSession(): Promise<StaffSession | null> {
   }
 }
 
+async function readStaffGate(): Promise<
+  { status: 401 } | { status: 403 } | { status: 200; session: StaffSession }
+> {
+  const jar = await cookies()
+  const value = jar.get(sessionCookieName)?.value
+  if (!value) return { status: 401 }
+
+  try {
+    const decoded = await adminAuth().verifySessionCookie(value, true)
+    if (sessionIsExpired(decoded.exp, Date.now())) return { status: 401 }
+    const session = staffFromVerified(decoded)
+    if (!session) return { status: 403 }
+    return { status: 200, session }
+  } catch {
+    return { status: 401 }
+  }
+}
+
 async function clearStaffSession() {
   const jar = await cookies()
   jar.delete(sessionCookieName)
 }
 
-export { clearStaffSession, createStaffSession, readStaffSession }
+export { clearStaffSession, createStaffSession, readStaffGate, readStaffSession }

@@ -75,6 +75,13 @@ test("un plato oculto y una lista sin límite no se leen", async () => {
   await assertFails(getDocs(query(collection(anon, "products"), where("isVisible", "==", true), limit(51))))
 })
 
+test("nadie lee cupos, límites ni el historial de una reserva", async () => {
+  await assertFails(getDoc(doc(anon, "reservationHolds/2026-11-09_salon")))
+  await assertFails(getDoc(doc(admin, "reservationRate/hour")))
+  await assertFails(getDoc(doc(superadmin, "reservations/one/events/created")))
+  await assertFails(setDoc(doc(anon, "reservations/one/events/fake"), { action: "confirm" }))
+})
+
 test("nadie publica un plato desde el navegador", async () => {
   await assertFails(setDoc(doc(anon, "products/nuevo"), { isVisible: true, name: "Nuevo", priceClp: 1 }))
   await assertFails(setDoc(doc(admin, "products/nuevo"), { isVisible: true, name: "Nuevo", priceClp: 1 }))

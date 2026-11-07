@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
 import { roleLabel } from "@/lib/auth/permissions"
 import { requireSection } from "@/server/auth/access"
+import { reservationSummary } from "@/server/reservations/service"
 
 export const instant = false
 
@@ -11,28 +12,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-const metrics = [
-  {
-    title: "Reservas pendientes",
-    note: "Aún no conectado",
-  },
-  {
-    title: "Reservas confirmadas",
-    note: "Aún no conectado",
-  },
-  {
-    title: "Próximas reservas",
-    note: "Aún no conectado",
-  },
-  {
-    title: "Productos del catálogo",
-    note: "Aún no conectado",
-  },
-] as const
-
 export default async function AdminHomePage() {
   const session = await requireSection("inicio")
   const who = session.displayName || session.email || "equipo de PIÙ"
+  const reservations = await reservationSummary(session)
+  const summary = reservations.summary
+  const metrics = [
+    { title: "Solicitudes pendientes", value: summary?.pending },
+    { title: "Confirmadas para hoy", value: summary?.confirmedToday },
+    { title: "Próximas confirmadas", value: summary?.upcoming },
+    { title: "Requieren atención", value: summary?.attention },
+  ]
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
@@ -52,16 +42,23 @@ export default async function AdminHomePage() {
           Resumen
         </h2>
         <p className="max-w-2xl text-sm text-olive-muted">
-          Las métricas estarán disponibles al conectar el módulo de reservas. El conteo de productos
-          aparecerá cuando el catálogo del panel esté conectado. La carta pública no cambia.
+          {reservations.ready
+            ? "Estos números salen de las solicitudes guardadas. El conteo de productos aparecerá cuando el catálogo del panel esté conectado."
+            : "La recepción de reservas sigue desactivada, así que no hay solicitudes reales que contar. El conteo de productos aparecerá cuando el catálogo del panel esté conectado."}
         </p>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {metrics.map((metric) => (
             <li key={metric.title} className="rounded-xl border border-olive-line bg-surface-raised p-4">
               <p className="font-heading text-base font-bold">{metric.title}</p>
-              <p className="mt-3 text-sm font-semibold text-terracotta">{metric.note}</p>
+              <p className="mt-3 text-sm font-semibold text-terracotta">
+                {reservations.ready ? (metric.value == null ? "No disponible" : metric.value) : "Recepción desactivada"}
+              </p>
             </li>
           ))}
+          <li className="rounded-xl border border-olive-line bg-surface-raised p-4">
+            <p className="font-heading text-base font-bold">Productos del catálogo</p>
+            <p className="mt-3 text-sm font-semibold text-terracotta">Aún no conectado</p>
+          </li>
         </ul>
       </section>
     </div>
