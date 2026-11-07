@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Container, Section } from "@/components/ui/layout"
 import { formatCLP } from "@/components/ui/price"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
-import { catalogDataSource } from "@/lib/catalog/catalog-data-source"
-import { CHEF_CATEGORY_ID } from "@/lib/catalog/data"
 import type { Product } from "@/lib/catalog/types"
 
 function SuggestionCard({ suggestion, index }: { suggestion: Product; index: number }) {
@@ -42,9 +40,7 @@ function SuggestionCard({ suggestion, index }: { suggestion: Product; index: num
   )
 }
 
-async function ChefSuggestions() {
-  const suggestions = await catalogDataSource.getProductsByCategory(CHEF_CATEGORY_ID)
-
+function ChefSuggestions({ suggestions }: { suggestions: readonly Product[] }) {
   return (
     <Section
       id="sugerencias"

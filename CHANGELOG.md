@@ -11,6 +11,9 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Catálogo de Fudo en `data/catalog/piu-catalogo-fudo.json` (14 categorías y 131 productos). `pnpm test:catalog` lo carga en el emulador, sin escribir en producción. Volver a importar no pisa el nombre, la descripción ni el precio editados en `/admin/carta`, salvo `node scripts/import-catalog.mjs --sobrescribir`. `/carta` y las tres sugerencias de la Home leen Firestore cuando el acceso a datos está encendido; si no, siguen con el catálogo local.
+- `/admin/carta` permite a `admin` y `superadmin` agregar, editar, ocultar, eliminar y cambiar el precio de productos y categorías. Las fotos se guardan en Storage desde el servidor.
+
 - Seguimiento de una solicitud en `/reservas/estado`, sin cuenta. El enlace lleva un secreto en el fragmento y la consulta es `POST /api/reservations/status`. La referencia `PIU-…` no abre la reserva. En el sitio publicado la consulta sigue apagada (`PIU_RESERVATION_STATUS` no está en `apphosting.yaml`).
 - Reservas: el formulario puede guardar una solicitud pendiente cuando la recepción está encendida, y el equipo la revisa en `/admin/reservas`. Confirmar una mesa queda bloqueado hasta tener la distribución real. En el sitio publicado la recepción sigue apagada (`PIU_RESERVATIONS_WRITES` no está en `apphosting.yaml`). Guía en `docs/arquitectura/reservas-operacion.md`.
 - Panel de administración en `/admin`, con ingreso en `/admin/login`. Solo entra quien tiene el rol `admin` o `superadmin` en el token de Firebase. La sesión queda en la cookie `piu_session` (httpOnly, 8 horas). Mesas, carta, configuración y personal se anuncian como en desarrollo. Guía en `docs/arquitectura/admin-auth.md`.
@@ -18,6 +21,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- Una foto de producto ausente sigue usando la ilustración de PIÙ. Una descripción vacía no se rellena con ingredientes.
 - Con la recepción apagada, `/reservas` avisa de inmediato que no se puede enviar una solicitud y muestra WhatsApp, sin recorrer el formulario.
 - En `/admin/login`, el logo de PIÙ queda centrado sobre el título, un poco más chico y separado del encabezado, sin el margen vacío del archivo.
 - Reservas en el celular: la fecha y su etiqueta quedan dentro de la pantalla. El control nativo ya no empuja el campo hasta el borde.
@@ -46,6 +50,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Seguridad
 
+- La importación del catálogo no corre si el proyecto es `piu-pizza-cl`. Las fotos de producto las escribe el servidor; Storage solo deja leerlas.
 - El enlace de seguimiento no se guarda en claro. Firestore tiene el hash y un cifrado para reponerlo solo si se reintenta la misma solicitud. Un secreto malo, vencido o revocado responde igual. La página no se indexa y la respuesta no se cachea.
 - El tope de solicitudes usa la dirección que agrega la plataforma al final de `X-Forwarded-For`. La primera la puede escribir el visitante.
 - Las solicitudes, los cupos y el historial de reservas siguen cerrados al navegador. El envío público tiene un tope por hora en Firestore y no devuelve el celular. Cada cambio del panel exige la sesión y queda anotado con quien lo hizo.

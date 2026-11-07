@@ -38,7 +38,7 @@ function ProductDetailDialog({ product, onClose }: ProductDetailDialogProps) {
               </p>
               <div aria-hidden className="my-5 h-0 border-t-2 border-dotted border-olive-soft" />
               <DialogDescription className="text-base leading-[1.6] text-olive-strong">
-                {product.description}
+                {product.description || "Este producto no tiene descripción en la carta."}
               </DialogDescription>
               {product.availability !== "available" ? (
                 <p className="mt-4 font-label text-[0.6875rem] font-semibold tracking-[0.16em] text-olive-muted uppercase">

@@ -29,4 +29,26 @@ type Product = {
   sortOrder: number
 }
 
-export type { Category, Product, ProductAvailability }
+type AdminCategory = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  sortOrder: number
+  isVisible: boolean
+}
+
+type AdminProduct = {
+  id: string
+  categoryId: string
+  name: string
+  description: string
+  priceClp: number
+  imageUrl: string | null
+  availability: ProductAvailability
+  isFeatured: boolean
+  isVisible: boolean
+  sortOrder: number
+}
+
+export type { AdminCategory, AdminProduct, Category, Product, ProductAvailability }
