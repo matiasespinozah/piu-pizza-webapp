@@ -16,6 +16,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En `/admin/login`, el logo de PIÙ queda centrado sobre el título, un poco más chico y separado del encabezado, sin el margen vacío del archivo.
 - Reservas en el celular: la fecha y su etiqueta quedan dentro de la pantalla. El control nativo ya no empuja el campo hasta el borde.
 - Reservas: la ilustración de la página usa el dibujo nuevo, con fondo transparente.
 - Reservas: el salón acepta hasta 15 personas y la terraza hasta 20. Si el grupo supera el tope de la zona elegida, el número baja a ese máximo.

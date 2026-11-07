@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { LoginForm } from "@/components/features/admin/login-form"
-import { Logo } from "@/components/ui/logo"
 import { Heading, Text } from "@/components/ui/typography"
 import { readStaffSession } from "@/server/auth/session"
 
@@ -21,9 +21,20 @@ export default async function AdminLoginPage() {
 
   return (
     <main className="flex min-h-svh flex-col bg-background px-4 py-8">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8">
-        <div className="flex flex-col items-start gap-4">
-          <Logo size={56} priority alt="PIÙ" />
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <div className="mb-[5%] h-[4.5rem] w-[9.9rem] overflow-hidden md:h-[6.3rem] md:w-[14.4rem]">
+            <Image
+              src="/logos/logopiu.png"
+              alt="PIÙ"
+              width={1254}
+              height={1254}
+              priority
+              quality={90}
+              sizes="256px"
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
           <div className="flex flex-col gap-2">
             <Heading as="h1" size="h3">
               Panel de administración
