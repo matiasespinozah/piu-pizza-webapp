@@ -2,8 +2,8 @@
 type ReservationZone = "salon" | "terrace"
 
 /**
- * Lo que el formulario reúne. Todavía no se persiste.
- * Los nombres quedan listos para el pedido que enviará el cliente más adelante.
+ * Lo que el formulario reúne. El servidor vuelve a validarlo antes de guardarlo.
+ * El cliente no elige mesa ni estado.
  */
 type ReservationRequest = {
   date: string
@@ -15,10 +15,7 @@ type ReservationRequest = {
   notes: string
 }
 
-/**
- * Estados futuros de una solicitud ya guardada.
- * No representan reservas reales en esta etapa.
- */
+/** Estados de una solicitud ya guardada. La mesa solo se asigna al confirmar. */
 type ReservationStatus =
   | "pending"
   | "confirmed"

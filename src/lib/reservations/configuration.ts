@@ -47,6 +47,24 @@ const reservationConfig = {
 
 const reservationWhatsappMessage = "Hola, quiero reservar una mesa en PIÙ."
 
+/**
+ * Datos que el propietario todavía no confirma. Null significa que la operación
+ * que depende de ese dato permanece bloqueada. No reemplazar por un número supuesto.
+ */
+const pendingOwnerDecisions = {
+  seatsPerTable: null,
+  combinableTables: null,
+  reservableCapacityPerZone: null,
+  walkInTables: null,
+  serviceMinutes: null,
+  lastSeatingTime: null,
+  exactWeekdayLeadHours: null,
+  weekendCutoff: null,
+  lateArrivalPolicy: null,
+  privacyPolicyPublished: null,
+  retentionPolicy: null,
+} as const
+
 type ZoneConfig = (typeof reservationConfig.zones)[number]
 
 function zoneConfig(id: ReservationZone): ZoneConfig {
@@ -61,5 +79,5 @@ function maxPartyFor(zone: ReservationZone | null) {
   return Math.max(...reservationConfig.zones.map((item) => item.maxPartySize))
 }
 
-export { maxPartyFor, reservationConfig, reservationWhatsappMessage, zoneConfig }
+export { maxPartyFor, pendingOwnerDecisions, reservationConfig, reservationWhatsappMessage, zoneConfig }
 export type { ZoneConfig }

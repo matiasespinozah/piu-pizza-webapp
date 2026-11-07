@@ -15,7 +15,7 @@ const sectionRoles: Record<AdminSection, readonly StaffRole[]> = {
 
 const adminNav = [
   { href: "/admin", section: "inicio", label: "Inicio", ready: true },
-  { href: "/admin/reservas", section: "reservas", label: "Reservas", ready: false },
+  { href: "/admin/reservas", section: "reservas", label: "Reservas", ready: true },
   { href: "/admin/mesas", section: "mesas", label: "Mesas", ready: false },
   { href: "/admin/carta", section: "carta", label: "Carta", ready: false },
   { href: "/admin/configuracion", section: "configuracion", label: "Configuración", ready: false },

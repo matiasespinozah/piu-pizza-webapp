@@ -154,8 +154,8 @@ test("el endpoint no acepta rol ni un destino en la URL", () => {
 
 test("el inicio no inventa métricas ni lee Firestore", () => {
   const page = text("src/app/admin/(panel)/page.tsx")
-  assert.match(page, /Las métricas estarán disponibles al conectar el módulo de reservas/)
-  assert.doesNotMatch(page, /listReservations|getFirestore|firebase-admin/)
+  assert.match(page, /La recepción de reservas sigue desactivada/)
+  assert.doesNotMatch(page, /getFirestore|firebase-admin/)
   assert.doesNotMatch(page, /\b\d+\s+reservas\b/i)
 })
 

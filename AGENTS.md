@@ -50,6 +50,7 @@ pnpm changelog:check  # changelog y versiones alineadas
 pnpm test          # superficie pública y reglas de la sesión, sin emulador
 pnpm test:auth     # sesión contra el emulador de Auth (proyecto demo-piu-pizza)
 pnpm test:rules    # reglas de Firestore contra el emulador
+pnpm test:reservations # solicitudes, cupos y transiciones contra el emulador
 ```
 
 Muestrario de componentes: `http://localhost:3000/ui` (solo en desarrollo).

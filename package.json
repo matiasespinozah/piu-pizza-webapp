@@ -12,9 +12,10 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "changelog:check": "node scripts/check-changelog.mjs",
-    "test": "node --import ./tests/register-alias.mjs --test tests/public-surface.test.mjs tests/admin-policy.test.mjs",
+    "test": "node --import ./tests/register-alias.mjs --test tests/public-surface.test.mjs tests/admin-policy.test.mjs tests/reservation-policy.test.mjs",
     "test:rules": "node scripts/test-rules.mjs",
     "test:auth": "node scripts/test-admin-auth.mjs",
+    "test:reservations": "node scripts/test-reservations.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {

@@ -32,6 +32,18 @@ service cloud.firestore {
     // El teléfono y el nombre del cliente viven en reservations y no se pueden leer desde el navegador.
     match /reservations/{reservationId} {
       allow read, write: if false;
+
+      match /events/{eventId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /reservationHolds/{holdId} {
+      allow read, write: if false;
+    }
+
+    match /reservationRate/{rateId} {
+      allow read, write: if false;
     }
 
     match /tables/{tableId} {
