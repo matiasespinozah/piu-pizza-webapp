@@ -5,8 +5,8 @@ import { getFirebaseApp } from "@/lib/firebase/client"
 let emulatorReady = false
 
 /**
- * Auth del navegador, solo para el futuro ingreso del personal.
- * Ninguna página lo importa en este hito, así que no entra al bundle público.
+ * Auth del navegador para el ingreso del personal.
+ * Solo lo usa el formulario de `/admin/login`. El sitio público no lo importa.
  * El emulador se usa únicamente si la variable está definida. App Hosting no la define.
  */
 function getClientAuth(): Auth {

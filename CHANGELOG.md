@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Panel de administración en `/admin`, con ingreso en `/admin/login`. Solo entra quien tiene el rol `admin` o `superadmin` en el token de Firebase. La sesión queda en la cookie `piu_session` (httpOnly, 8 horas). Reservas, mesas, carta, configuración y personal se anuncian como en desarrollo y no muestran cifras. Guía en `docs/arquitectura/admin-auth.md`.
 - Fundación Firebase, sin reservas reales ni catálogo importado: modelo de datos, reglas que niegan las reservas al navegador, Auth de personal por custom claims y acceso a Firestore apagado salvo emulador o aprobación. Documentado en `docs/arquitectura/firebase.md`.
 
 ### Cambiado
@@ -37,6 +38,10 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Corregido
 
 - En el Hero de escritorio, el build de producción dejaba el `<source>` de la foto horizontal sin `srcset`. El navegador usaba la foto vertical y, con el recorte hacia abajo, se veía el suelo en lugar del horno y el logo. En desarrollo el `srcset` sí existía, por eso el encuadre solo fallaba al publicar.
+
+### Seguridad
+
+- El ingreso del personal no guarda la contraseña ni el token en el navegador. Crear la cookie exige un token reciente, un rol de personal y un pedido del propio sitio. Quien no tiene rol recibe acceso denegado. El script del primer propietario ya no borra los otros custom claims, y revoca las sesiones anteriores.
 
 ### Agregado
 

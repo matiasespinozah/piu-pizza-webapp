@@ -10,7 +10,7 @@ import { assertFirebaseDataEnabled } from "@/server/firebase/guard"
 
 /**
  * Cambia el rol de otra cuenta. Solo un SUPERADMIN, y solo desde el servidor.
- * El claim reemplaza los claims anteriores y revoca las sesiones viejas.
+ * Conserva los demás custom claims, cambia solo `role` y revoca las sesiones viejas.
  * El primer SUPERADMIN no pasa por aquí: lo asigna scripts/bootstrap-superadmin.mjs.
  */
 async function assignStaffRole(actor: StaffSession, targetUid: string, role: StaffRole) {
@@ -21,7 +21,8 @@ async function assignStaffRole(actor: StaffSession, targetUid: string, role: Sta
   }
 
   const auth = getAuth(getAdminApp())
-  await auth.setCustomUserClaims(targetUid, { role })
+  const user = await auth.getUser(targetUid)
+  await auth.setCustomUserClaims(targetUid, { ...user.customClaims, role })
   await auth.revokeRefreshTokens(targetUid)
   await appendAuditLog(actor, {
     action: "staff.role.assign",

@@ -20,11 +20,22 @@ function text(path) {
   return readFileSync(path, "utf8")
 }
 
-test("las páginas y los componentes no importan Firebase", () => {
+function rel(file) {
+  return file.slice(root.length).replaceAll("\\", "/")
+}
+
+test("el sitio público no importa Firebase ni el servidor", () => {
   const dirs = ["src/app", "src/components"].map((dir) => join(root, dir))
-  const offenders = dirs
-    .flatMap((dir) => walk(dir))
-    .filter((file) => /from ["'](firebase|firebase-admin|@\/lib\/firebase|@\/server\/)/.test(text(file)))
+  const offenders = []
+  for (const file of dirs.flatMap((dir) => walk(dir))) {
+    const source = text(file)
+    const path = rel(file)
+    const loginForm = path.endsWith("src/components/features/admin/login-form.tsx")
+    const adminPage = path.includes("src/app/admin/")
+    if (/from ["']firebase-admin/.test(source)) offenders.push(path)
+    if (/from ["'](firebase(?:\/[^"']*)?|@\/lib\/firebase)/.test(source) && !loginForm) offenders.push(path)
+    if (/from ["']@\/server\//.test(source) && !adminPage) offenders.push(path)
+  }
   assert.deepEqual(offenders, [])
 })
 
