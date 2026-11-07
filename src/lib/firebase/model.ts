@@ -14,6 +14,10 @@ const collections = {
   staff: "staff",
   restaurantSettings: "restaurantSettings",
   auditLogs: "auditLogs",
+  reservationHolds: "reservationHolds",
+  reservationRate: "reservationRate",
+  reservationAccess: "reservationAccess",
+  reservationStatusRate: "reservationStatusRate",
 } as const
 
 const settingsDocId = "operations"

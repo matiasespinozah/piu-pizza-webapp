@@ -28,6 +28,8 @@ Nombres en inglés, alineados con el código. No hay documentos cargados.
 | `staff` | Ficha del trabajador (nombre y correo). **No guarda el rol.** | Nadie. |
 | `restaurantSettings/operations` | Tope por zona, cupo sin reserva (`walkInHold`, null hasta definirlo) y anticipación (null). | Nadie. |
 | `auditLogs` | Quién cambió qué, sin copiar el teléfono del cliente. | Nadie. |
+| `reservationAccess` | Hash del enlace de seguimiento, vencimiento, revocación y un cifrado del secreto. No guarda el secreto en claro. | Nadie. |
+| `reservationStatusRate` | Contador de consultas de seguimiento, sin la dirección ni el secreto. | Nadie. |
 
 No hay colección `customers`. Quien reserva no crea cuenta. El nombre y el teléfono viven solo dentro de la reserva.
 
@@ -48,13 +50,16 @@ Navegador ── /admin/login (email y contraseña, sin localStorage)
 /admin/session ── verifica el ID token y el rol ── cookie piu_session (httpOnly, 8 h)
 /admin         ── lee esa cookie en el servidor antes de mostrar el panel
 
-App Hosting ── Admin SDK ── Firestore (sigue apagado para el sitio)
+App Hosting ── Admin SDK ── Firestore
+          Las escrituras de reservas siguen apagadas hasta PIU_RESERVATIONS_WRITES=on
+          y PIU_FIREBASE_DATA=on. Ninguna de las dos está en apphosting.yaml.
 ```
 
 - `src/lib/firebase/model.ts`: formas de los documentos (zod).
 - `src/server/auth/session.ts`: crea y lee la cookie. Sin rol de personal, no hay sesión.
 - `src/server/auth/claims.ts`: solo un SUPERADMIN cambia el claim de otra cuenta, y revoca las sesiones viejas.
-- `src/server/dal/`: reservas, catálogo y auditoría. Ninguna página los llama. No hay Server Actions: un archivo `"use server"` sería un endpoint público.
+- `src/server/reservations/`: solicitudes, transiciones y cupos. El panel las usa. El navegador no lee la colección.
+- `src/server/dal/`: el listado anterior no está conectado. No hay Server Actions: un archivo `"use server"` sería un endpoint público.
 - `assertFirebaseDataEnabled()` se niega a tocar Firestore salvo `PIU_FIREBASE_DATA=on` o `FIRESTORE_EMULATOR_HOST`.
 
 En App Hosting, `initializeApp()` usa la cuenta del backend. En el emulador se inicializa solo con el `projectId`, sin clave. Esa variable de emulador no está en `apphosting.yaml`.
@@ -73,12 +78,16 @@ No se publicaron. Publicar es `firebase deploy --only firestore,storage` y pide 
 pnpm test
 pnpm test:auth
 pnpm test:rules
+pnpm test:reservations
+pnpm test:reservation-status
 ```
 
 `test:rules` levanta el emulador de Firestore con el proyecto **`demo-piu-pizza`**. No es `piu-pizza-cl`. Hace falta Java para el emulador. `test:auth` usa solo el emulador de Auth, con el mismo proyecto de prueba.
 
 El primer SUPERADMIN no se crea con una contraseña de ejemplo. El script `scripts/bootstrap-superadmin.mjs` sale sin hacer nada si faltan las variables. Contra producción exige `PIU_BOOTSTRAP_TARGET=production` y no se ejecutó en este hito. Al asignar el rol conserva los otros custom claims. Los pasos están en `docs/arquitectura/admin-auth.md`.
 
-## Qué no hace este hito
+## Reservas
 
-Envío de reservas, confirmaciones, importación del catálogo, Fudo, WhatsApp automático y pagos. El panel de personal existe, pero no consulta esas colecciones.
+El camino para guardar una solicitud está en `docs/arquitectura/reservas.md` y la guía de operación en `docs/arquitectura/reservas-operacion.md`. En producción no se enciende solo por estar el código en `main`.
+
+Siguen fuera: catálogo importado, Fudo, WhatsApp automático, correo, SMS y pagos.

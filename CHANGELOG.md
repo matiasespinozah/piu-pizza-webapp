@@ -11,11 +11,14 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
-- Panel de administración en `/admin`, con ingreso en `/admin/login`. Solo entra quien tiene el rol `admin` o `superadmin` en el token de Firebase. La sesión queda en la cookie `piu_session` (httpOnly, 8 horas). Reservas, mesas, carta, configuración y personal se anuncian como en desarrollo y no muestran cifras. Guía en `docs/arquitectura/admin-auth.md`.
+- Seguimiento de una solicitud en `/reservas/estado`, sin cuenta. El enlace lleva un secreto en el fragmento y la consulta es `POST /api/reservations/status`. La referencia `PIU-…` no abre la reserva. En el sitio publicado la consulta sigue apagada (`PIU_RESERVATION_STATUS` no está en `apphosting.yaml`).
+- Reservas: el formulario puede guardar una solicitud pendiente cuando la recepción está encendida, y el equipo la revisa en `/admin/reservas`. Confirmar una mesa queda bloqueado hasta tener la distribución real. En el sitio publicado la recepción sigue apagada (`PIU_RESERVATIONS_WRITES` no está en `apphosting.yaml`). Guía en `docs/arquitectura/reservas-operacion.md`.
+- Panel de administración en `/admin`, con ingreso en `/admin/login`. Solo entra quien tiene el rol `admin` o `superadmin` en el token de Firebase. La sesión queda en la cookie `piu_session` (httpOnly, 8 horas). Mesas, carta, configuración y personal se anuncian como en desarrollo. Guía en `docs/arquitectura/admin-auth.md`.
 - Fundación Firebase, sin reservas reales ni catálogo importado: modelo de datos, reglas que niegan las reservas al navegador, Auth de personal por custom claims y acceso a Firestore apagado salvo emulador o aprobación. Documentado en `docs/arquitectura/firebase.md`.
 
 ### Cambiado
 
+- Con la recepción apagada, `/reservas` avisa de inmediato que no se puede enviar una solicitud y muestra WhatsApp, sin recorrer el formulario.
 - En `/admin/login`, el logo de PIÙ queda centrado sobre el título, un poco más chico y separado del encabezado, sin el margen vacío del archivo.
 - Reservas en el celular: la fecha y su etiqueta quedan dentro de la pantalla. El control nativo ya no empuja el campo hasta el borde.
 - Reservas: la ilustración de la página usa el dibujo nuevo, con fondo transparente.
@@ -38,15 +41,19 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- `pnpm test:auth` usa otro puerto si el 9099 ya tiene un emulador, y no lo detiene.
 - En el Hero de escritorio, el build de producción dejaba el `<source>` de la foto horizontal sin `srcset`. El navegador usaba la foto vertical y, con el recorte hacia abajo, se veía el suelo en lugar del horno y el logo. En desarrollo el `srcset` sí existía, por eso el encuadre solo fallaba al publicar.
 
 ### Seguridad
 
+- El enlace de seguimiento no se guarda en claro. Firestore tiene el hash y un cifrado para reponerlo solo si se reintenta la misma solicitud. Un secreto malo, vencido o revocado responde igual. La página no se indexa y la respuesta no se cachea.
+- El tope de solicitudes usa la dirección que agrega la plataforma al final de `X-Forwarded-For`. La primera la puede escribir el visitante.
+- Las solicitudes, los cupos y el historial de reservas siguen cerrados al navegador. El envío público tiene un tope por hora en Firestore y no devuelve el celular. Cada cambio del panel exige la sesión y queda anotado con quien lo hizo.
 - El ingreso del personal no guarda la contraseña ni el token en el navegador. Crear la cookie exige un token reciente, un rol de personal y un pedido del propio sitio. Quien no tiene rol recibe acceso denegado. El script del primer propietario ya no borra los otros custom claims, y revoca las sesiones anteriores.
 
 ### Agregado
 
-- Página `/reservas` (solo frontend): tres pasos para pedir fecha, personas, zona, horario y datos de contacto. El envío queda deshabilitado y no se guardan solicitudes. Los botones de reserva de la Home, la barra y el footer llevan a esa página. La conexión futura está descrita en `docs/arquitectura/reservas.md`.
+- Página `/reservas`: tres pasos para pedir fecha, personas, zona, horario y datos de contacto. Los botones de reserva de la Home, la barra y el footer llevan a esa página. La recepción queda descrita en `docs/arquitectura/reservas.md`.
 - Página `/carta` (solo frontend, datos locales): encabezado editorial, buscador sin acentos, categorías deslizables con estado «En preparación» para las que aún no tienen productos, y filas de carta con la ilustración PIÙ como imagen predeterminada.
 - Catálogo local en `src/lib/catalog/` (`Category`, `Product`, `CatalogDataSource`): única fuente de los tres productos para la Home y `/carta`. Puntos de integración futura en `docs/arquitectura/catalogo.md`.
 - Tarjetas de **Sugerencias del chef** rediseñadas: imagen arriba con `ProductImage` (ilustración PIÙ mientras no haya foto), etiqueta numerada, nombre, descripción y precio.
