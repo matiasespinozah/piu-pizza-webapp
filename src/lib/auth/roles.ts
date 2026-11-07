@@ -8,6 +8,9 @@ type StaffRole = z.infer<typeof staffRoleSchema>
 type StaffSession = {
   uid: string
   role: StaffRole
+  /** Salen del token verificado. Pueden ir vacíos si Auth no los trae. */
+  email: string
+  displayName: string
 }
 
 function readStaffRole(value: unknown): StaffRole | null {

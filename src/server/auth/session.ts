@@ -3,35 +3,46 @@ import "server-only"
 import { getAuth } from "firebase-admin/auth"
 import { cookies } from "next/headers"
 
-import { readStaffRole, type StaffSession } from "@/lib/auth/roles"
+import { decideStaffSession, staffFromVerified } from "@/lib/auth/staff-session"
+import type { StaffSession } from "@/lib/auth/roles"
+import {
+  sessionCookieName,
+  sessionIsExpired,
+  sessionMaxAgeMs,
+} from "@/lib/auth/session-policy"
+import { StaffAccessError } from "@/server/auth/authorization"
 import { getAdminApp } from "@/server/firebase/admin"
-
-const sessionCookieName = "piu_session"
-const sessionMs = 5 * 24 * 60 * 60 * 1000
 
 function adminAuth() {
   return getAuth(getAdminApp())
 }
 
-/** Crea la cookie solo si el token ya trae un rol de personal. Un cliente no puede entrar por aquí. */
+/**
+ * Crea la cookie solo si el token es reciente y ya trae un rol de personal.
+ * No consulta Firestore y no usa PIU_FIREBASE_DATA.
+ */
 async function createStaffSession(idToken: string): Promise<StaffSession> {
   const decoded = await adminAuth().verifyIdToken(idToken, true)
-  const role = readStaffRole(decoded.role)
-  if (!role) {
-    throw new Error("La cuenta no tiene un rol de personal.")
+  const decision = decideStaffSession(decoded)
+  if (!decision.ok) {
+    if (decision.reason === "forbidden") throw new StaffAccessError()
+    throw new Error("La sesión de inicio ya no es válida.")
   }
 
-  const value = await adminAuth().createSessionCookie(idToken, { expiresIn: sessionMs })
+  const value = await adminAuth().createSessionCookie(idToken, { expiresIn: sessionMaxAgeMs })
   const jar = await cookies()
+  const emulator = Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST)
   jar.set(sessionCookieName, value, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    // En producción la cookie solo viaja por HTTPS. El emulador local es HTTP:
+    // App Hosting no define FIREBASE_AUTH_EMULATOR_HOST.
+    secure: process.env.NODE_ENV === "production" && !emulator,
     sameSite: "lax",
     path: "/",
-    maxAge: sessionMs / 1000,
+    maxAge: sessionMaxAgeMs / 1000,
   })
 
-  return { uid: decoded.uid, role }
+  return decision.session
 }
 
 async function readStaffSession(): Promise<StaffSession | null> {
@@ -41,9 +52,8 @@ async function readStaffSession(): Promise<StaffSession | null> {
 
   try {
     const decoded = await adminAuth().verifySessionCookie(value, true)
-    const role = readStaffRole(decoded.role)
-    if (!role) return null
-    return { uid: decoded.uid, role }
+    if (sessionIsExpired(decoded.exp, Date.now())) return null
+    return staffFromVerified(decoded)
   } catch {
     return null
   }
@@ -54,4 +64,4 @@ async function clearStaffSession() {
   jar.delete(sessionCookieName)
 }
 
-export { clearStaffSession, createStaffSession, readStaffSession, sessionCookieName }
+export { clearStaffSession, createStaffSession, readStaffSession }

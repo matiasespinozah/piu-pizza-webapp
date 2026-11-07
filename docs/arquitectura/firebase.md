@@ -42,12 +42,13 @@ Los 15 y 20 personas del formulario siguen en `src/lib/reservations/configuratio
 ## Cómo se conecta
 
 ```
-Navegador ── Auth (solo el personal, más adelante)
+Navegador ── /admin/login (email y contraseña, sin localStorage)
           ── no lee Firestore de reservas
 
-App Hosting ── Admin SDK ── Firestore
-                 │
-                 └── cookie piu_session (httpOnly), verificada con revocación
+/admin/session ── verifica el ID token y el rol ── cookie piu_session (httpOnly, 8 h)
+/admin         ── lee esa cookie en el servidor antes de mostrar el panel
+
+App Hosting ── Admin SDK ── Firestore (sigue apagado para el sitio)
 ```
 
 - `src/lib/firebase/model.ts`: formas de los documentos (zod).
@@ -70,13 +71,14 @@ No se publicaron. Publicar es `firebase deploy --only firestore,storage` y pide 
 
 ```bash
 pnpm test
+pnpm test:auth
 pnpm test:rules
 ```
 
-`test:rules` levanta el emulador de Firestore con el proyecto **`demo-piu-pizza`**. No es `piu-pizza-cl`. Hace falta Java para el emulador.
+`test:rules` levanta el emulador de Firestore con el proyecto **`demo-piu-pizza`**. No es `piu-pizza-cl`. Hace falta Java para el emulador. `test:auth` usa solo el emulador de Auth, con el mismo proyecto de prueba.
 
-El primer SUPERADMIN no se crea con una contraseña de ejemplo. El script `scripts/bootstrap-superadmin.mjs` sale sin hacer nada si faltan las variables. Contra producción exige `PIU_BOOTSTRAP_TARGET=production` y no se ejecutó en este hito.
+El primer SUPERADMIN no se crea con una contraseña de ejemplo. El script `scripts/bootstrap-superadmin.mjs` sale sin hacer nada si faltan las variables. Contra producción exige `PIU_BOOTSTRAP_TARGET=production` y no se ejecutó en este hito. Al asignar el rol conserva los otros custom claims. Los pasos están en `docs/arquitectura/admin-auth.md`.
 
 ## Qué no hace este hito
 
-Envío de reservas, confirmaciones, panel, importación del catálogo, Fudo, WhatsApp automático y pagos.
+Envío de reservas, confirmaciones, importación del catálogo, Fudo, WhatsApp automático y pagos. El panel de personal existe, pero no consulta esas colecciones.

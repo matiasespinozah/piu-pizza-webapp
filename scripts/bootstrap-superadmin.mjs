@@ -45,6 +45,6 @@ if (current === "superadmin") {
   process.exit(1)
 }
 
-await auth.setCustomUserClaims(uid, { role: "superadmin" })
+await auth.setCustomUserClaims(uid, { ...existing.customClaims, role: "superadmin" })
 await auth.revokeRefreshTokens(uid)
 console.log(`SUPERADMIN asignado a ${uid}. Las sesiones anteriores quedaron revocadas.`)
