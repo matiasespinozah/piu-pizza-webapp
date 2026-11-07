@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/features/layout/site-footer"
 import { MenuExplorer } from "@/components/features/menu/menu-explorer"
 import { MenuHeader } from "@/components/features/menu/menu-header"
 import { SiteHeader } from "@/components/features/site-header"
-import { catalogDataSource } from "@/lib/catalog/catalog-data-source"
+import { getPublicCatalog } from "@/server/dal/catalog"
 
 import "../home.css"
 
@@ -21,10 +21,7 @@ export const metadata: Metadata = {
 }
 
 export default async function CartaPage() {
-  const [categories, products] = await Promise.all([
-    catalogDataSource.getCategories(),
-    catalogDataSource.getProducts(),
-  ])
+  const { categories, products } = await getPublicCatalog()
 
   return (
     <div className="bg-cream">

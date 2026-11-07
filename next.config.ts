@@ -14,8 +14,25 @@ const nextConfig: NextConfig = {
     imageSizes: [96, 256, 384],
     // 31 días: las imágenes de producto cambian de URL al reemplazarse (nombres versionados).
     minimumCacheTTL: 2678400,
-    // Solo orígenes explícitos. Agregar el bucket de Firebase Storage cuando exista.
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        pathname: "/v0/b/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "9199",
+        pathname: "/v0/b/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9199",
+        pathname: "/v0/b/**",
+      },
+    ],
   },
 
   async headers() {
