@@ -1,6 +1,6 @@
 # Reservas — puente hacia el backend
 
-La página `/reservas` solo recorre el formulario. No guarda solicitudes, no confirma mesas y no llama a Firebase.
+La página `/reservas` solo recorre el formulario. No guarda solicitudes, no confirma mesas y no llama a Firebase. La colección y las reglas ya están descritas en `docs/arquitectura/firebase.md`; el envío sigue desactivado.
 
 ## Qué existe hoy
 

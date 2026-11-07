@@ -27,7 +27,7 @@ Sitio web de la pizzería PIÙ. Este archivo sigue el estándar [AGENTS.md](http
 | Node.js | **24.x** (`engines` en `package.json`, `.nvmrc`) |
 | Paquetes | **pnpm** (no usar npm ni yarn) |
 
-Infraestructura: **solo Firebase CLI** (`firebase …`) y la consola web. Sin `gcloud` y sin emuladores.
+Infraestructura: **solo Firebase CLI** (`firebase …`) y la consola web. Sin `gcloud`. Los emuladores se usan solo para probar reglas y Auth en local; `pnpm dev` no escribe en la base real.
 
 | Archivo | Qué es |
 |---|---|
@@ -47,6 +47,9 @@ pnpm build         # build de producción — debe pasar antes de dar algo por t
 pnpm lint          # ESLint
 pnpm typecheck     # chequeo de tipos
 pnpm changelog:check  # changelog y versiones alineadas
+pnpm test          # superficie pública y reglas de la sesión, sin emulador
+pnpm test:auth     # sesión contra el emulador de Auth (proyecto demo-piu-pizza)
+pnpm test:rules    # reglas de Firestore contra el emulador
 ```
 
 Muestrario de componentes: `http://localhost:3000/ui` (solo en desarrollo).

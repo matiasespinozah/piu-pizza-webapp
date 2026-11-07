@@ -17,12 +17,15 @@ Proyecto Firebase: **`piu-pizza-cl`** (plan Blaze). Todo en `us-central1`. Infra
 - Nunca importar `firebase-admin` desde un archivo que pueda llegar al cliente.
 
 ## Autenticación
-- Login en el cliente con el Web SDK → enviar ID token al servidor → crear **cookie de sesión** (`httpOnly`, `secure`, `sameSite=lax`) con el Admin SDK.
-- En el servidor, verificar la cookie con `verifySessionCookie(cookie, true)` (chequea revocación) en el DAL, no en el layout.
-- Roles (`admin`, `staff`) con **custom claims** asignados desde el servidor, nunca un campo `role` editable por el usuario en Firestore.
-- Proteger rutas en `proxy.ts` solo como primera barrera (redirect); la autorización real va en el DAL/Server Action.
-- Proveedores habilitados en `piu-pizza-cl`: **email/contraseña** y **Google**. Sin enlace por email ni Phone Auth.
-- Habilitar protección contra enumeración de emails. Datos extra del cliente (nombre, teléfono) van en un documento de perfil propio (`users/{uid}`), protegido por reglas, nunca en custom claims.
+- El personal entra en `/admin/login`. Los clientes del restaurante no tienen cuenta.
+- Email y contraseña con el Web SDK, persistencia en memoria. El ID token se envía a `/admin/session` y el servidor crea la cookie `piu_session` (`httpOnly`, `secure` en producción, `sameSite=lax`, 8 horas). No va a `localStorage`.
+- Ese route exige que `Origin` coincida con el host y el encabezado `x-piu-requested-with: admin-login`. No acepta `?next=`.
+- El layout de `/admin` llama `readStaffSession()` antes de pintar HTML. `/admin/login` está fuera de ese layout. Cada página vuelve a pedir su sección con `requireSection`.
+- `verifyIdToken` y `verifySessionCookie` se llaman con `checkRevoked: true`. Cambiar un rol también ejecuta `revokeRefreshTokens`.
+- Los roles son `superadmin` y `admin`, en el custom claim `role`. No es un campo de Firestore. El mapa de permisos está en `src/lib/auth/permissions.ts`.
+- El procedimiento, los emuladores y lo que aún no existe están en `docs/arquitectura/admin-auth.md`.
+- Proveedores previstos: **email/contraseña** y **Google**. Este panel usa solo email/contraseña. Sin Phone Auth. MFA no está contratado: no se exige en el ingreso.
+- El ingreso no dice si un correo es de personal cuando la contraseña falla. Firebase ya limita los intentos; no hay un segundo contador propio.
 
 ## Firestore Security Rules
 - **Deny by default**. Empezar con:
@@ -53,10 +56,11 @@ Proyecto Firebase: **`piu-pizza-cl`** (plan Blaze). Todo en `us-central1`. Infra
 - Leer `node_modules/next/dist/docs/01-app/02-guides/data-security.md` antes de crear acciones.
 
 ## Desarrollo local
-- **No se usan emuladores** (decisión del proyecto). En local, `pnpm dev` apunta al proyecto real `piu-pizza-cl` con la config de `.env.local` (copiar de `.env.example`).
-- Por eso: **nunca** escribir datos de prueba en colecciones reales ni correr scripts de escritura contra producción sin revisarlos. Usar documentos con prefijo `_test` y borrarlos después.
-- Si más adelante se necesita un entorno aislado, crear un proyecto aparte (`piu-pizza-cl-dev`), no emuladores.
-- Las Security Rules viven versionadas en el repo (`firestore.rules`, `storage.rules`) y se publican **solo** con `firebase deploy --only firestore,storage`. Nunca editarlas en la consola: el repo es la fuente de verdad.
+- `pnpm dev` **no** lee ni escribe Firestore. El acceso nace apagado (`src/lib/firebase/access.ts`) hasta `PIU_FIREBASE_DATA=on` o hasta que el proceso apunte al emulador.
+- Las pruebas de reglas usan el emulador con un proyecto `demo-*` (`pnpm test:rules`). La sesión de personal se ensaya con `pnpm test:auth` (solo el emulador de Auth, el mismo proyecto `demo-piu-pizza`). Ninguno es `piu-pizza-cl`.
+- Auth del emulador solo si `FIREBASE_AUTH_EMULATOR_HOST` está definido. App Hosting no define esa variable. El ingreso del panel no enciende `PIU_FIREBASE_DATA`.
+- **Nunca** escribir datos de prueba en colecciones reales ni correr `scripts/bootstrap-superadmin.mjs` contra producción sin aprobación. La clave de una cuenta de servicio, si hace falta, queda fuera del repo (`GOOGLE_APPLICATION_CREDENTIALS`).
+- Las Security Rules viven versionadas en el repo (`firestore.rules`, `storage.rules`) y se publican **solo** con `firebase deploy --only firestore,storage`, y solo con aprobación. Nunca editarlas en la consola: el repo es la fuente de verdad.
 
 ## Prohibido
 - Commitear `serviceAccount*.json`, `.env*`, tokens o claves.

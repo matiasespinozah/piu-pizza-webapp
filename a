@@ -1,0 +1,7 @@
+  backup/develop-antes-pr       [m a098568 subiendo home actualizado, primera version
+  develop                       [m 7427969 [[34morigin/develop[m: behind 9] Merge pull request #4 from matiasespinozah/feature/home-page
+  feature/catalog-page          [m d50aee3 [[34morigin/feature/catalog-page[m] feat: implement local catalog and enhance carta page functionality
+  feature/home-page             [m 07332f2 [[34morigin/feature/home-page[m] fix: correct hero image handling for desktop and mobile
+  feature/product-image-fallback[m 3b7d70e [[34morigin/feature/product-image-fallback[m] feat: redesign chef suggestions and enhance product image handling
+* [32mfeature/reservations-page     [m 9de336a [[34morigin/feature/reservations-page[m] feat: improve mobile reservation interface and UI adjustments
+  main                          [m 21f4b43 [[34morigin/main[m: behind 17] Merge pull request #2 from matiasespinozah/develop

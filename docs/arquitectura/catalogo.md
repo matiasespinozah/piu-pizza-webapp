@@ -14,7 +14,9 @@ Hoy solo «Sugerencias del chef» tiene productos (los tres confirmados). Las de
 
 ## Conectar Firestore más adelante (no implementado)
 
-1. Crear `src/server/dal/catalog.ts` (`import "server-only"`) con lecturas cacheadas (`"use cache"` + `cacheLife` + `cacheTag("catalog")`), `limit()` y DTOs mínimos que cumplan `Category` y `Product`.
+El contrato de las colecciones `categories` y `products` ya está en `docs/arquitectura/firebase.md`. `/carta` sigue usando `localCatalogDataSource`. No cambiar ese punto hasta el hito del catálogo.
+
+1. `src/server/dal/catalog.ts` ya lee solo documentos visibles, con `limit()`, y no se usa. Al conectarlo: agregar `"use cache"` + `cacheLife` + `cacheTag("catalog")` y mapear al contrato `Category` / `Product`.
 2. Implementar `CatalogDataSource` sobre ese DAL y cambiar el único punto de intercambio: `catalogDataSource` en `catalog-data-source.ts`.
 3. Los componentes (`MenuExplorer`, `ProductList`, `ChefSuggestions`…) no cambian: reciben `Category[]` y `Product[]` por props.
 4. Las fotografías llegan en `imageUrl`; los orígenes remotos deben declararse en `images.remotePatterns` (ver `images-media.md`).
