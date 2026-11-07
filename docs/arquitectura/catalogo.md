@@ -1,23 +1,25 @@
-# Catálogo y `/carta` (solo frontend)
+# Catálogo
 
-La carta funciona con datos locales en memoria: sin Firebase, sin red y sin credenciales.
+La carta pública y las tres sugerencias del chef leen Firestore cuando este proceso tiene `PIU_FIREBASE_DATA=on` o apunta al emulador. Si no, siguen con el catálogo local de `src/lib/catalog/data.ts`: tres pizzas y el resto de categorías vacío. Así el sitio publicado no cambia hasta que se autorice el acceso, y esta rama no escribe en `piu-pizza-cl`.
 
-| Capa | Archivo |
-|---|---|
-| Contratos (`Category`, `Product`) | `src/lib/catalog/types.ts` |
-| Datos locales (única fuente para Home y `/carta`) | `src/lib/catalog/data.ts` |
-| Acceso a datos (`CatalogDataSource`) | `src/lib/catalog/catalog-data-source.ts` |
-| Búsqueda local (sin acentos) | `src/lib/catalog/search.ts` |
-| Interfaz | `src/components/features/menu/` y `src/app/carta/page.tsx` |
+El menú de origen está en `data/catalog/piu-catalogo-fudo.json`: 14 categorías y 131 productos, con los nombres, textos, precios y disponibilidad del archivo. No hay fotos reales. Si falta la descripción, la carta no inventa ingredientes. Si falta la foto, se usa `/not_image.png`.
 
-Hoy solo «Sugerencias del chef» tiene productos (los tres confirmados). Las demás categorías existen en `data.ts`, sin productos, y la interfaz las muestra como «En preparación».
+## Importar
 
-## Conectar Firestore más adelante (no implementado)
+`node scripts/import-catalog.mjs` carga ese archivo en el emulador de Firestore (`demo-piu-pizza`). La segunda corrida no crea copias. Si un producto ya existe, conserva el nombre, la descripción y el precio editados en `/admin/carta`, la foto y si está oculto. Para volver a copiar nombre, descripción y precio desde el JSON hay que pedirlo: `node scripts/import-catalog.mjs --sobrescribir`. El script se niega si el proyecto es `piu-pizza-cl`.
 
-El contrato de las colecciones `categories` y `products` ya está en `docs/arquitectura/firebase.md`. `/carta` sigue usando `localCatalogDataSource`. No cambiar ese punto hasta el hito del catálogo.
+No publica reglas ni índices. Cuando se autorice, en el proyecto de pruebas:
 
-1. `src/server/dal/catalog.ts` ya lee solo documentos visibles, con `limit()`, y no se usa. Al conectarlo: agregar `"use cache"` + `cacheLife` + `cacheTag("catalog")` y mapear al contrato `Category` / `Product`.
-2. Implementar `CatalogDataSource` sobre ese DAL y cambiar el único punto de intercambio: `catalogDataSource` en `catalog-data-source.ts`.
-3. Los componentes (`MenuExplorer`, `ProductList`, `ChefSuggestions`…) no cambian: reciben `Category[]` y `Product[]` por props.
-4. Las fotografías llegan en `imageUrl`; los orígenes remotos deben declararse en `images.remotePatterns` (ver `images-media.md`).
-5. Invalidar con `updateTag("catalog")` desde las Server Actions del futuro panel.
+```bash
+firebase deploy --only firestore,storage --project piu-pizza-staging
+```
+
+## Panel
+
+`/admin/carta` lo usan `admin` y `superadmin`. Desde ahí se agregan, editan, ocultan y eliminan productos y categorías, y se cambia el precio. La foto se sube al servidor, que la convierte a WebP de hasta 1200 px y 150 KB y la guarda en Storage en `products/{id}/{hash}.webp`. Eliminar un producto borra el registro. Ocultarlo lo deja guardado y fuera de la carta pública.
+
+Las sugerencias de la Home son como máximo tres, primero las de «SUGERENCIAS DEL CHEF» y sin repetir el mismo nombre.
+
+## Caché
+
+La lectura pública usa `cacheTag("catalog")` y se invalida cuando el panel guarda. Cada consulta lleva `limit()`.

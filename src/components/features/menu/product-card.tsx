@@ -30,7 +30,9 @@ function ProductCard({ product }: { product: Product }) {
       </p>
 
       <div className="col-span-2 mt-2 min-w-0">
-        <p className="text-[0.9375rem] leading-[1.5] text-olive-strong">{product.description}</p>
+        {product.description ? (
+          <p className="text-[0.9375rem] leading-[1.5] text-olive-strong">{product.description}</p>
+        ) : null}
 
         {product.availability !== "available" ? (
           <p className="mt-2 font-label text-[0.6875rem] font-semibold tracking-[0.16em] text-olive-muted uppercase">

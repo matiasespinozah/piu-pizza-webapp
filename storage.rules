@@ -1,17 +1,17 @@
 rules_version = '2';
 
 // Deny by default. Ver .agents/rules/firebase-security.md e images-media.md.
-// Cuando se habiliten las fotos de producto:
-//   match /products/{productId}/{file} {
-//     allow read: if true;
-//     allow write: if request.auth != null && request.auth.token.admin == true
-//                  && request.resource.contentType.matches('image/.*')
-//                  && request.resource.size < 2 * 1024 * 1024;
-//   }
+// Las fotos las sube el servidor con el Admin SDK. El navegador solo las lee.
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
       allow read, write: if false;
+    }
+
+    // Lectura pública de las fotos que sube el servidor. El navegador no escribe.
+    match /products/{productId}/{file} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

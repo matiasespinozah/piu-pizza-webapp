@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { ChefSuggestions } from "@/components/features/home/chef-suggestions"
+import { getChefSuggestions } from "@/server/dal/catalog"
 import { EssenceSection } from "@/components/features/home/essence-section"
 import { Hero } from "@/components/features/home/hero"
 import { ReserveSection } from "@/components/features/home/reserve-section"
@@ -22,7 +23,9 @@ export const metadata: Metadata = {
   },
 }
 
-export default function Home() {
+export default async function Home() {
+  const suggestions = await getChefSuggestions()
+
   return (
     <div className="bg-cream">
       <SiteHeader />
@@ -30,7 +33,7 @@ export default function Home() {
       <div className="overflow-x-clip">
         <main>
           <Hero />
-          <ChefSuggestions />
+          <ChefSuggestions suggestions={suggestions} />
           <EssenceSection />
           <ReserveSection />
           <VisitSection />
