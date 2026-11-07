@@ -77,6 +77,8 @@ async function wipe() {
   await db.recursiveDelete(db.collection("reservations"))
   await db.recursiveDelete(db.collection("reservationHolds"))
   await db.recursiveDelete(db.collection("reservationRate"))
+  await db.recursiveDelete(db.collection("reservationAccess"))
+  await db.recursiveDelete(db.collection("reservationStatusRate"))
 }
 
 test.before(async () => {
@@ -93,7 +95,9 @@ test("una solicitud válida queda pendiente y el teléfono no sale en la respues
   assert.equal(result.receipt.status, "pending")
   assert.match(result.receipt.referenceCode, /^PIU-/)
   assert.equal(JSON.stringify(result.receipt).includes("2887"), false)
+  assert.equal(typeof result.trackingToken, "string")
   const stored = await getDb().collection("reservations").doc(result.id).get()
+  assert.equal(JSON.stringify(stored.data()).includes(result.trackingToken), false)
   assert.equal(stored.data()?.status, "pending")
   assert.deepEqual(stored.data()?.assignedTableIds, [])
 })
@@ -104,6 +108,9 @@ test("el mismo envío no crea dos documentos y otro envío sí es otra solicitud
   const replay = await send(first)
   assert.equal(replay.duplicate, true)
   assert.equal(replay.receipt.referenceCode, again.receipt.referenceCode)
+  assert.equal(replay.trackingToken, again.trackingToken)
+  const access = await getDb().collection("reservationAccess").get()
+  assert.equal(access.size, 1)
   const other = await send(payload({ customerName: "Ana Soto" }))
   assert.notEqual(other.id, first.idempotencyKey)
   const all = await getDb().collection("reservations").get()

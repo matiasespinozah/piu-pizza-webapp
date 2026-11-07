@@ -9,7 +9,9 @@ import { readPublicBody } from "@/lib/reservations/public-request"
 import { isClosedDay, openingWindow, preferenceSlots, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 import { canTransition } from "@/lib/reservations/transitions"
 import { clientAddress } from "@/lib/reservations/client-address"
-import { reservationWritesEnabled } from "@/lib/reservations/writes"
+import { createTrackingSecret, hashTrackingSecret, trackingExpired, trackingExpiresOn, unwrapTrackingSecret, wrapTrackingSecret } from "@/lib/reservations/tracking"
+import { parseTrackingCredential, publicReservationStatus } from "@/lib/reservations/tracking-link"
+import { reservationStatusEnabled, reservationWritesEnabled } from "@/lib/reservations/writes"
 import { requestIsTrusted } from "@/lib/auth/session-policy"
 
 const now = new Date("2026-11-07T18:00:00Z")
@@ -64,7 +66,7 @@ test("las escrituras de reservas nacen apagadas y no apuntan al proyecto real de
     }),
     true
   )
-  assert.doesNotMatch(readFileSync(new URL("../apphosting.yaml", import.meta.url), "utf8"), /PIU_RESERVATIONS_WRITES|PIU_FIREBASE_DATA/)
+  assert.doesNotMatch(readFileSync(new URL("../apphosting.yaml", import.meta.url), "utf8"), /PIU_RESERVATIONS_WRITES|PIU_FIREBASE_DATA|PIU_RESERVATION_STATUS/)
 })
 
 test("la fecha se calcula en America/Santiago y el domingo está cerrado", () => {
@@ -183,4 +185,80 @@ test("el cambio administrativo exige el mismo control que el ingreso", () => {
     }),
     true
   )
+})
+
+test("el seguimiento no se enciende con las escrituras y el secreto no sale de campos públicos", () => {
+  assert.equal(reservationStatusEnabled({}), false)
+  assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: "on" }), false)
+  assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: "on", PIU_RESERVATIONS_WRITES: "on" }), false)
+  assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: "on", FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080" }), true)
+  assert.equal(
+    reservationStatusEnabled({
+      PIU_RESERVATION_STATUS: "on",
+      FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080",
+      GCLOUD_PROJECT: "piu-pizza-cl",
+    }),
+    false
+  )
+  assert.equal(pendingOwnerDecisions.retentionPolicy, null)
+  assert.equal(reservationConfig.trackingLinkGraceDays, 2)
+  assert.equal(trackingExpiresOn("2026-11-09"), "2026-11-11")
+  assert.equal(trackingExpired("2026-11-11", new Date("2026-11-11T18:00:00Z")), false)
+  assert.equal(trackingExpired("2026-11-11", new Date("2026-11-12T15:00:00Z")), true)
+
+  const token = createTrackingSecret()
+  assert.equal(token.length, 43)
+  assert.notEqual(hashTrackingSecret(token), token)
+  const key = "11111111-1111-4111-8111-111111111111"
+  assert.equal(unwrapTrackingSecret(wrapTrackingSecret(token, key), key), token)
+  assert.equal(unwrapTrackingSecret(wrapTrackingSecret(token, key), "otra-clave-distinta-de-32"), null)
+
+  assert.equal(parseTrackingCredential("PIU-ABCD2345").kind, "reference")
+  assert.equal(parseTrackingCredential("https://piu.example/reservas/estado?token=" + token).kind, "malformed")
+  assert.deepEqual(parseTrackingCredential(`https://piu.example/reservas/estado#${token}`), { kind: "token", token })
+
+  const dto = publicReservationStatus({
+    referenceCode: "PIU-ABCD2345",
+    status: "reschedule_requested",
+    date: "2026-11-09",
+    preferredTime: "18:00",
+    partySize: 2,
+    preferredZone: "salon",
+    updatedAt: "2026-11-07T18:00:00.000Z",
+    proposedDate: "2026-11-10",
+    proposedTime: "19:00",
+    proposedZone: "terrace",
+    customerName: "Ana Soto",
+    customerPhone: "+56 9 2887 3619",
+    notes: "cumpleaños",
+    assignedTableIds: ["mesa-1"],
+    confirmedBy: "staff-admin",
+    rejectionReason: "motivo interno",
+    trackingId: hashTrackingSecret(token),
+    wrapped: "cifrado",
+  })
+  assert.deepEqual(Object.keys(dto).sort(), ["date", "partySize", "proposal", "referenceCode", "status", "time", "updatedAt", "zone"])
+  const json = JSON.stringify(dto)
+  assert.equal(json.includes("Ana"), false)
+  assert.equal(json.includes("2887"), false)
+  assert.equal(json.includes("cumpleaños"), false)
+  assert.equal(json.includes("staff-admin"), false)
+  assert.equal(json.includes("mesa-1"), false)
+  assert.equal(json.includes(token), false)
+  assert.equal(dto.proposal.zone, "terrace")
+
+  const card = readFileSync(new URL("../src/components/features/reservations/reservation-status-card.tsx", import.meta.url), "utf8")
+  assert.equal(card.includes("Aceptar cambio"), false)
+  const form = readFileSync(new URL("../src/components/features/reservations/reservation-form.tsx", import.meta.url), "utf8")
+  const actions = readFileSync(new URL("../src/components/features/reservations/reservation-tracking-actions.tsx", import.meta.url), "utf8")
+  assert.ok(form.indexOf('data-reservation-enabled="off"') < form.indexOf("<CopyTrackingLink"))
+  assert.match(actions, /Copiar enlace de seguimiento/)
+  for (const file of [
+    "src/server/reservations/tracking.ts",
+    "src/server/reservations/status-request.ts",
+    "src/app/api/reservations/status/route.ts",
+    "src/components/features/reservations/reservation-status.tsx",
+  ]) {
+    assert.doesNotMatch(readFileSync(new URL(`../${file}`, import.meta.url), "utf8"), /console\.(log|info|debug|warn|error)/)
+  }
 })

@@ -16,6 +16,7 @@
     "test:rules": "node scripts/test-rules.mjs",
     "test:auth": "node scripts/test-admin-auth.mjs",
     "test:reservations": "node scripts/test-reservations.mjs",
+    "test:reservation-status": "node scripts/test-reservation-status.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {

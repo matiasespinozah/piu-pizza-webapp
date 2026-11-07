@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Seguimiento de una solicitud en `/reservas/estado`, sin cuenta. El enlace lleva un secreto en el fragmento y la consulta es `POST /api/reservations/status`. La referencia `PIU-…` no abre la reserva. En el sitio publicado la consulta sigue apagada (`PIU_RESERVATION_STATUS` no está en `apphosting.yaml`).
 - Reservas: el formulario puede guardar una solicitud pendiente cuando la recepción está encendida, y el equipo la revisa en `/admin/reservas`. Confirmar una mesa queda bloqueado hasta tener la distribución real. En el sitio publicado la recepción sigue apagada (`PIU_RESERVATIONS_WRITES` no está en `apphosting.yaml`). Guía en `docs/arquitectura/reservas-operacion.md`.
 - Panel de administración en `/admin`, con ingreso en `/admin/login`. Solo entra quien tiene el rol `admin` o `superadmin` en el token de Firebase. La sesión queda en la cookie `piu_session` (httpOnly, 8 horas). Mesas, carta, configuración y personal se anuncian como en desarrollo. Guía en `docs/arquitectura/admin-auth.md`.
 - Fundación Firebase, sin reservas reales ni catálogo importado: modelo de datos, reglas que niegan las reservas al navegador, Auth de personal por custom claims y acceso a Firestore apagado salvo emulador o aprobación. Documentado en `docs/arquitectura/firebase.md`.
@@ -45,6 +46,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Seguridad
 
+- El enlace de seguimiento no se guarda en claro. Firestore tiene el hash y un cifrado para reponerlo solo si se reintenta la misma solicitud. Un secreto malo, vencido o revocado responde igual. La página no se indexa y la respuesta no se cachea.
 - El tope de solicitudes usa la dirección que agrega la plataforma al final de `X-Forwarded-For`. La primera la puede escribir el visitante.
 - Las solicitudes, los cupos y el historial de reservas siguen cerrados al navegador. El envío público tiene un tope por hora en Firestore y no devuelve el celular. Cada cambio del panel exige la sesión y queda anotado con quien lo hizo.
 - El ingreso del personal no guarda la contraseña ni el token en el navegador. Crear la cookie exige un token reciente, un rol de personal y un pedido del propio sitio. Quien no tiene rol recibe acceso denegado. El script del primer propietario ya no borra los otros custom claims, y revoca las sesiones anteriores.

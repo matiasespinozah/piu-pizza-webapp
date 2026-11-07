@@ -22,6 +22,10 @@ type ReservationEvent = {
   reason: string | null
 }
 
+type ReservationTrackingState =
+  | { state: "missing" }
+  | { state: "active" | "revoked" | "expired"; expiresOn: string | null }
+
 type ReservationDetail = ReservationListItem & {
   customerPhone: string
   notes: string
@@ -31,6 +35,7 @@ type ReservationDetail = ReservationListItem & {
   proposedZone: ReservationZone | null
   updatedAt: string
   events: ReservationEvent[]
+  tracking: ReservationTrackingState
 }
 
 type ReservationSummary = {
@@ -59,5 +64,12 @@ const statusLabel: Record<ReservationStatus, string> = {
   completed: "Finalizada",
 }
 
-export type { PublicReceipt, ReservationDetail, ReservationEvent, ReservationListItem, ReservationSummary }
+export type {
+  PublicReceipt,
+  ReservationDetail,
+  ReservationEvent,
+  ReservationListItem,
+  ReservationSummary,
+  ReservationTrackingState,
+}
 export { statusLabel }

@@ -16,6 +16,8 @@ const collections = {
   auditLogs: "auditLogs",
   reservationHolds: "reservationHolds",
   reservationRate: "reservationRate",
+  reservationAccess: "reservationAccess",
+  reservationStatusRate: "reservationStatusRate",
 } as const
 
 const settingsDocId = "operations"

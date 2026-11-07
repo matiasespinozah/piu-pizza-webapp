@@ -46,6 +46,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /reservationAccess/{accessId} {
+      allow read, write: if false;
+    }
+
+    match /reservationStatusRate/{rateId} {
+      allow read, write: if false;
+    }
+
     match /tables/{tableId} {
       allow read, write: if false;
     }

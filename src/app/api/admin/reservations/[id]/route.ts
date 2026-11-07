@@ -3,10 +3,11 @@ import { z } from "zod"
 
 import { requestIsTrusted } from "@/lib/auth/session-policy"
 import { ReservationError } from "@/lib/reservations/errors"
-import { staffActions } from "@/lib/reservations/transitions"
+import { staffActions, type StaffAction } from "@/lib/reservations/transitions"
 import { StaffAccessError } from "@/server/auth/authorization"
 import { readStaffGate } from "@/server/auth/session"
 import { getReservationForStaff, transitionReservation } from "@/server/reservations/service"
+import { issueReservationTracking, revokeReservationTracking } from "@/server/reservations/tracking"
 
 const noStore = { "Cache-Control": "no-store" }
 
@@ -20,6 +21,15 @@ const transitionBody = z
     proposedZone: z.enum(["salon", "terrace"]).optional(),
   })
   .strict()
+
+const trackingBody = z
+  .object({
+    action: z.enum(["issue_tracking", "revoke_tracking"]),
+    revision: z.number().int().positive(),
+  })
+  .strict()
+
+const patchBody = z.union([transitionBody, trackingBody])
 
 function fail(error: unknown) {
   if (error instanceof ReservationError) {
@@ -67,16 +77,35 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch {
     return NextResponse.json({ ok: false, message: "No pudimos leer la solicitud." }, { status: 400, headers: noStore })
   }
-  const parsed = transitionBody.safeParse(json)
+  const parsed = patchBody.safeParse(json)
   if (!parsed.success) {
     return NextResponse.json({ ok: false, message: "Ese cambio no es válido." }, { status: 400, headers: noStore })
   }
 
   const { id } = await context.params
   try {
-    await transitionReservation(gate.session, { id, ...parsed.data })
+    let trackingToken: string | null = null
+    const data = parsed.data
+    if (data.action === "issue_tracking") {
+      trackingToken = await issueReservationTracking(gate.session, id, data.revision)
+    } else if (data.action === "revoke_tracking") {
+      await revokeReservationTracking(gate.session, id, data.revision)
+    } else if ((staffActions as readonly string[]).includes(data.action)) {
+      await transitionReservation(gate.session, {
+        id,
+        action: data.action as StaffAction,
+        revision: data.revision,
+        reason: "reason" in data ? data.reason : undefined,
+        proposedDate: "proposedDate" in data ? data.proposedDate : undefined,
+        proposedTime: "proposedTime" in data ? data.proposedTime : undefined,
+        proposedZone: "proposedZone" in data ? data.proposedZone : undefined,
+      })
+    }
     const reservation = await getReservationForStaff(gate.session, id)
-    return NextResponse.json({ ok: true, reservation }, { headers: noStore })
+    return NextResponse.json(
+      trackingToken ? { ok: true, reservation, trackingToken } : { ok: true, reservation },
+      { headers: noStore }
+    )
   } catch (error) {
     return fail(error)
   }

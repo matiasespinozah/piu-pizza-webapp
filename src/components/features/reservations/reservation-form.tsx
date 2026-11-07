@@ -7,6 +7,7 @@ import { ReservationDateStep } from "@/components/features/reservations/reservat
 import { ReservationProgress } from "@/components/features/reservations/reservation-progress"
 import { ReservationSummary } from "@/components/features/reservations/reservation-summary"
 import { ReservationTimeStep } from "@/components/features/reservations/reservation-time-step"
+import { CopyTrackingLink } from "@/components/features/reservations/reservation-tracking-actions"
 import { Button } from "@/components/ui/button"
 import { reservationWhatsappMessage, zoneConfig } from "@/lib/reservations/configuration"
 import { formatVisitDate, todayIsoInSantiago } from "@/lib/reservations/schedule"
@@ -39,6 +40,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   const [sending, setSending] = useState(false)
   const [formError, setFormError] = useState("")
   const [receipt, setReceipt] = useState<PublicReceipt | null>(null)
+  const [trackingToken, setTrackingToken] = useState<string | null>(null)
   const requestKey = useRef<string | null>(null)
   const today = useSyncExternalStore(
     () => () => {},
@@ -103,9 +105,10 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
           notes: draft.notes,
         }),
       })
-      const body = (await response.json().catch(() => null)) as { request?: PublicReceipt; message?: string } | null
+      const body = (await response.json().catch(() => null)) as { request?: PublicReceipt; message?: string; trackingToken?: string | null } | null
       if ((response.status === 201 || response.status === 200) && body?.request?.status === "pending") {
         setReceipt(body.request)
+        setTrackingToken(typeof body.trackingToken === "string" ? body.trackingToken : null)
         return
       }
       setFormError(body?.message || "No se pudo enviar la solicitud.")
@@ -170,6 +173,22 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
             <dd className="font-label font-semibold">{receipt.referenceCode}</dd>
           </div>
         </dl>
+        <div className="mt-5">
+          {trackingToken ? (
+            <CopyTrackingLink token={trackingToken} />
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-olive-strong">
+                No pudimos entregar el enlace de seguimiento. Anota la referencia {receipt.referenceCode} y escríbenos para que el equipo te ayude.
+              </p>
+              <Button asChild variant="accent" className="h-12 w-full">
+                <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
+                  Escribir por WhatsApp
+                </a>
+              </Button>
+            </div>
+          )}
+        </div>
       </section>
     )
   }
