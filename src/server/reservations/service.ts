@@ -12,6 +12,7 @@ import type { PublicReservationInput } from "@/lib/reservations/public-request"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { canTransition, nextStatus, type StaffAction } from "@/lib/reservations/transitions"
 import type { ReservationStatus, ReservationZone } from "@/lib/reservations/types"
+import { createTrackingSecret, hashTrackingSecret, trackingExpiresOn, wrapTrackingSecret } from "@/lib/reservations/tracking"
 import { normalizeChileMobile, validateTime } from "@/lib/reservations/validation"
 import type {
   PublicReceipt,
@@ -23,6 +24,7 @@ import type {
 import { reservationWritesEnabled } from "@/lib/reservations/writes"
 import { assertStaff } from "@/server/auth/authorization"
 import { getDb } from "@/server/firebase/firestore"
+import { readTrackingState, recoverTrackingToken } from "@/server/reservations/tracking"
 
 const pageSize = 20
 const rateLimitPerHour = 8
@@ -175,6 +177,10 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
   const rateRef = db.collection(collections.reservationRate).doc(rateDocId(ip, now))
   const stamp = Timestamp.fromDate(now)
   const mark = fingerprint(input)
+  const freshToken = createTrackingSecret()
+  const freshId = hashTrackingSecret(freshToken)
+  const wrapped = wrapTrackingSecret(freshToken, input.idempotencyKey)
+  const expiresOn = trackingExpiresOn(input.date)
 
   const outcome = await db.runTransaction(async (tx) => {
     const current = await tx.get(ref)
@@ -183,7 +189,13 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       if (data.fingerprint !== mark) {
         throw new ReservationError(409, "idempotency", "Esa solicitud ya se envió con otros datos.")
       }
-      return { duplicate: true, data }
+      const trackingId = typeof data.trackingId === "string" ? data.trackingId : ""
+      const access = trackingId ? await tx.get(db.collection(collections.reservationAccess).doc(trackingId)) : null
+      return {
+        duplicate: true,
+        data,
+        trackingToken: recoverTrackingToken(access?.get("wrapped"), access?.get("revokedAt"), input.idempotencyKey),
+      }
     }
 
     const rate = await tx.get(rateRef)
@@ -219,8 +231,16 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       confirmedAt: null,
       cancelledAt: null,
       fingerprint: mark,
+      trackingId: freshId,
     }
     tx.set(ref, data)
+    tx.set(db.collection(collections.reservationAccess).doc(freshId), {
+      reservationId: input.idempotencyKey,
+      expiresOn,
+      revokedAt: null,
+      wrapped,
+      createdAt: stamp,
+    })
     tx.set(rateRef, { count: used + 1 }, { merge: true })
     tx.set(ref.collection("events").doc(), {
       action: "received",
@@ -230,10 +250,10 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       at: stamp,
       reason: null,
     })
-    return { duplicate: false, data }
+    return { duplicate: false, data, trackingToken: freshToken }
   })
 
-  return { duplicate: outcome.duplicate, receipt: receiptOf(outcome.data) }
+  return { duplicate: outcome.duplicate, receipt: receiptOf(outcome.data), trackingToken: outcome.trackingToken }
 }
 
 function listQuery(db: Firestore, query: ListQuery) {
@@ -334,6 +354,7 @@ async function getReservationForStaff(session: StaffSession | null, id: string):
     proposedZone: asZone(data.proposedZone),
     updatedAt: iso(data.updatedAt),
     events,
+    tracking: await readTrackingState(db, data),
   }
 }
 
@@ -427,6 +448,9 @@ async function transitionReservation(session: StaffSession | null, input: Transi
     const settingsSnap = confirms ? await tx.get(settingsRef) : null
     const oldSnap = oldRef && (releases || confirms) ? await tx.get(oldRef) : null
     const newSnap = newRef && (!oldRef || newRef.path !== oldRef.path) ? await tx.get(newRef) : oldSnap
+    const trackingId = typeof data.trackingId === "string" ? data.trackingId : ""
+    const accessRef = trackingId ? db.collection(collections.reservationAccess).doc(trackingId) : null
+    const accessSnap = accessRef ? await tx.get(accessRef) : null
 
     if (confirms && (!targetZone || !newRef)) {
       throw new ReservationError(409, "capacity_unconfigured", capacityMessage("unconfigured"))
@@ -470,6 +494,10 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       patch.assignedTableIds = []
       patch.holdDate = null
       patch.holdZone = null
+    }
+
+    if (confirms && accessRef && accessSnap?.exists) {
+      tx.update(accessRef, { expiresOn: trackingExpiresOn(targetDate) })
     }
 
     tx.update(ref, patch)

@@ -80,6 +80,9 @@ test("nadie lee cupos, límites ni el historial de una reserva", async () => {
   await assertFails(getDoc(doc(admin, "reservationRate/hour")))
   await assertFails(getDoc(doc(superadmin, "reservations/one/events/created")))
   await assertFails(setDoc(doc(anon, "reservations/one/events/fake"), { action: "confirm" }))
+  await assertFails(getDoc(doc(anon, "reservationAccess/hash")))
+  await assertFails(getDoc(doc(admin, "reservationStatusRate/hour")))
+  await assertFails(setDoc(doc(superadmin, "reservationAccess/hash"), { reservationId: "x" }))
 })
 
 test("nadie publica un plato desde el navegador", async () => {

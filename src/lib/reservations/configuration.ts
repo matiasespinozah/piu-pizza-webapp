@@ -8,6 +8,11 @@ const reservationConfig = {
   timeZone: "America/Santiago",
   /** Paso de los horarios de preferencia. No es un cupo ni un tiempo de permanencia. */
   slotMinutes: 30,
+  /**
+   * Días que el enlace de seguimiento sigue sirviendo después de la visita.
+   * No es la política de conservación de datos: esa sigue pendiente.
+   */
+  trackingLinkGraceDays: 2,
   notesMaxLength: 280,
   /** Mínimo de personas por reserva. El máximo depende de la zona. */
   partySize: { min: 1 },
@@ -46,6 +51,7 @@ const reservationConfig = {
 } as const
 
 const reservationWhatsappMessage = "Hola, quiero reservar una mesa en PIÙ."
+const reservationStatusWhatsappMessage = "Hola, quiero consultar el estado de mi solicitud en PIÙ."
 
 /**
  * Datos que el propietario todavía no confirma. Null significa que la operación
@@ -79,5 +85,12 @@ function maxPartyFor(zone: ReservationZone | null) {
   return Math.max(...reservationConfig.zones.map((item) => item.maxPartySize))
 }
 
-export { maxPartyFor, pendingOwnerDecisions, reservationConfig, reservationWhatsappMessage, zoneConfig }
+export {
+  maxPartyFor,
+  pendingOwnerDecisions,
+  reservationConfig,
+  reservationStatusWhatsappMessage,
+  reservationWhatsappMessage,
+  zoneConfig,
+}
 export type { ZoneConfig }

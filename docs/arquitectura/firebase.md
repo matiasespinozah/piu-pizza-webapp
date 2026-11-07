@@ -28,6 +28,8 @@ Nombres en inglés, alineados con el código. No hay documentos cargados.
 | `staff` | Ficha del trabajador (nombre y correo). **No guarda el rol.** | Nadie. |
 | `restaurantSettings/operations` | Tope por zona, cupo sin reserva (`walkInHold`, null hasta definirlo) y anticipación (null). | Nadie. |
 | `auditLogs` | Quién cambió qué, sin copiar el teléfono del cliente. | Nadie. |
+| `reservationAccess` | Hash del enlace de seguimiento, vencimiento, revocación y un cifrado del secreto. No guarda el secreto en claro. | Nadie. |
+| `reservationStatusRate` | Contador de consultas de seguimiento, sin la dirección ni el secreto. | Nadie. |
 
 No hay colección `customers`. Quien reserva no crea cuenta. El nombre y el teléfono viven solo dentro de la reserva.
 
@@ -77,6 +79,7 @@ pnpm test
 pnpm test:auth
 pnpm test:rules
 pnpm test:reservations
+pnpm test:reservation-status
 ```
 
 `test:rules` levanta el emulador de Firestore con el proyecto **`demo-piu-pizza`**. No es `piu-pizza-cl`. Hace falta Java para el emulador. `test:auth` usa solo el emulador de Auth, con el mismo proyecto de prueba.

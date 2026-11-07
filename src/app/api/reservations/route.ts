@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const forwarded = clientAddress(request.headers.get("x-forwarded-for"))
     const result = await createPublicReservation(input, forwarded)
     return NextResponse.json(
-      { ok: true, duplicate: result.duplicate, request: result.receipt },
+      { ok: true, duplicate: result.duplicate, request: result.receipt, trackingToken: result.trackingToken },
       { status: result.duplicate ? 200 : 201, headers: noStore }
     )
   } catch (error) {

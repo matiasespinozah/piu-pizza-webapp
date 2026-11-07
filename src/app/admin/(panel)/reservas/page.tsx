@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { ReservationActions } from "@/components/features/admin/reservations/reservation-actions"
+import { ReservationTrackingPanel } from "@/components/features/admin/reservations/reservation-tracking-panel"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
 import { zoneConfig } from "@/lib/reservations/configuration"
 import { formatVisitDate } from "@/lib/reservations/schedule"
@@ -22,6 +23,18 @@ type PageProps = {
 
 function one(value: string | string[] | undefined) {
   return typeof value === "string" ? value : undefined
+}
+
+const actionLabel: Record<string, string> = {
+  received: "Recibida",
+  confirm: "Confirmó",
+  reject: "Rechazó",
+  propose: "Propuso un cambio",
+  cancel: "Canceló",
+  arrive: "Marcó llegada",
+  complete: "Finalizó",
+  tracking_issued: "Generó un enlace",
+  tracking_revoked: "Revocó el enlace",
 }
 
 function hrefOf(params: Record<string, string | undefined>) {
@@ -174,12 +187,13 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
               </a>
               <p className="text-sm text-olive-muted">Esto abre el teléfono. PIÙ no envía un mensaje automático ni marca al cliente como avisado.</p>
               <ReservationActions reservation={detail} />
+              <ReservationTrackingPanel reservation={detail} />
               <section>
                 <h3 className="font-heading text-base font-bold">Historial</h3>
                 <ol className="mt-2 flex flex-col gap-2">
                   {detail.events.map((event, index) => (
                     <li key={`${event.at}-${index}`} className="text-sm">
-                      <span className="font-semibold">{event.action}</span>
+                      <span className="font-semibold">{actionLabel[event.action] ?? event.action}</span>
                       <span className="text-olive-muted">
                         {" "}
                         {event.fromStatus ? statusLabel[event.fromStatus] : "—"} → {statusLabel[event.toStatus]}

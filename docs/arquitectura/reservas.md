@@ -21,7 +21,23 @@ El documento queda en `reservations/{clave}` con estado `pending`. La misma clav
 
 Un contador en `reservationRate` limita 8 solicitudes por hora y por origen, sin guardar la dirección. El tope vive en Firestore, así que vale con varias instancias.
 
-La respuesta pública trae la referencia `PIU-…`, la fecha, la hora, las personas y la zona. No trae el celular. Esa referencia no abre la solicitud: la consulta del cliente queda para el hito siguiente, con un token que todavía no se entrega.
+La respuesta pública trae la referencia `PIU-…`, la fecha, la hora, las personas y la zona. No trae el celular. Esa referencia no abre la solicitud.
+
+Si la respuesta del alta se pierde, el mismo navegador puede reintentar con la misma clave y los mismos datos. El servidor devuelve el mismo enlace, porque lo puede descifrar con esa clave. Quien solo tiene la referencia `PIU-…` no lo recupera. Si la persona cerró la página y no guardó el enlace, el equipo lo genera de nuevo desde el panel. El anterior deja de servir.
+
+## Seguimiento
+
+`/reservas/estado` no pide cuenta. El secreto viaja en el fragmento (`#`) del enlace, no en la query. La página lo lee en el navegador y lo manda con `POST /api/reservations/status`. Esa respuesta lleva `Cache-Control: private, no-store` y la página no se indexa.
+
+En Firestore solo se guarda el hash del secreto, como id de `reservationAccess/{hash}`, más un cifrado para el reintento del alta. El documento de la reserva no tiene el secreto. La consulta es un `get` por ese id: no recorre la colección y no pide un índice compuesto nuevo. No se publicaron índices ni reglas en este paso.
+
+El cliente ve la referencia, el estado, la fecha, la hora, las personas, la zona y, si hay un cambio propuesto, la propuesta. No ve nombre, celular, observaciones, mesas, trabajadores ni el motivo interno. No puede aceptar el cambio ni modificar la reserva.
+
+El enlace vale el día de la visita y los dos días siguientes (`trackingLinkGraceDays`). Eso no define cuánto tiempo se guardan el nombre y el celular: la conservación sigue pendiente. El personal puede revocar el enlace o emitir otro.
+
+La consulta usa `PIU_RESERVATION_STATUS=on` y, además, el emulador o `PIU_FIREBASE_DATA=on`. No enciende `PIU_RESERVATIONS_WRITES`. En el sitio publicado las dos siguen apagadas. Si la lectura está apagada, la página explica que el seguimiento no está disponible. Un secreto inválido, vencido o revocado responde igual, para no decir si la reserva existe.
+
+Hay un tope aparte del de las solicitudes: 30 consultas por hora para un mismo enlace, y 40 intentos fallidos por hora para la dirección que la plataforma agrega al final de `X-Forwarded-For`. Un enlace válido no gasta el cupo de los demás. La dirección no se guarda.
 
 ## Panel
 

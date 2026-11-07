@@ -7,9 +7,9 @@ Para el equipo de PIÙ. El sistema puede guardar solicitudes, pero **en el sitio
 1. La persona elige fecha, horario, cantidad, salón o terraza, y deja nombre, celular y, si quiere, una observación.
 2. El servidor revisa el horario del local y los datos. No acepta un estado ni una mesa elegidos en el navegador.
 3. Si la recepción está apagada, la página lo dice de inmediato y muestra el enlace a WhatsApp. No hace recorrer el formulario ni muestra un comprobante falso.
-4. Si está encendida, guarda la solicitud como **pendiente** y muestra «¡Recibimos tu solicitud!». La mesa todavía no está confirmada.
+4. Si está encendida, guarda la solicitud como **pendiente** y muestra «¡Recibimos tu solicitud!». La mesa todavía no está confirmada. También muestra un enlace privado para consultar el estado. Hay que guardarlo. No se envía por WhatsApp, correo ni SMS.
 
-Si la persona presiona dos veces, se guarda una sola vez.
+Si la persona presiona dos veces, se guarda una sola vez. Si se perdió la respuesta pero el navegador reintenta, vuelve el mismo enlace. Si ya cerró la página y no lo guardó, no se puede reconstruir: hay que generarle otro desde el panel.
 
 ## Qué significa cada estado
 
@@ -24,6 +24,16 @@ Si la persona presiona dos veces, se guarda una sola vez.
 | Finalizada | Terminó la atención y se libera la mesa. No se vuelve a editar como pendiente. |
 
 El historial dice quién hizo cada cambio. No se puede borrar desde el panel.
+
+## Si la persona no tiene el enlace
+
+En el detalle aparece si el enlace está vigente, vencido, revocado o si esa solicitud no tiene. «Generar enlace» muestra uno nuevo una sola vez. El anterior deja de funcionar. «Revocar enlace» lo apaga sin crear otro.
+
+No se le pide el celular para buscarlo en la web. La referencia `PIU-…` tampoco abre la consulta. Las solicitudes antiguas, de antes de este enlace, siguen en el panel y no quedan públicas. Si hace falta, se les genera un enlace a mano.
+
+El cliente mira `/reservas/estado`. Ve si sigue pendiente, si la mesa quedó confirmada, si se propuso otro horario, si se rechazó, si se canceló, si ya llegó o si la visita terminó. No ve el celular, el nombre ni las notas. No puede aceptar el cambio desde la página: se resuelve por teléfono o WhatsApp, y el equipo lo registra en el panel.
+
+El enlace deja de servir dos días después de la visita. Eso no borra la solicitud. Cuánto tiempo se guardan el nombre y el celular sigue sin definirse.
 
 ## Cómo confirmar
 
@@ -61,9 +71,10 @@ No usar datos del restaurante.
 
 ```bash
 corepack pnpm test:reservations
+corepack pnpm test:reservation-status
 ```
 
-Eso levanta Firestore en el proyecto `demo-piu-pizza`, con mesas de ensayo. También siguen `pnpm test`, `pnpm test:auth` y `pnpm test:rules`.
+Eso levanta Firestore en el proyecto `demo-piu-pizza`, con mesas de ensayo. También siguen `pnpm test`, `pnpm test:auth` y `pnpm test:rules`. No uses reservas del restaurante.
 
 ## Activar y apagar
 
@@ -82,9 +93,18 @@ PIU_RESERVATIONS_WRITES=on
 PIU_FIREBASE_DATA=on
 ```
 
-No van en `apphosting.yaml` dentro del repositorio. Poner el código en `main` no las enciende.
+El seguimiento es otro interruptor. No enciende la recepción:
 
-Para apagarlas ante un problema, quita `PIU_RESERVATIONS_WRITES` o déjala en otro valor y reinicia el servicio. La página vuelve al aviso y a WhatsApp. Lo ya guardado no se borra, pero no entran solicitudes nuevas.
+```bash
+PIU_RESERVATION_STATUS=on
+PIU_FIREBASE_DATA=on
+```
+
+No van en `apphosting.yaml` dentro del repositorio. Poner el código en `main` no las enciende. Se puede consultar sin aceptar solicitudes nuevas, y al revés.
+
+Para apagar la recepción ante un problema, quita `PIU_RESERVATIONS_WRITES` o déjala en otro valor y reinicia el servicio. La página vuelve al aviso y a WhatsApp. Lo ya guardado no se borra, pero no entran solicitudes nuevas.
+
+Para apagar solo el seguimiento, quita `PIU_RESERVATION_STATUS`. Los enlaces dejan de responder y la página avisa que no está disponible. Las solicitudes siguen en el panel. Revocar un enlace puntual se hace desde el detalle, con la recepción de datos encendida.
 
 El tope es de 8 solicitudes por hora y por dirección pública, en un documento de Firestore, así que vale aunque haya varias instancias. Se usa la última dirección de `X-Forwarded-For`, que es la que agrega la plataforma. Una conexión compartida (el wifi del local o una red móvil) comparte ese cupo: ocho pedidos en una hora desde la misma salida a internet agotan el tope para el resto. No está pensado para encenderse así, sin revisar ese límite con Felipe.
 
@@ -113,7 +133,8 @@ Tampoco se avisa solo al cliente. El teléfono está en el detalle para llamar. 
 - [ ] Felipe confirmó mesas, duración, anticipación y la política de datos.
 - [ ] `restaurantSettings/operations` tiene `productionReady: true` y ninguna mesa de ensayo.
 - [ ] Los índices están publicados.
-- [ ] Las reglas siguen negando `reservations`, `reservationHolds`, `reservationRate` y `events` al navegador.
+- [ ] Las reglas siguen negando `reservations`, `reservationHolds`, `reservationRate`, `reservationAccess`, `reservationStatusRate` y `events` al navegador.
 - [ ] `PIU_RESERVATIONS_WRITES` y `PIU_FIREBASE_DATA` se encienden juntas, fuera del repositorio, y se probó el apagado.
+- [ ] `PIU_RESERVATION_STATUS` se enciende aparte, solo si el seguimiento debe quedar público, y se probó quitarlo sin apagar el panel.
 - [ ] Un envío de prueba real se revisó en el panel y se eliminó o se anuló según lo que se acuerde.
 - [ ] El formulario no dice «reserva confirmada».

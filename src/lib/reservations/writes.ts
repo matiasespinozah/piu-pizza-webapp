@@ -11,4 +11,14 @@ function reservationWritesEnabled(env: Record<string, string | undefined> = proc
   return Boolean(env.FIRESTORE_EMULATOR_HOST) || firebaseDataAccessEnabled(env)
 }
 
-export { reservationWritesEnabled }
+/**
+ * Lectura pública del seguimiento. No enciende las escrituras.
+ * Hace falta el interruptor propio y, además, el emulador o el acceso a datos ya aprobado.
+ */
+function reservationStatusEnabled(env: Record<string, string | undefined> = process.env) {
+  if (env.PIU_RESERVATION_STATUS !== "on") return false
+  if (env.GCLOUD_PROJECT === "piu-pizza-cl" && env.FIRESTORE_EMULATOR_HOST) return false
+  return Boolean(env.FIRESTORE_EMULATOR_HOST) || firebaseDataAccessEnabled(env)
+}
+
+export { reservationStatusEnabled, reservationWritesEnabled }
