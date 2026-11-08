@@ -264,6 +264,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
             draft={draft}
             errors={errors}
             clock={rules.clock}
+            week={rules.week}
             visit={visitException(day)}
             onChange={(preferredTime) => patch({ preferredTime })}
           />

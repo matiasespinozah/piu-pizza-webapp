@@ -136,6 +136,7 @@ function capacityMessage(reason: string) {
   if (reason === "unreservable") return "Las mesas de esa zona no están habilitadas para reservas. La solicitud sigue pendiente."
   if (reason === "overlap") return "Ese horario ya tiene las mesas ocupadas."
   if (reason === "zone") return "No hay mesas configuradas para esa zona."
+  if (reason === "manual") return "El grupo es más grande que una mesa conocida. Queda pendiente para asignarlo a mano."
   if (reason === "daily") return "Ese día ya alcanzó el tope de reservas confirmadas. La solicitud sigue pendiente."
   if (reason === "slot") return "Ese horario ya alcanzó el tope de reservas. La solicitud sigue pendiente."
   return "Falta la configuración real de mesas. La solicitud sigue pendiente."
@@ -508,7 +509,13 @@ async function transitionReservation(session: StaffSession | null, input: Transi
         delete previous[input.id]
         tx.set(oldRef, { bookings: previous }, { merge: true })
       }
-      nextBookings[input.id] = { tableIds: plan.tableIds, startMin: hours * 60 + minutes, endMin: plan.endMin, zone: targetZone }
+      nextBookings[input.id] = {
+        tableIds: plan.tableIds,
+        slots: plan.slots ?? Math.max(1, plan.tableIds.length),
+        startMin: hours * 60 + minutes,
+        endMin: plan.endMin,
+        zone: targetZone,
+      }
       tx.set(newRef, { bookings: nextBookings }, { merge: true })
       patch.assignedTableIds = plan.tableIds
       patch.holdDate = targetDate

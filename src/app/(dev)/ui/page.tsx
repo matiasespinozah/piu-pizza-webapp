@@ -417,7 +417,7 @@ export default function UiShowcasePage() {
           </Block>
 
           <Block title="Mesas del panel">
-            <Text className="mb-4">Ejemplo vacío. Guardar aquí no escribe en Firestore ni completa las mesas que faltan.</Text>
+            <Text className="mb-4">Ejemplo. Guardar aquí no escribe en Firestore.</Text>
             <FloorEditor
               preview
               rules={defaultOperationRules()}

@@ -1,3 +1,4 @@
+import { knownSingleTableSeats } from "@/lib/reservations/operations"
 import type { ReservationZone } from "@/lib/reservations/types"
 
 type SeatTable = {
@@ -13,19 +14,24 @@ type CapacityConfig = {
   serviceMinutes: number
   maxCombinedTables?: number
   tables: SeatTable[]
+  /** Cupos simultáneos para la web. Si está, no se asignan mesas físicas. */
+  sectors?: Record<ReservationZone, number>
+  singleTableMax?: number
 }
 
 type HoldBooking = {
   tableIds: string[]
+  /** Mesas del sector que ocupa esta reserva. Si falta, cuenta `tableIds`. */
+  slots?: number
   startMin: number
   endMin: number
   zone: ReservationZone
 }
 
-type CapacityProblem = "unconfigured" | "insufficient" | "blocked" | "unreservable" | "overlap" | "zone"
+type CapacityProblem = "unconfigured" | "insufficient" | "blocked" | "unreservable" | "overlap" | "zone" | "manual"
 
 type Assignment =
-  | { ok: true; tableIds: string[]; endMin: number }
+  | { ok: true; tableIds: string[]; endMin: number; slots?: number }
   | { ok: false; reason: CapacityProblem }
 
 function isZone(value: unknown): value is ReservationZone {
@@ -33,13 +39,26 @@ function isZone(value: unknown): value is ReservationZone {
 }
 
 /**
- * Lee la configuración de mesas. En producción solo vale `productionReady`.
- * `fixture` existe para el emulador y no habilita el restaurante real.
+ * Lee la configuración. Con cupos por sector basta `capacityReady`.
+ * Las mesas de ensayo (`fixture`) no usan esos cupos ni habilitan el restaurante real.
  */
 function readCapacity(data: unknown, options: { allowFixture: boolean }): CapacityConfig | null {
   if (!data || typeof data !== "object") return null
   const record = data as Record<string, unknown>
   const ready = record.productionReady === true || (options.allowFixture && record.fixture === true)
+  const sectors = readWebSectors(record.sectors)
+  if (sectors && record.fixture !== true && record.capacityReady === true) {
+    if (typeof record.serviceMinutes !== "number" || !Number.isInteger(record.serviceMinutes) || record.serviceMinutes <= 0) {
+      return null
+    }
+    return {
+      serviceMinutes: record.serviceMinutes,
+      tables: [],
+      sectors,
+      singleTableMax: knownSingleTableSeats,
+      maxCombinedTables: 1,
+    }
+  }
   if (!ready || record.capacityReady !== true) return null
   if (typeof record.serviceMinutes !== "number" || !Number.isInteger(record.serviceMinutes) || record.serviceMinutes <= 0) {
     return null
@@ -81,10 +100,12 @@ function planAssignment(input: {
   partySize: number
   startMin: number
 }): Assignment {
-  if (!input.config) return { ok: false, reason: "unconfigured" }
+  const config = input.config
+  if (!config) return { ok: false, reason: "unconfigured" }
+  if (config.sectors) return planSector({ ...input, config })
 
-  const endMin = input.startMin + input.config.serviceMinutes
-  const inZone = input.config.tables.filter((table) => table.zone === input.zone)
+  const endMin = input.startMin + config.serviceMinutes
+  const inZone = config.tables.filter((table) => table.zone === input.zone)
   if (inZone.length === 0) return { ok: false, reason: "zone" }
 
   const open = inZone.filter((table) => !table.blocked && table.reservable !== false)
@@ -105,7 +126,7 @@ function planAssignment(input: {
   const single = free[0]
   if (single) return { ok: true, tableIds: [single.id], endMin }
 
-  const maxCombined = input.config.maxCombinedTables ?? 1
+  const maxCombined = config.maxCombinedTables ?? 1
   if (maxCombined >= 2) {
     const pool = open.filter((table) => table.combinable && !busy.has(table.id))
     const joined = bestCombination(pool, input.partySize, maxCombined)
@@ -115,6 +136,59 @@ function planAssignment(input: {
   const fitting = open.filter((item) => item.seats >= input.partySize || (item.combinable && maxCombined >= 2))
   if (fitting.length === 0) return { ok: false, reason: "insufficient" }
   return { ok: false, reason: "overlap" }
+}
+
+function readWebSectors(value: unknown): Record<ReservationZone, number> | null {
+  if (!value || typeof value !== "object") return null
+  const record = value as Record<string, unknown>
+  const side = (zone: ReservationZone) => {
+    const item = record[zone]
+    if (!item || typeof item !== "object") return null
+    const web = (item as Record<string, unknown>).web
+    if (typeof web !== "number" || !Number.isInteger(web) || web < 0 || web > 40) return null
+    return web
+  }
+  const salon = side("salon")
+  const terrace = side("terrace")
+  if (salon === null || terrace === null) return null
+  return { salon, terrace }
+}
+
+function occupiedSlots(bookings: Record<string, HoldBooking>, startMin: number, endMin: number, ignoreId?: string) {
+  let used = 0
+  for (const [id, booking] of Object.entries(bookings)) {
+    if (id === ignoreId) continue
+    if (!(booking.startMin < endMin && startMin < booking.endMin)) continue
+    if (typeof booking.slots === "number" && Number.isInteger(booking.slots) && booking.slots > 0) {
+      used += booking.slots
+      continue
+    }
+    used += Math.max(1, booking.tableIds.length)
+  }
+  return used
+}
+
+/**
+ * Una reserva ocupa un cupo del sector durante la duración. No elige una mesa física.
+ * Un grupo mayor que la mesa más grande conocida queda pendiente.
+ */
+function planSector(input: {
+  config: CapacityConfig
+  bookings: Record<string, HoldBooking>
+  ignoreReservationId?: string
+  zone: ReservationZone
+  partySize: number
+  startMin: number
+}): Assignment {
+  const web = input.config.sectors?.[input.zone]
+  if (web === undefined) return { ok: false, reason: "zone" }
+  if (web <= 0) return { ok: false, reason: "unreservable" }
+  const endMin = input.startMin + input.config.serviceMinutes
+  const used = occupiedSlots(input.bookings, input.startMin, endMin, input.ignoreReservationId)
+  if (used >= web) return { ok: false, reason: "overlap" }
+  const singleMax = input.config.singleTableMax ?? knownSingleTableSeats
+  if (input.partySize > singleMax) return { ok: false, reason: "manual" }
+  return { ok: true, tableIds: [], endMin, slots: 1 }
 }
 
 function bestCombination(tables: SeatTable[], partySize: number, maxTables: number) {

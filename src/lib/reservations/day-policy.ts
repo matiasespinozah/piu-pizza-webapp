@@ -1,6 +1,6 @@
 import type { OperationRules, PublicNotice, ReservationCap } from "@/lib/reservations/operations"
 import { defaultNotices, defaultOperationRules, rawLimits, readOperationRules, receptionPausedOf } from "@/lib/reservations/operations"
-import { openingWindow, type OpeningWindow, type ReservationClock } from "@/lib/reservations/schedule"
+import { openingWindow, type OpeningWindow, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
 import type { HoldBooking } from "@/lib/reservations/capacity"
 
 type DayCap = {
@@ -92,7 +92,11 @@ function noticeText(notice: PublicNotice, fallback: string) {
   return notice.enabled && notice.text.trim() ? notice.text.trim() : fallback
 }
 
-function admitRequest(rules: Pick<OperationRules, "clock" | "receptionPaused" | "notices">, day: DayOverride | null, isoDate: string): Admission {
+function admitRequest(
+  rules: Pick<OperationRules, "clock" | "receptionPaused" | "notices"> & { week?: WeekSchedule },
+  day: DayOverride | null,
+  isoDate: string,
+): Admission {
   const notices = rules.notices ?? defaultNotices()
   if (rules.receptionPaused) {
     return { ok: false, code: "paused", message: noticeText(notices.paused, "Por ahora no estamos tomando reservas en línea.") }
@@ -104,7 +108,7 @@ function admitRequest(rules: Pick<OperationRules, "clock" | "receptionPaused" | 
       message: day.notice ?? noticeText(notices.closedDay, "Ese día no estamos recibiendo reservas en línea."),
     }
   }
-  const window = openingWindow(isoDate, rules.clock, day)
+  const window = openingWindow(isoDate, rules.clock, day, rules.week)
   if (!window) {
     return { ok: false, code: "venue", message: noticeText(notices.venueClosed, "Ese día el local está cerrado.") }
   }

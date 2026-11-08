@@ -1,11 +1,12 @@
 import { admitRequest, visitException, type DayOverride } from "@/lib/reservations/day-policy"
 import { maxPartyFor, reservationConfig } from "@/lib/reservations/configuration"
 import type { OperationRules } from "@/lib/reservations/operations"
-import { instantInSantiago, isClosedDay, isPastDate, preferenceSlots, previousIso, santiagoParts, toMinutes, weekdayOf, type ReservationClock } from "@/lib/reservations/schedule"
+import { instantInSantiago, isClosedDay, isPastDate, preferenceSlots, previousIso, santiagoParts, toMinutes, weekdayOf, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
 import type { ReservationDraft, ReservationErrors } from "@/lib/reservations/types"
 
 type VisitRules = {
   clock?: ReservationClock
+  week?: WeekSchedule
   anticipation?: OperationRules["anticipation"]
   maxParty?: OperationRules["maxParty"]
   receptionPaused?: boolean
@@ -30,6 +31,7 @@ function validateVisit(draft: ReservationDraft, now = new Date(), rules?: VisitR
         clock: rules.clock,
         receptionPaused: rules.receptionPaused === true,
         notices: rules.notices ?? { full: { enabled: false, text: "" }, paused: { enabled: false, text: "" }, closedDay: { enabled: false, text: "" }, venueClosed: { enabled: false, text: "" } },
+        week: rules.week,
       },
       rules.day ?? null,
       draft.date,
@@ -58,7 +60,7 @@ function validateTime(draft: ReservationDraft, now = new Date(), rules?: VisitRu
   const errors = validateVisit(draft, now, rules)
   if (errors.date) return errors
 
-  const slots = preferenceSlots(draft.date, now, rules?.clock, visitException(rules?.day ?? null))
+  const slots = preferenceSlots(draft.date, now, rules?.clock, visitException(rules?.day ?? null), rules?.week)
   if (slots.length === 0) {
     errors.preferredTime = "Hoy ya no quedan horarios de preferencia. Prueba con otro día."
   } else if (!draft.preferredTime) {
