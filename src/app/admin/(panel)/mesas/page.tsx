@@ -44,7 +44,6 @@ export default async function AdminMesasPage({
       rules={floor.rules}
       date={date}
       day={floor.day}
-      role={session.role}
       bookings={floor.bookings}
       pendingCount={floor.pendingCount}
       pendingTruncated={floor.pendingTruncated}

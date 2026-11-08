@@ -65,6 +65,53 @@ type ReservationClock = {
   lastSeatingTime: string | null
 }
 
+/** Horario de un día de la semana. `open` en false es un día sin atención. */
+type DayService = {
+  open: boolean
+  opensAt: string
+  closesAt: string
+}
+
+type WeekSchedule = Record<Weekday, DayService>
+
+/** Horario que el restaurante ya confirmó, día por día. El domingo no abre. */
+function defaultWeek(): WeekSchedule {
+  const weekday: DayService = { open: true, opensAt: "17:00", closesAt: "22:00" }
+  const weekend: DayService = { open: true, opensAt: "13:00", closesAt: "23:00" }
+  return {
+    mon: { ...weekday },
+    tue: { ...weekday },
+    wed: { ...weekday },
+    thu: { ...weekday },
+    fri: { ...weekend },
+    sat: { ...weekend },
+    sun: { open: false, opensAt: "13:00", closesAt: "22:00" },
+  }
+}
+
+/** Arma la semana desde el horario antiguo de lun–jue y vie–sáb. El domingo queda cerrado. */
+function weekFromClock(clock: ReservationClock): WeekSchedule {
+  const week = defaultWeek()
+  for (const day of ["mon", "tue", "wed", "thu"] as const) {
+    week[day] = { open: true, opensAt: clock.weekday.opensAt, closesAt: clock.weekday.closesAt }
+  }
+  week.fri = { open: true, opensAt: clock.weekend.opensAt, closesAt: clock.weekend.closesAt }
+  week.sat = { open: true, opensAt: clock.weekend.opensAt, closesAt: clock.weekend.closesAt }
+  week.sun = { ...week.sun, open: false }
+  return week
+}
+
+/** Deja un horario resumido para el código que todavía lee lun–jue y vie–sáb. */
+function clockFromWeek(week: WeekSchedule, previous: ReservationClock): ReservationClock {
+  const weekday = (["mon", "tue", "wed", "thu"] as const).map((day) => week[day]).find((day) => day.open)
+  const weekend = (["fri", "sat"] as const).map((day) => week[day]).find((day) => day.open)
+  return {
+    weekday: weekday ? { opensAt: weekday.opensAt, closesAt: weekday.closesAt } : previous.weekday,
+    weekend: weekend ? { opensAt: weekend.opensAt, closesAt: weekend.closesAt } : previous.weekend,
+    lastSeatingTime: previous.lastSeatingTime,
+  }
+}
+
 /** Excepción de un día. `hours` en null usa el horario semanal. */
 type VisitHours = {
   closed: boolean
@@ -82,10 +129,20 @@ const confirmedClock: ReservationClock = {
 /**
  * Horario de atención. Sin última llegada, los horarios llegan hasta el intervalo anterior al cierre.
  */
-function openingWindow(isoDate: string, clock: ReservationClock = confirmedClock, visit?: VisitHours | null): OpeningWindow | null {
+function openingWindow(
+  isoDate: string,
+  clock: ReservationClock = confirmedClock,
+  visit?: VisitHours | null,
+  week?: WeekSchedule | null,
+): OpeningWindow | null {
   if (visit?.closed) return null
   if (visit?.hours) return visit.hours
   const day = weekdayOf(isoDate)
+  if (week) {
+    const service = week[day]
+    if (!service?.open) return null
+    return { opensAt: service.opensAt, closesAt: service.closesAt }
+  }
   if (day === "sun") return null
   if (day === "fri" || day === "sat") return clock.weekend
   return clock.weekday
@@ -103,8 +160,14 @@ function fromMinutes(total: number) {
 }
 
 /** Horarios de preferencia dentro del horario de atención. No son cupos. */
-function preferenceSlots(isoDate: string, now = new Date(), clock: ReservationClock = confirmedClock, visit?: VisitHours | null) {
-  const window = openingWindow(isoDate, clock, visit)
+function preferenceSlots(
+  isoDate: string,
+  now = new Date(),
+  clock: ReservationClock = confirmedClock,
+  visit?: VisitHours | null,
+  week?: WeekSchedule | null,
+) {
+  const window = openingWindow(isoDate, clock, visit, week)
   if (!window || isPastDate(isoDate, now)) return []
 
   const start = toMinutes(window.opensAt)
@@ -156,7 +219,9 @@ function previousIso(isoDate: string) {
 }
 
 export {
+  clockFromWeek,
   confirmedClock,
+  defaultWeek,
   formatVisitDate,
   instantInSantiago,
   isClosedDay,
@@ -168,5 +233,6 @@ export {
   todayIsoInSantiago,
   toMinutes,
   weekdayOf,
+  weekFromClock,
 }
-export type { OpeningWindow, ReservationClock, VisitHours, Weekday }
+export type { DayService, OpeningWindow, ReservationClock, VisitHours, Weekday, WeekSchedule }

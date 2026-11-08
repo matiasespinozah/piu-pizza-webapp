@@ -1,4 +1,4 @@
-import { confirmedClock, type ReservationClock } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, weekFromClock, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
 
 const declaredTables = { salon: 19, terrace: 15 } as const
 
@@ -10,6 +10,20 @@ const informedGroups = {
   salon: { of4: 4, of3: 2, of2: 5 },
   terrace: { of4: 5, of2: 4 },
 } as const
+
+/** La mesa más grande que se detalló es de 4. Un grupo mayor no se confirma solo. */
+const knownSingleTableSeats = 4
+
+type SectorTables = {
+  total: number
+  /** Mesas que se pueden reservar en la web. El resto queda para quien llega sin reserva. */
+  web: number
+}
+
+type SectorLayout = {
+  salon: SectorTables
+  terrace: SectorTables
+}
 
 const fullDayMessage =
   "¡Nuestras reservas para hoy están completas! 🍕 Pero puedes visitarnos igualmente: seguimos recibiendo clientes por orden de llegada, según disponibilidad de mesas."
@@ -62,6 +76,10 @@ type OperationRules = {
   /** Tope de reservas que empiezan en el mismo horario. No es la ocupación simultánea. */
   slotLimit: ReservationCap
   maxParty: { salon: number; terrace: number }
+  /** Cupos del salón y la terraza. No son mesas con puestos inventados. */
+  sectors: SectorLayout
+  /** Horario de los siete días. Vive en Firestore hasta que el equipo lo cambie. */
+  week: WeekSchedule
   receptionPaused: boolean
   productionReady: boolean
   /** Huella de la última configuración que un superadmin validó. */
@@ -103,6 +121,11 @@ function defaultOperationRules(): OperationRules {
     dailyLimit: { mode: "unset", max: null },
     slotLimit: { mode: "unset", max: null },
     maxParty: { salon: 15, terrace: 20 },
+    sectors: {
+      salon: { total: declaredTables.salon, web: declaredTables.salon },
+      terrace: { total: declaredTables.terrace, web: declaredTables.terrace },
+    },
+    week: defaultWeek(),
     receptionPaused: false,
     productionReady: false,
     validatedFingerprint: null,
@@ -184,6 +207,54 @@ function readNotice(value: unknown, fallback: PublicNotice): PublicNotice | null
   return { enabled: notice.enabled, text }
 }
 
+function readSectorSide(value: unknown): SectorTables | null {
+  if (!value || typeof value !== "object") return null
+  const side = value as Record<string, unknown>
+  if (typeof side.total !== "number" || !Number.isInteger(side.total) || side.total < 0 || side.total > 40) return null
+  if (typeof side.web !== "number" || !Number.isInteger(side.web) || side.web < 0 || side.web > side.total) return null
+  return { total: side.total, web: side.web }
+}
+
+function sectorsFromTables(tables: DiningTable[]): SectorLayout {
+  if (tables.length === 0) {
+    return {
+      salon: { total: declaredTables.salon, web: declaredTables.salon },
+      terrace: { total: declaredTables.terrace, web: declaredTables.terrace },
+    }
+  }
+  const side = (zone: DiningTable["zone"]): SectorTables => {
+    const inZone = tables.filter((table) => table.zone === zone)
+    return { total: inZone.length, web: inZone.filter((table) => !table.blocked && table.reservable).length }
+  }
+  return { salon: side("salon"), terrace: side("terrace") }
+}
+
+function readSectors(value: unknown, tables: DiningTable[]): SectorLayout | null {
+  if (value === undefined || value === null) return sectorsFromTables(tables)
+  if (!value || typeof value !== "object") return null
+  const record = value as Record<string, unknown>
+  const salon = readSectorSide(record.salon)
+  const terrace = readSectorSide(record.terrace)
+  if (!salon || !terrace) return null
+  return { salon, terrace }
+}
+
+function readWeek(value: unknown, clock: ReservationClock): WeekSchedule | null {
+  if (value === undefined || value === null) return weekFromClock(clock)
+  if (!value || typeof value !== "object") return null
+  const record = value as Record<string, unknown>
+  const week = defaultWeek()
+  for (const day of Object.keys(week) as (keyof WeekSchedule)[]) {
+    const item = record[day]
+    if (!item || typeof item !== "object") return null
+    const row = item as Record<string, unknown>
+    if (typeof row.open !== "boolean" || typeof row.opensAt !== "string" || typeof row.closesAt !== "string") return null
+    if (!HHMM.test(row.opensAt) || !HHMM.test(row.closesAt) || row.opensAt >= row.closesAt) return null
+    week[day] = { open: row.open, opensAt: row.opensAt, closesAt: row.closesAt }
+  }
+  return week
+}
+
 function readNotices(value: unknown): PublicNotices | null {
   const fallback = defaultNotices()
   if (value === undefined || value === null) return fallback
@@ -235,6 +306,9 @@ function readOperationRules(value: unknown): OperationRules | null {
     if (!table || tables.some((current) => current.id === table.id)) return null
     tables.push(table)
   }
+  const sectors = readSectors(record.sectors, tables)
+  const week = readWeek(record.week, clock)
+  if (!sectors || !week) return null
   const validatedFingerprint = typeof record.validatedFingerprint === "string" ? record.validatedFingerprint : null
   const draft: OperationRules = {
     clock,
@@ -248,6 +322,8 @@ function readOperationRules(value: unknown): OperationRules | null {
     dailyLimit,
     slotLimit,
     maxParty: { salon: salonParty, terrace: terraceParty },
+    sectors,
+    week,
     receptionPaused: record.receptionPaused === true,
     productionReady: false,
     validatedFingerprint,
@@ -270,6 +346,8 @@ function criticalFingerprint(rules: OperationRules) {
     dailyLimit: rules.dailyLimit,
     slotLimit: rules.slotLimit,
     maxParty: rules.maxParty,
+    sectors: rules.sectors,
+    week: rules.week,
     tables: rules.tables.map((table) => ({ ...table })).sort((a, b) => a.id.localeCompare(b.id)),
   })
 }
@@ -285,25 +363,13 @@ function tableUse(tables: DiningTable[]) {
 
 function readinessIssues(rules: OperationRules) {
   const issues: string[] = []
-  const use = tableUse(rules.tables)
-  if (rules.tables.length === 0) issues.push("Falta registrar al menos una mesa real.")
-  if (use.reservable === 0) issues.push("No hay mesas habilitadas para reservas.")
   if (rules.serviceMinutes === null) issues.push("Falta la duración de una reserva.")
-  if (!rules.clock.lastSeatingTime) issues.push("Falta la última hora de llegada.")
-  if (rules.anticipation.weekdayLeadHours === null) issues.push("Falta la anticipación de lunes a jueves. Sigue sin elegirse entre 1 y 2 horas.")
-  if (!rules.anticipation.weekendPreviousDayCutoff) issues.push("Falta la hora de corte del viernes y sábado.")
-  if (rules.dailyLimit.mode === "unset") issues.push("Falta decidir si hay un tope diario de reservas.")
-  if (rules.slotLimit.mode === "unset") issues.push("Falta decidir si hay un tope por horario.")
-  if (rules.walkInTables === null) issues.push("Falta confirmar cuántas mesas quedan para quien llega sin reserva.")
-  if (rules.walkInTables !== null && rules.walkInTables !== use.walkIn) {
-    issues.push(`Las mesas marcadas para orden de llegada son ${use.walkIn} y el número guardado es ${rules.walkInTables}.`)
-  }
-  const turns = use.reservable * 20
-  if (rules.dailyLimit.mode === "capped" && rules.dailyLimit.max !== null && rules.dailyLimit.max > turns) {
-    issues.push("El tope diario supera los turnos que permiten las mesas reservables.")
-  }
-  if (rules.slotLimit.mode === "capped" && rules.slotLimit.max !== null && rules.slotLimit.max > use.reservable) {
-    issues.push("El tope por horario supera la cantidad de mesas reservables.")
+  for (const [zone, label] of [
+    ["salon", "salón"],
+    ["terrace", "terraza"],
+  ] as const) {
+    const side = rules.sectors[zone]
+    if (side.web > side.total) issues.push(`En ${label} hay más mesas para la web que mesas en total.`)
   }
   return issues
 }
@@ -312,7 +378,7 @@ function readinessIssues(rules: OperationRules) {
 function operationsDocument(rules: OperationRules) {
   const fingerprint = criticalFingerprint(rules)
   const productionReady = rules.productionReady === true && rules.validatedFingerprint === fingerprint
-  const capacityReady = rules.serviceMinutes !== null && rules.tables.length > 0
+  const capacityReady = rules.serviceMinutes !== null && readinessIssues(rules).length === 0
   return {
     productionReady,
     capacityReady,
@@ -325,6 +391,8 @@ function operationsDocument(rules: OperationRules) {
     dailyLimit: rules.dailyLimit,
     slotLimit: rules.slotLimit,
     maxParty: rules.maxParty,
+    sectors: rules.sectors,
+    week: rules.week,
     receptionPaused: rules.receptionPaused,
     validatedFingerprint: rules.validatedFingerprint,
     notices: rules.notices,
@@ -335,7 +403,7 @@ function operationsDocument(rules: OperationRules) {
 }
 
 function capacityFromRules(rules: OperationRules) {
-  if (!rules.productionReady || rules.serviceMinutes === null || rules.tables.length === 0) return null
+  if (rules.serviceMinutes === null || readinessIssues(rules).length > 0) return null
   return {
     serviceMinutes: rules.serviceMinutes,
     maxCombinedTables: rules.maxCombinedTables,
@@ -372,6 +440,7 @@ function publicRules(rules: OperationRules) {
     maxParty: rules.maxParty,
     receptionPaused: rules.receptionPaused,
     notices: rules.notices,
+    week: rules.week,
   }
 }
 
@@ -383,6 +452,7 @@ export {
   defaultOperationRules,
   fullDayMessage,
   informedGroups,
+  knownSingleTableSeats,
   operationsDocument,
   publicRules,
   rawLimits,
@@ -391,4 +461,4 @@ export {
   receptionPausedOf,
   tableUse,
 }
-export type { CapMode, DiningTable, OperationRules, PublicNotice, PublicNotices, ReservationCap }
+export type { CapMode, DiningTable, OperationRules, PublicNotice, PublicNotices, ReservationCap, SectorLayout, SectorTables }
