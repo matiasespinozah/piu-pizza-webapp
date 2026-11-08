@@ -79,6 +79,7 @@ async function wipe() {
   await db.recursiveDelete(db.collection("reservationRate"))
   await db.recursiveDelete(db.collection("reservationAccess"))
   await db.recursiveDelete(db.collection("reservationStatusRate"))
+  await db.recursiveDelete(db.collection("reservationDays"))
 }
 
 test.before(async () => {
@@ -269,6 +270,58 @@ test("sin la configuración real la confirmación no marca la solicitud como con
   )
   const stored = await getDb().collection("reservations").doc(created.id).get()
   assert.equal(stored.data()?.status, "pending")
+})
+
+test("una pausa y un día cerrado impiden solicitudes nuevas y conservan las existentes", async () => {
+  const created = await send(payload())
+  await getDb().collection("restaurantSettings").doc("operations").set({ receptionPaused: true }, { merge: true })
+  await assert.rejects(
+    () => send(payload({ customerName: "Pausa Ada", customerPhone: "+56 9 6666 7777" }), "203.0.113.61"),
+    (error) => error.code === "paused",
+  )
+  assert.equal((await getDb().collection("reservations").doc(created.id).get()).data()?.status, "pending")
+
+  await seed()
+  await getDb().collection("reservationDays").doc(monday).set({
+    closed: true,
+    full: false,
+    hours: null,
+    lastSeatingTime: null,
+    daily: { mode: "inherit", max: null },
+    slot: { mode: "inherit", max: null },
+    notice: null,
+  })
+  await assert.rejects(
+    () => send(payload({ customerName: "Cierre Ada", customerPhone: "+56 9 6666 8888" }), "203.0.113.62"),
+    (error) => error.code === "closed",
+  )
+  assert.equal((await getDb().collection("reservations").get()).size, 1)
+})
+
+test("el tope diario deja la segunda confirmación pendiente", async () => {
+  await seed([
+    { id: "fixture-salon-1", zone: "salon", seats: 4, blocked: false },
+    { id: "fixture-salon-2", zone: "salon", seats: 4, blocked: false },
+  ])
+  await getDb().collection("restaurantSettings").doc("operations").set(
+    { dailyLimit: { mode: "capped", max: 1 }, slotLimit: { mode: "none", max: null } },
+    { merge: true },
+  )
+  const first = await send(payload({ preferredTime: "17:00" }))
+  const second = await send(payload({ preferredTime: "19:30", customerName: "Tope Ada", customerPhone: "+56 9 7777 8888" }))
+  const results = await Promise.allSettled([
+    transitionReservation(admin, { id: first.id, action: "confirm", revision: 1 }, now),
+    transitionReservation(owner, { id: second.id, action: "confirm", revision: 1 }, now),
+  ])
+  assert.equal(results.filter((item) => item.status === "fulfilled").length, 1)
+  const rejected = results.find((item) => item.status === "rejected")
+  assert.equal(rejected?.reason?.code, "capacity_daily")
+  const pending = await getDb().collection("reservations").doc(second.id).get()
+  const confirmed = await getDb().collection("reservations").doc(first.id).get()
+  const hold = await getDb().collection("reservationHolds").doc(`${monday}_salon`).get()
+  const confirmedCount = [pending.data()?.status, confirmed.data()?.status].filter((status) => status === "confirmed").length
+  assert.equal(confirmedCount, 1)
+  assert.equal(Object.keys(hold.data()?.bookings ?? {}).length, 1)
 })
 
 test("el límite por hora corta la ráfaga y no guarda la dirección", async () => {

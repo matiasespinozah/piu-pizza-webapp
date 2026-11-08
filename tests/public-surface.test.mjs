@@ -36,7 +36,8 @@ test("el sitio público no importa Firebase ni el servidor", () => {
     const catalogServer =
       path.endsWith("src/app/page.tsx") ||
       path.endsWith("src/app/carta/page.tsx") ||
-      path.includes("src/app/api/admin/catalog/")
+      path.includes("src/app/api/admin/catalog/") ||
+      path.includes("src/app/api/admin/tables/")
     if (/from ["']firebase-admin/.test(source)) offenders.push(path)
     if (/from ["'](firebase(?:\/[^"']*)?|@\/lib\/firebase)/.test(source) && !loginForm) offenders.push(path)
     if (/from ["']@\/server\//.test(source) && !adminPage && !reservationApi && !catalogServer) offenders.push(path)

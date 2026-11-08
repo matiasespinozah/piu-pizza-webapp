@@ -5,6 +5,14 @@ type SeatTable = {
   zone: ReservationZone
   seats: number
   blocked: boolean
+  reservable?: boolean
+  combinable?: boolean
+}
+
+type CapacityConfig = {
+  serviceMinutes: number
+  maxCombinedTables?: number
+  tables: SeatTable[]
 }
 
 type HoldBooking = {
@@ -14,12 +22,7 @@ type HoldBooking = {
   zone: ReservationZone
 }
 
-type CapacityConfig = {
-  serviceMinutes: number
-  tables: SeatTable[]
-}
-
-type CapacityProblem = "unconfigured" | "insufficient" | "blocked" | "overlap" | "zone"
+type CapacityProblem = "unconfigured" | "insufficient" | "blocked" | "unreservable" | "overlap" | "zone"
 
 type Assignment =
   | { ok: true; tableIds: string[]; endMin: number }
@@ -50,11 +53,24 @@ function readCapacity(data: unknown, options: { allowFixture: boolean }): Capaci
     if (typeof table.id !== "string" || table.id.length < 1 || table.id.length > 40) return null
     if (!isZone(table.zone)) return null
     if (typeof table.seats !== "number" || !Number.isInteger(table.seats) || table.seats <= 0) return null
-    if (typeof table.blocked !== "boolean") return null
-    tables.push({ id: table.id, zone: table.zone, seats: table.seats, blocked: table.blocked })
+    const seatsMax = table.seatsMax
+    const seats =
+      typeof seatsMax === "number" && Number.isInteger(seatsMax) && seatsMax >= table.seats ? seatsMax : table.seats
+    if (table.blocked !== undefined && typeof table.blocked !== "boolean") return null
+    tables.push({
+      id: table.id,
+      zone: table.zone,
+      seats,
+      blocked: table.blocked === true,
+      reservable: table.reservable !== false,
+      combinable: table.combinable === true,
+    })
   }
 
-  return { serviceMinutes: record.serviceMinutes, tables }
+  const maxCombined = record.maxCombinedTables === undefined ? 1 : record.maxCombinedTables
+  if (typeof maxCombined !== "number" || !Number.isInteger(maxCombined) || maxCombined < 1 || maxCombined > 4) return null
+
+  return { serviceMinutes: record.serviceMinutes, maxCombinedTables: maxCombined, tables }
 }
 
 function planAssignment(input: {
@@ -71,8 +87,10 @@ function planAssignment(input: {
   const inZone = input.config.tables.filter((table) => table.zone === input.zone)
   if (inZone.length === 0) return { ok: false, reason: "zone" }
 
-  const open = inZone.filter((table) => !table.blocked)
-  if (open.length === 0) return { ok: false, reason: "blocked" }
+  const open = inZone.filter((table) => !table.blocked && table.reservable !== false)
+  if (open.length === 0) {
+    return { ok: false, reason: inZone.every((table) => table.blocked) ? "blocked" : "unreservable" }
+  }
 
   const busy = new Set<string>()
   for (const [id, booking] of Object.entries(input.bookings)) {
@@ -82,15 +100,51 @@ function planAssignment(input: {
     for (const tableId of booking.tableIds) busy.add(tableId)
   }
 
-  // Una mesa por reserva. Juntar mesas sigue pendiente: no se suman puestos.
   const free = open.filter((table) => !busy.has(table.id) && table.seats >= input.partySize)
   free.sort((a, b) => a.seats - b.seats || a.id.localeCompare(b.id))
-  const table = free[0]
-  if (table) return { ok: true, tableIds: [table.id], endMin }
+  const single = free[0]
+  if (single) return { ok: true, tableIds: [single.id], endMin }
 
-  const fitting = open.filter((item) => item.seats >= input.partySize)
+  const maxCombined = input.config.maxCombinedTables ?? 1
+  if (maxCombined >= 2) {
+    const pool = open.filter((table) => table.combinable && !busy.has(table.id))
+    const joined = bestCombination(pool, input.partySize, maxCombined)
+    if (joined) return { ok: true, tableIds: joined, endMin }
+  }
+
+  const fitting = open.filter((item) => item.seats >= input.partySize || (item.combinable && maxCombined >= 2))
   if (fitting.length === 0) return { ok: false, reason: "insufficient" }
   return { ok: false, reason: "overlap" }
+}
+
+function bestCombination(tables: SeatTable[], partySize: number, maxTables: number) {
+  const found: { best: SeatTable[] | null } = { best: null }
+  const chosen: SeatTable[] = []
+
+  function walk(start: number) {
+    if (chosen.length >= 2) {
+      const seats = chosen.reduce((sum, table) => sum + table.seats, 0)
+      if (seats >= partySize && better(chosen, found.best)) found.best = chosen.slice()
+    }
+    if (chosen.length === maxTables) return
+    for (let index = start; index < tables.length; index += 1) {
+      chosen.push(tables[index])
+      walk(index + 1)
+      chosen.pop()
+    }
+  }
+
+  walk(0)
+  return found.best?.map((table) => table.id) ?? null
+}
+
+function better(next: SeatTable[], current: SeatTable[] | null) {
+  if (!current) return true
+  const nextSeats = next.reduce((sum, table) => sum + table.seats, 0)
+  const currentSeats = current.reduce((sum, table) => sum + table.seats, 0)
+  if (nextSeats !== currentSeats) return nextSeats < currentSeats
+  if (next.length !== current.length) return next.length < current.length
+  return next.map((table) => table.id).join() < current.map((table) => table.id).join()
 }
 
 export { planAssignment, readCapacity }

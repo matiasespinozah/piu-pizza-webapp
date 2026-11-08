@@ -5,6 +5,8 @@ import { clientAddress } from "@/lib/reservations/client-address"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
 import { reservationWritesEnabled } from "@/lib/reservations/writes"
+import { publicRules } from "@/lib/reservations/operations"
+import { getDayOverride, getOperationRules } from "@/server/operations/service"
 import { createPublicReservation } from "@/server/reservations/service"
 
 const noStore = { "Cache-Control": "no-store" }
@@ -31,9 +33,12 @@ function fail(error: unknown) {
   return NextResponse.json({ ok: false, message: "No se pudo completar la operación." }, { status: 500, headers: noStore })
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   await connection()
-  return NextResponse.json({ enabled: reservationWritesEnabled() }, { headers: noStore })
+  const date = new URL(request.url).searchParams.get("date") ?? ""
+  const rules = await getOperationRules()
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(date) ? await getDayOverride(date) : null
+  return NextResponse.json({ enabled: reservationWritesEnabled(), rules: publicRules(rules), day }, { headers: noStore })
 }
 
 export async function POST(request: Request) {
@@ -43,7 +48,16 @@ export async function POST(request: Request) {
 
   const raw = await request.text()
   try {
-    const input = readPublicBody(raw)
+    const rules = await getOperationRules()
+    let date = ""
+    try {
+      const parsed = JSON.parse(raw) as { date?: unknown }
+      date = typeof parsed.date === "string" ? parsed.date : ""
+    } catch {
+      date = ""
+    }
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(date) ? await getDayOverride(date) : null
+    const input = readPublicBody(raw, new Date(), { ...publicRules(rules), day })
     const forwarded = clientAddress(request.headers.get("x-forwarded-for"))
     const result = await createPublicReservation(input, forwarded)
     return NextResponse.json(

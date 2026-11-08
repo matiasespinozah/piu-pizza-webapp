@@ -11,6 +11,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- `/admin/mesas` permite a `admin` y `superadmin` crear y editar mesas, pausar la recepción, cerrar o completar un día, y guardar horario, duración, topes y avisos. La duración inicial es 90 minutos. Un `superadmin` puede habilitar la confirmación cuando no falten datos; eso no enciende la recepción pública. No se crean las mesas que la distribución informada no detalla.
+- Una pausa, un día cerrado o un día completo rechaza solicitudes nuevas en el servidor. Al confirmar se respetan el tope diario, el tope por horario y las mesas, sin cancelar reservas ya confirmadas.
 - El inicio del panel cuenta los productos de Firestore cuando el acceso a datos está encendido. Las cifras de reservas siguen en «Recepción desactivada» mientras `PIU_RESERVATIONS_WRITES` no esté en `on`.
 - Catálogo de Fudo en `data/catalog/piu-catalogo-fudo.json` (14 categorías y 131 productos). `pnpm test:catalog` lo carga en el emulador, sin escribir en producción. Volver a importar no pisa el nombre, la descripción ni el precio editados en `/admin/carta`, salvo `node scripts/import-catalog.mjs --sobrescribir`. `/carta` y las tres sugerencias de la Home leen Firestore cuando el acceso a datos está encendido; si no, siguen con el catálogo local.
 - `/admin/carta` permite a `admin` y `superadmin` agregar, editar, ocultar, eliminar y cambiar el precio de productos y categorías. Las fotos se guardan en Storage desde el servidor.

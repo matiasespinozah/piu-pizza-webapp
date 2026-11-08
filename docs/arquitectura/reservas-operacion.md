@@ -59,7 +59,13 @@ La solicitud queda cancelada y, si tenía mesa, esa asignación se suelta en la 
 
 El cupo se toma al confirmar, no al recibir la solicitud. Dos personas no pueden confirmar a la vez la misma mesa: la segunda recibe un error y la solicitud no cambia.
 
-No se confirma un grupo juntando mesas. Hasta que Felipe diga qué mesas se pueden unir, un grupo solo entra si cabe en una mesa.
+Un grupo usa una mesa que alcance. Si ninguna alcanza y la regla permite juntar, se usan solo mesas marcadas como combinables, de la misma zona, sin ocupar una que ya esté tomada.
+
+## Mesas
+
+`/admin/mesas` lo usan `admin` y `superadmin`. Ahí se crean y editan las mesas, se pausa la recepción, se cierra o se marca completo un día, y se guardan horario, duración, última llegada, anticipación, topes y los avisos públicos. La duración inicial es 90 minutos. La anticipación de 1 o 2 horas y la hora de corte del viernes y sábado siguen vacías hasta que el local las escriba. Las mesas que la distribución no detalla no se crean.
+
+Guardar no enciende la página pública. Confirmar solo funciona después de que un `superadmin` pulse «Habilitar configuración de reservas» y no falte ningún dato obligatorio. Si después cambia una mesa, el horario, la duración o un tope, hay que habilitar de nuevo. Una pausa, un día cerrado o un día completo rechaza solicitudes nuevas en el servidor. Las ya guardadas siguen en el panel. El tope diario cuenta reservas confirmadas y es distinto de las mesas ocupadas al mismo tiempo.
 
 ## Si faltan las mesas
 

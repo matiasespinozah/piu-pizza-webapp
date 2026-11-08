@@ -69,5 +69,9 @@ service cloud.firestore {
     match /auditLogs/{logId} {
       allow read, write: if false;
     }
+
+    match /reservationDays/{dayId} {
+      allow read, write: if false;
+    }
   }
 }

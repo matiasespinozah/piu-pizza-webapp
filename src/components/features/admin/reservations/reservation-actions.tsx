@@ -134,7 +134,7 @@ function ReservationActions({ reservation }: { reservation: ReservationDetail })
         </p>
       ) : null}
       <p className="text-sm text-olive-muted">
-        Falta la distribución real de mesas, la duración y las mesas que se pueden juntar. Sin eso, confirmar queda bloqueado.
+        Confirmar sigue bloqueado hasta que la configuración de mesas esté completa y validada. Si no hay una mesa válida, la solicitud permanece pendiente.
       </p>
     </div>
   )
