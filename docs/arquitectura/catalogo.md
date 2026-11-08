@@ -18,7 +18,7 @@ firebase deploy --only firestore,storage --project piu-pizza-staging
 
 ## Panel
 
-`/admin/carta` lo usan `admin` y `superadmin`. Desde ahí se agregan, editan, ocultan y eliminan productos y categorías, y se cambia el precio. La foto se sube al servidor, que la convierte a WebP de hasta 1200 px y 150 KB y la guarda en Storage en `products/{id}/{hash}.webp`. Eliminar un producto borra el registro. Ocultarlo lo deja guardado y fuera de la carta pública.
+`/admin/carta` lo usan `admin` y `superadmin`. La pantalla abre con cuadros para elegir «Productos» o «Categorías», más accesos a Agotados, Ocultos y Sin foto. Los productos se muestran como tarjetas y se buscan y filtran en el navegador; editar abre un panel lateral en escritorio y una hoja a pantalla completa en el celular. Crear un producto puede incluir la foto: primero se guarda el registro y después se sube el archivo. El precio, la disponibilidad y la visibilidad también se cambian desde el menú «⋯» de cada tarjeta. El orden se mueve con «Mover antes» y «Mover después» dentro de una categoría, no arrastrando. La foto se convierte en el servidor a WebP de hasta 1200 px y 150 KB y se guarda en Storage en `products/{id}/{hash}.webp`. Eliminar un producto borra el registro. Ocultarlo lo deja guardado y fuera de la carta pública. Agotado sigue visible, con el aviso de que no se puede pedir.
 
 Las sugerencias de la Home son como máximo tres, primero las de «SUGERENCIAS DEL CHEF» y sin repetir el mismo nombre.
 

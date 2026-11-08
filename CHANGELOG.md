@@ -24,6 +24,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- `/admin/carta` se reorganiza en cuadros: al entrar se elige «Productos» o «Categorías», con accesos a Agotados, Ocultos y Sin foto. Los productos se ven como tarjetas con foto, precio y estado, filtradas por buscador y categoría; tocar una abre el editor y el menú «⋯» cambia precio, disponibilidad, visibilidad y orden. Las categorías también son tarjetas y llevan a sus productos. La foto se puede elegir al crear el producto.
 - Una foto de producto ausente sigue usando la ilustración de PIÙ. Una descripción vacía no se rellena con ingredientes.
 - Con la recepción apagada, `/reservas` avisa de inmediato que no se puede enviar una solicitud y muestra WhatsApp, sin recorrer el formulario.
 - En `/admin/login`, el logo de PIÙ queda centrado sobre el título, un poco más chico y separado del encabezado, sin el margen vacío del archivo.
