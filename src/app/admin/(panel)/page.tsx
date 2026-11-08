@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
 import { roleLabel } from "@/lib/auth/permissions"
 import { requireSection } from "@/server/auth/access"
+import { countCatalogProducts } from "@/server/catalog/service"
 import { reservationSummary } from "@/server/reservations/service"
 
 export const instant = false
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 export default async function AdminHomePage() {
   const session = await requireSection("inicio")
   const who = session.displayName || session.email || "equipo de PIÙ"
-  const reservations = await reservationSummary(session)
+  const [reservations, productCount] = await Promise.all([reservationSummary(session), countCatalogProducts(session)])
   const summary = reservations.summary
   const metrics = [
     { title: "Solicitudes pendientes", value: summary?.pending },
@@ -43,8 +44,9 @@ export default async function AdminHomePage() {
         </h2>
         <p className="max-w-2xl text-sm text-olive-muted">
           {reservations.ready
-            ? "Estos números salen de las solicitudes guardadas. El conteo de productos aparecerá cuando el catálogo del panel esté conectado."
-            : "La recepción de reservas sigue desactivada, así que no hay solicitudes reales que contar. El conteo de productos aparecerá cuando el catálogo del panel esté conectado."}
+            ? "Estos números salen de las solicitudes guardadas."
+            : "La recepción de reservas sigue desactivada, así que no hay solicitudes reales que contar."}{" "}
+          {productCount == null ? "El conteo de productos aparecerá cuando Firestore esté conectado." : "El conteo de productos sale de la carta guardada."}
         </p>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {metrics.map((metric) => (
@@ -57,7 +59,7 @@ export default async function AdminHomePage() {
           ))}
           <li className="rounded-xl border border-olive-line bg-surface-raised p-4">
             <p className="font-heading text-base font-bold">Productos del catálogo</p>
-            <p className="mt-3 text-sm font-semibold text-terracotta">Aún no conectado</p>
+            <p className="mt-3 text-sm font-semibold text-terracotta">{productCount == null ? "Aún no conectado" : productCount}</p>
           </li>
         </ul>
       </section>

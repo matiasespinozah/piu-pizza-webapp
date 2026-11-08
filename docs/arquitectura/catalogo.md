@@ -6,7 +6,9 @@ El menú de origen está en `data/catalog/piu-catalogo-fudo.json`: 14 categoría
 
 ## Importar
 
-`node scripts/import-catalog.mjs` carga ese archivo en el emulador de Firestore (`demo-piu-pizza`). La segunda corrida no crea copias. Si un producto ya existe, conserva el nombre, la descripción y el precio editados en `/admin/carta`, la foto y si está oculto. Para volver a copiar nombre, descripción y precio desde el JSON hay que pedirlo: `node scripts/import-catalog.mjs --sobrescribir`. El script se niega si el proyecto es `piu-pizza-cl`.
+`node scripts/import-catalog.mjs` carga ese archivo en el emulador de Firestore (`demo-piu-pizza`). La segunda corrida no crea copias. Si un producto ya existe, conserva el nombre, la descripción y el precio editados en `/admin/carta`, la foto y si está oculto. Para volver a copiar nombre, descripción y precio desde el JSON hay que pedirlo: `node scripts/import-catalog.mjs --sobrescribir`.
+
+Escribir en `piu-pizza-cl` exige `PIU_CATALOG_IMPORT_PRODUCTION=on` en esa corrida y no usa el emulador. Sin esa variable el script se niega. `PIU_FIREBASE_DATA` no alcanza para autorizarla.
 
 No publica reglas ni índices. Cuando se autorice, en el proyecto de pruebas:
 

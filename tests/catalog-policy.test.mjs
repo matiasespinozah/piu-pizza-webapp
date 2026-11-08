@@ -29,9 +29,18 @@ test("el archivo de Fudo arma 14 categorías y 131 productos sin fotos inventada
   assert.equal(juice?.description, "Frambuesa, chirimoya, maracuyá")
 })
 
-test("la importación no acepta el proyecto de producción", () => {
+test("la importación de producción exige una autorización aparte", () => {
   assert.equal(catalogImportAllowed({}), false)
   assert.equal(catalogImportAllowed({ GOOGLE_CLOUD_PROJECT: "piu-pizza-cl", PIU_FIREBASE_DATA: "on" }), false)
+  assert.equal(
+    catalogImportAllowed({
+      GOOGLE_CLOUD_PROJECT: "piu-pizza-cl",
+      PIU_CATALOG_IMPORT_PRODUCTION: "on",
+      FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080",
+    }),
+    false
+  )
+  assert.equal(catalogImportAllowed({ GOOGLE_CLOUD_PROJECT: "piu-pizza-cl", PIU_CATALOG_IMPORT_PRODUCTION: "on" }), true)
   assert.equal(
     catalogImportAllowed({
       GOOGLE_CLOUD_PROJECT: "piu-pizza-cl",
