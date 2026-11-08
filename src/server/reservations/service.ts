@@ -163,7 +163,7 @@ async function loadSummary(db: Firestore): Promise<ReservationSummary> {
 
 async function reservationSummary(session: StaffSession | null) {
   assertStaff(session, ["superadmin", "admin"])
-  if (!firebaseDataAccessEnabled()) return { ready: false as const, summary: null }
+  if (!reservationWritesEnabled()) return { ready: false as const, summary: null }
   return { ready: true as const, summary: await loadSummary(getDb()) }
 }
 

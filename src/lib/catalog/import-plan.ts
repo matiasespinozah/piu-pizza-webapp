@@ -59,8 +59,9 @@ type CatalogImportPlan = {
 
 function catalogImportAllowed(env: Record<string, string | undefined> = process.env) {
   const project = env.GOOGLE_CLOUD_PROJECT || env.GCLOUD_PROJECT || env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || ""
-  if (!project || project === productionProjectId) return false
-  if (env.FIRESTORE_EMULATOR_HOST) return project.startsWith("demo-")
+  if (!project) return false
+  if (env.FIRESTORE_EMULATOR_HOST) return project.startsWith("demo-") && project !== productionProjectId
+  if (project === productionProjectId) return env.PIU_CATALOG_IMPORT_PRODUCTION === "on"
   return env.PIU_APP_ENV === "staging" && env.PIU_EXPECTED_FIREBASE_PROJECT === project
 }
 

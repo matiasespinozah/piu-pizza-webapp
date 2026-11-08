@@ -59,6 +59,13 @@ function parse<T>(schema: z.ZodType<T>, input: unknown) {
   return parsed.data
 }
 
+async function countCatalogProducts(session: StaffSession | null) {
+  assertStaff(session, catalogRoles)
+  if (!firebaseDataAccessEnabled()) return null
+  const snap = await getDb().collection(collections.products).count().get()
+  return snap.data().count
+}
+
 async function readCatalogEditor(session: StaffSession | null) {
   assertStaff(session, catalogRoles)
   if (!firebaseDataAccessEnabled()) return null
@@ -201,4 +208,14 @@ async function deleteStoredPhotos(productId: string, keep?: string) {
   await Promise.all(files.filter((file) => file.name !== keep).map((file) => file.delete().catch(() => undefined)))
 }
 
-export { CatalogError, deleteCategory, deleteProduct, listCatalogForStaff, readCatalogEditor, replaceProductPhoto, saveCategory, saveProduct }
+export {
+  CatalogError,
+  countCatalogProducts,
+  deleteCategory,
+  deleteProduct,
+  listCatalogForStaff,
+  readCatalogEditor,
+  replaceProductPhoto,
+  saveCategory,
+  saveProduct,
+}
