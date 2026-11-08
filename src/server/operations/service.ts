@@ -3,7 +3,6 @@ import "server-only"
 import { z } from "zod"
 
 import type { StaffSession } from "@/lib/auth/roles"
-import { catalogSlug } from "@/lib/catalog/slug"
 import { collections, settingsDocId } from "@/lib/firebase/model"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
 import { emptyDay, readDayOverride, type DayOverride } from "@/lib/reservations/day-policy"
@@ -13,9 +12,9 @@ import {
   operationsDocument,
   readinessIssues,
   readOperationRules,
-  type DiningTable,
   type OperationRules,
 } from "@/lib/reservations/operations"
+import { clockFromWeek } from "@/lib/reservations/schedule"
 import { assertStaff } from "@/server/auth/authorization"
 import { assertFirebaseDataEnabled } from "@/server/firebase/guard"
 import { getDb } from "@/server/firebase/firestore"
@@ -35,65 +34,40 @@ class FloorError extends Error {
   }
 }
 
-const tableInput = z
+const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/
+
+const sectorInput = z
   .object({
-    id: z.string().trim().min(1).max(40).optional(),
-    label: z.string().trim().min(1).max(40),
-    zone: z.enum(["salon", "terrace"]),
-    seats: z.number().int().min(1).max(30),
-    seatsMax: z.number().int().min(1).max(30).nullable(),
-    blocked: z.boolean(),
-    reservable: z.boolean(),
-    combinable: z.boolean(),
-    smoker: z.boolean(),
+    total: z.number().int().min(0).max(40),
+    web: z.number().int().min(0).max(40),
   })
   .strict()
 
-const capInput = z
+const dayServiceInput = z
   .object({
-    mode: z.enum(["unset", "none", "capped"]),
-    max: z.number().int().nullable(),
-  })
-  .strict()
-
-const noticeInput = z
-  .object({
-    enabled: z.boolean(),
-    text: z.string().trim().min(8).max(400),
+    open: z.boolean(),
+    opensAt: z.string().regex(hhmm),
+    closesAt: z.string().regex(hhmm),
   })
   .strict()
 
 const rulesInput = z
   .object({
-    clock: z
-      .object({
-        weekday: z.object({ opensAt: z.string(), closesAt: z.string() }).strict(),
-        weekend: z.object({ opensAt: z.string(), closesAt: z.string() }).strict(),
-        lastSeatingTime: z.string().nullable(),
-      })
-      .strict(),
-    serviceMinutes: z.number().int().nullable(),
-    anticipation: z
-      .object({
-        weekdayLeadHours: z.number().int().nullable(),
-        weekendPreviousDayCutoff: z.string().nullable(),
-      })
-      .strict(),
-    maxCombinedTables: z.number().int(),
-    walkInTables: z.number().int().nullable(),
-    dailyLimit: capInput,
-    slotLimit: capInput,
-    maxParty: z.object({ salon: z.number().int(), terrace: z.number().int() }).strict(),
+    serviceMinutes: z.number().int().min(30).max(300),
     receptionPaused: z.boolean(),
-    notices: z
+    fullNotice: z.string().trim().min(8).max(400),
+    sectors: z.object({ salon: sectorInput, terrace: sectorInput }).strict(),
+    week: z
       .object({
-        full: noticeInput,
-        paused: noticeInput,
-        closedDay: noticeInput,
-        venueClosed: noticeInput,
+        mon: dayServiceInput,
+        tue: dayServiceInput,
+        wed: dayServiceInput,
+        thu: dayServiceInput,
+        fri: dayServiceInput,
+        sat: dayServiceInput,
+        sun: dayServiceInput,
       })
       .strict(),
-    tables: z.array(tableInput).max(40),
   })
   .strict()
 
@@ -153,25 +127,44 @@ async function saveFloor(session: StaffSession | null, input: unknown) {
   assertFirebaseDataEnabled()
   const parsed = rulesInput.safeParse(input)
   if (!parsed.success) throw new FloorError(400, "Revisa las mesas y los horarios. Hay un dato vacío o fuera de rango.")
-  const tables = parsed.data.tables.map((table) => normalizeTable(table))
-  if (new Set(tables.map((table) => table.id)).size !== tables.length) {
-    throw new FloorError(400, "Hay dos mesas con el mismo nombre.")
+  for (const day of Object.values(parsed.data.week)) {
+    if (day.opensAt >= day.closesAt) throw new FloorError(400, "La apertura tiene que ser anterior al cierre.")
+  }
+  for (const [zone, label] of [
+    ["salon", "el salón"],
+    ["terrace", "la terraza"],
+  ] as const) {
+    const side = parsed.data.sectors[zone]
+    if (side.web > side.total) throw new FloorError(400, `En ${label} hay más mesas para la web que mesas en total.`)
   }
   const db = getDb()
   const ref = db.collection(collections.restaurantSettings).doc(settingsDocId)
   const current = await ref.get()
-  const stored = readOperationRules(current.data())
-  const rules = readOperationRules({ ...parsed.data, tables })
-  if (!rules) throw new FloorError(400, "Revisa las mesas y los horarios. Hay un dato vacío o fuera de rango.")
-  const validatedFingerprint = stored?.validatedFingerprint ?? null
-  rules.validatedFingerprint = validatedFingerprint
-  rules.productionReady = validatedFingerprint === criticalFingerprint(rules)
+  if (current.exists && !readOperationRules(current.data())) {
+    throw new FloorError(409, "La configuración guardada no se pudo leer. No se sobrescribió.")
+  }
+  const stored = readOperationRules(current.data()) ?? defaultOperationRules()
+  const rules: OperationRules = {
+    ...stored,
+    serviceMinutes: parsed.data.serviceMinutes,
+    receptionPaused: parsed.data.receptionPaused,
+    sectors: parsed.data.sectors,
+    week: parsed.data.week,
+    clock: clockFromWeek(parsed.data.week, stored.clock),
+    notices: { ...stored.notices, full: { enabled: true, text: parsed.data.fullNotice } },
+    tables: stored.tables,
+  }
+  rules.validatedFingerprint = stored.validatedFingerprint
+  rules.productionReady = stored.validatedFingerprint === criticalFingerprint(rules)
   rules.updatedBy = actor.displayName || actor.email || "Personal"
   rules.updatedAt = new Date().toISOString()
   const document = operationsDocument(rules)
   const batch = db.batch()
   batch.set(ref, document)
-  batch.set(db.collection(collections.auditLogs).doc(), auditEntry(actor, "operations.save", settingsPath(), "Guardó mesas, horarios o cupos. Las reservas ya confirmadas no se cancelan."))
+  batch.set(
+    db.collection(collections.auditLogs).doc(),
+    auditEntry(actor, "operations.save", settingsPath(), "Guardó cupos, horario o duración. Las reservas ya confirmadas no se cancelan."),
+  )
   await batch.commit()
   return rules
 }
@@ -233,11 +226,6 @@ async function saveDay(session: StaffSession | null, input: unknown) {
   )
   await batch.commit()
   return day
-}
-
-function normalizeTable(table: z.infer<typeof tableInput>): DiningTable {
-  const id = table.id || catalogSlug(table.label).slice(0, 40)
-  return { ...table, id, seatsMax: table.seatsMax !== null && table.seatsMax <= table.seats ? null : table.seatsMax }
 }
 
 function settingsPath() {

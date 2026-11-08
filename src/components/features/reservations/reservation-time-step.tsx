@@ -1,20 +1,21 @@
 import { cn } from "cn"
 
 import { FieldError } from "@/components/ui/field"
-import { formatVisitDate, openingWindow, preferenceSlots, type ReservationClock, type VisitHours } from "@/lib/reservations/schedule"
+import { formatVisitDate, openingWindow, preferenceSlots, type ReservationClock, type VisitHours, type WeekSchedule } from "@/lib/reservations/schedule"
 import type { ReservationDraft, ReservationErrors } from "@/lib/reservations/types"
 
 type ReservationTimeStepProps = {
   draft: ReservationDraft
   errors: ReservationErrors
   clock: ReservationClock
+  week?: WeekSchedule
   visit?: VisitHours | null
   onChange: (preferredTime: string) => void
 }
 
-function ReservationTimeStep({ draft, errors, clock, visit = null, onChange }: ReservationTimeStepProps) {
-  const closed = Boolean(draft.date) && openingWindow(draft.date, clock, visit) === null
-  const slots = draft.date ? preferenceSlots(draft.date, new Date(), clock, visit) : []
+function ReservationTimeStep({ draft, errors, clock, week, visit = null, onChange }: ReservationTimeStepProps) {
+  const closed = Boolean(draft.date) && openingWindow(draft.date, clock, visit, week) === null
+  const slots = draft.date ? preferenceSlots(draft.date, new Date(), clock, visit, week) : []
 
   return (
     <fieldset className="flex flex-col gap-4">

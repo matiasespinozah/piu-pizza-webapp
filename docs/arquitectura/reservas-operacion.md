@@ -39,7 +39,7 @@ El enlace deja de servir dos días después de la visita. Eso no borra la solici
 
 Abre la solicitud en `/admin/reservas` y pulsa Confirmar. El sistema vuelve a pedir confirmación.
 
-Hoy esa acción **no va a completar la reserva** en el restaurante real: faltan los puestos de cada mesa, cuánto dura una reserva, qué mesas se pueden juntar y cuántas se dejan para quien llega sin avisar. El panel lo dice. La solicitud sigue pendiente.
+Al confirmar, el sistema aparta un cupo del salón o de la terraza durante la duración guardada (al inicio, 90 minutos). No elige una mesa física. Si en ese horario ya están ocupados todos los cupos de reservas web, la solicitud sigue pendiente. Un grupo de más de 4 personas también sigue pendiente: es el tamaño de la mesa más grande que se detalló, y no confirmamos algo que no sabemos si cabe. El equipo lo asigna a mano.
 
 En el emulador de pruebas sí hay mesas marcadas como ensayo. Esas mesas no sirven para el local.
 
@@ -59,17 +59,17 @@ La solicitud queda cancelada y, si tenía mesa, esa asignación se suelta en la 
 
 El cupo se toma al confirmar, no al recibir la solicitud. Dos personas no pueden confirmar a la vez la misma mesa: la segunda recibe un error y la solicitud no cambia.
 
-Un grupo usa una mesa que alcance. Si ninguna alcanza y la regla permite juntar, se usan solo mesas marcadas como combinables, de la misma zona, sin ocupar una que ya esté tomada.
+Cada reserva confirmada ocupa un cupo del sector mientras dura. Dos confirmaciones a la misma hora no pueden pasar del número de mesas web de ese sector. Una reserva ya guardada con mesas concretas sigue ocupando esas mesas. No se borran al cambiar la configuración.
 
 ## Mesas
 
-`/admin/mesas` lo usan `admin` y `superadmin`. Ahí se crean y editan las mesas, se pausa la recepción, se cierra o se marca completo un día, y se guardan horario, duración, última llegada, anticipación, topes y los avisos públicos. La duración inicial es 90 minutos. La anticipación de 1 o 2 horas y la hora de corte del viernes y sábado siguen vacías hasta que el local las escriba. Las mesas que la distribución no detalla no se crean.
+`/admin/mesas` lo usan `admin` y `superadmin`. Ahí se anotan las mesas del salón (19 al inicio) y de la terraza (15 al inicio), cuántas de cada sector aceptan reserva web y cuántas quedan para quien llega sin reserva. También se editan la duración, el horario de cada día y la pausa de la recepción. Se puede marcar una fecha como completa. El horario queda en Firestore y no vuelve a los valores iniciales al recargar ni al publicar una versión nueva.
 
-Guardar no enciende la página pública. Confirmar solo funciona después de que un `superadmin` pulse «Habilitar configuración de reservas» y no falte ningún dato obligatorio. Si después cambia una mesa, el horario, la duración o un tope, hay que habilitar de nuevo. Una pausa, un día cerrado o un día completo rechaza solicitudes nuevas en el servidor. Las ya guardadas siguen en el panel. El tope diario cuenta reservas confirmadas y es distinto de las mesas ocupadas al mismo tiempo.
+Guardar no enciende la página pública. Una pausa o un día completo rechaza solicitudes nuevas en el servidor. Las ya guardadas siguen en el panel. El salón sigue aceptando solicitudes de hasta 15 personas y la terraza de hasta 20: son topes del formulario, no el tamaño de una mesa.
 
-## Si faltan las mesas
+## Si el grupo no cabe en una mesa conocida
 
-El panel muestra que falta la configuración. No inventa puestos ni marca la reserva como confirmada. Rechazar, proponer y cancelar sí se pueden usar cuando la recepción de datos está encendida.
+No se inventan puestos. La solicitud queda pendiente y no se marca confirmada. Rechazar, proponer y cancelar sí se pueden usar cuando la recepción de datos está encendida.
 
 ## Probar con emuladores
 
@@ -116,19 +116,13 @@ El tope es de 8 solicitudes por hora y por dirección pública, en un documento 
 
 ## Antes de operar con clientes
 
-Felipe tiene que confirmar, por escrito:
+Antes de recibir clientes por la web falta, por escrito:
 
-- Puestos de cada mesa.
-- Qué mesas se pueden juntar.
-- Cuántas mesas de salón y terraza se pueden reservar, aparte de las 19 y 15 declaradas.
-- Cuántas quedan para quien llega sin reserva.
-- Cuánto dura una reserva y cuál es el último horario de llegada.
-- Si la anticipación de lunes a jueves es 1 o 2 horas, y a qué hora del día anterior cierra el viernes y el sábado.
-- El máximo de un grupo, si no alcanza con el tope actual del formulario (15 en salón y 20 en terraza). Esos topes no son la capacidad del local.
+- Cuántas de las 19 mesas del salón y de las 15 de la terraza quedan para reservas web. Mientras no se guarde otra cifra, las 19 y las 15 quedan para la web.
 - Qué se hace si la persona llega tarde o no llega.
 - El texto de la política de privacidad y cuánto tiempo se guardan nombre y celular.
 
-Con eso se carga `restaurantSettings/operations` con `productionReady: true`. Hasta entonces confirmar sigue bloqueado.
+Hasta publicar esa política, la recepción pública sigue apagada. Los cupos se confirman con lo guardado en `restaurantSettings/operations`, sin crear mesas de ensayo. Un grupo de más de 4 personas no se confirma solo.
 
 Los índices de `firestore.indexes.json` hay que publicarlos antes de usar los filtros en producción. No se publicaron en este paso.
 
@@ -136,8 +130,8 @@ Tampoco se avisa solo al cliente. El teléfono está en el detalle para llamar. 
 
 ## Checklist de producción
 
-- [ ] Felipe confirmó mesas, duración, anticipación y la política de datos.
-- [ ] `restaurantSettings/operations` tiene `productionReady: true` y ninguna mesa de ensayo.
+- [ ] Quedó guardado cuántas mesas de cada sector aceptan reserva web, y está publicada la política de datos.
+- [ ] `restaurantSettings/operations` tiene los cupos del local y ninguna mesa de ensayo.
 - [ ] Los índices están publicados.
 - [ ] Las reglas siguen negando `reservations`, `reservationHolds`, `reservationRate`, `reservationAccess`, `reservationStatusRate` y `events` al navegador.
 - [ ] `PIU_RESERVATIONS_WRITES` y `PIU_FIREBASE_DATA` se encienden juntas, fuera del repositorio, y se probó el apagado.

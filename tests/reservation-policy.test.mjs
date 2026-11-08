@@ -4,12 +4,11 @@ import { readFileSync } from "node:fs"
 
 import { planAssignment, readCapacity } from "@/lib/reservations/capacity"
 import { admitRequest, quotaReason } from "@/lib/reservations/day-policy"
-import { criticalFingerprint, declaredTables, defaultOperationRules, informedGroups, operationsDocument, readinessIssues } from "@/lib/reservations/operations"
-import { confirmedClock } from "@/lib/reservations/schedule"
+import { criticalFingerprint, declaredTables, defaultOperationRules, informedGroups, knownSingleTableSeats, operationsDocument, readinessIssues, readOperationRules } from "@/lib/reservations/operations"
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
-import { isClosedDay, openingWindow, preferenceSlots, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, isClosedDay, openingWindow, preferenceSlots, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 import { canTransition } from "@/lib/reservations/transitions"
 import { clientAddress } from "@/lib/reservations/client-address"
 import { createTrackingSecret, hashTrackingSecret, trackingExpired, trackingExpiresOn, unwrapTrackingSecret, wrapTrackingSecret } from "@/lib/reservations/tracking"
@@ -178,12 +177,21 @@ test("juntar mesas solo ocurre cuando la regla y las mesas lo permiten", () => {
   assert.equal(planAssignment({ config: closed, bookings: {}, zone: "salon", partySize: 2, startMin: 17 * 60 }).reason, "unreservable")
 })
 
-test("la configuración guardada no queda lista para confirmar y no inventa las mesas que faltan", () => {
+test("la configuración inicial no inventa mesas y deja los cupos de salón y terraza", () => {
   const document = operationsDocument(defaultOperationRules())
   assert.equal(document.productionReady, false)
-  assert.equal(document.capacityReady, false)
+  assert.equal(document.capacityReady, true)
   assert.equal(document.walkInTables, null)
   assert.equal(document.serviceMinutes, 90)
+  assert.equal(document.sectors.salon.total, 19)
+  assert.equal(document.sectors.salon.web, 19)
+  assert.equal(document.sectors.terrace.total, 15)
+  assert.equal(document.sectors.terrace.web, 15)
+  assert.equal(document.week.sun.open, false)
+  assert.equal(document.week.mon.opensAt, "17:00")
+  assert.equal(document.week.mon.closesAt, "22:00")
+  assert.equal(document.week.fri.opensAt, "13:00")
+  assert.equal(document.week.fri.closesAt, "23:00")
   assert.equal(document.dailyLimit.mode, "unset")
   assert.equal(document.tables.length, 0)
   const salonInformed = informedGroups.salon.of4 + informedGroups.salon.of3 + informedGroups.salon.of2
@@ -193,6 +201,49 @@ test("la configuración guardada no queda lista para confirmar y no inventa las 
   const slots = preferenceSlots("2026-11-09", now, { ...confirmedClock, lastSeatingTime: "21:00" })
   assert.equal(slots.at(-1), "21:00")
   assert.equal(slots.includes("21:30"), false)
+})
+
+test("los cupos simultáneos respetan la duración y dejan pendiente un grupo grande", () => {
+  const document = operationsDocument({
+    ...defaultOperationRules(),
+    sectors: {
+      salon: { total: 19, web: 2 },
+      terrace: { total: 15, web: 1 },
+    },
+  })
+  const config = readCapacity(document, { allowFixture: false })
+  assert.equal(config?.sectors?.salon, 2)
+  const first = planAssignment({ config, bookings: {}, zone: "salon", partySize: 4, startMin: 17 * 60 })
+  assert.equal(first.ok, true)
+  assert.deepEqual(first.ok && first.tableIds, [])
+  assert.equal(first.ok && first.endMin, 18 * 60 + 30)
+  const busy = {
+    one: { tableIds: [], slots: 1, startMin: 17 * 60, endMin: 18 * 60 + 30, zone: "salon" },
+    two: { tableIds: ["vieja"], startMin: 17 * 60 + 30, endMin: 19 * 60, zone: "salon" },
+  }
+  assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 2, startMin: 18 * 60 }).reason, "overlap")
+  assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 2, startMin: 19 * 60 }).ok, true)
+  assert.equal(planAssignment({ config, bookings: {}, zone: "salon", partySize: knownSingleTableSeats + 1, startMin: 17 * 60 }).reason, "manual")
+  const kept = readOperationRules({
+    clock: { weekday: { opensAt: "18:00", closesAt: "22:00" }, weekend: { opensAt: "12:00", closesAt: "23:00" }, lastSeatingTime: null },
+    tables: [{ id: "mesa-1", label: "Mesa 1", zone: "salon", seats: 4, seatsMax: null, blocked: false, reservable: true, combinable: false, smoker: false }],
+    serviceMinutes: 90,
+  })
+  assert.equal(kept?.tables.length, 1)
+  assert.equal(kept?.week.mon.opensAt, "18:00")
+  assert.equal(kept?.sectors.salon.total, 1)
+  const migrated = operationsDocument({
+    ...defaultOperationRules(),
+    tables: kept?.tables ?? [],
+    sectors: { salon: { total: 19, web: 10 }, terrace: { total: 15, web: 8 } },
+  })
+  assert.equal(migrated.tables.length, 1)
+  assert.equal(migrated.sectors.salon.web, 10)
+  const custom = readOperationRules({
+    ...operationsDocument(defaultOperationRules()),
+    week: { ...defaultWeek(), sun: { open: true, opensAt: "13:00", closesAt: "18:00" } },
+  })
+  assert.equal(openingWindow("2026-11-08", custom?.clock, null, custom?.week)?.opensAt, "13:00")
 })
 
 test("pausar, cerrar un día y los topes no confirman de más", () => {
