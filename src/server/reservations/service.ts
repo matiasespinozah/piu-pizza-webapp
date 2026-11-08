@@ -7,6 +7,7 @@ import type { StaffSession } from "@/lib/auth/roles"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
 import { collections, settingsDocId } from "@/lib/firebase/model"
 import { planAssignment, readCapacity, type HoldBooking } from "@/lib/reservations/capacity"
+import { admitStored, limitsStored, quotaReason, readDayOverride } from "@/lib/reservations/day-policy"
 import { ReservationError } from "@/lib/reservations/errors"
 import type { PublicReservationInput } from "@/lib/reservations/public-request"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
@@ -132,8 +133,11 @@ function listItem(id: string, data: ReservationData): ReservationListItem | null
 function capacityMessage(reason: string) {
   if (reason === "insufficient") return "No hay mesas suficientes para ese grupo en la zona."
   if (reason === "blocked") return "Las mesas de esa zona están bloqueadas."
+  if (reason === "unreservable") return "Las mesas de esa zona no están habilitadas para reservas. La solicitud sigue pendiente."
   if (reason === "overlap") return "Ese horario ya tiene las mesas ocupadas."
   if (reason === "zone") return "No hay mesas configuradas para esa zona."
+  if (reason === "daily") return "Ese día ya alcanzó el tope de reservas confirmadas. La solicitud sigue pendiente."
+  if (reason === "slot") return "Ese horario ya alcanzó el tope de reservas. La solicitud sigue pendiente."
   return "Falta la configuración real de mesas. La solicitud sigue pendiente."
 }
 
@@ -182,6 +186,9 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
   const wrapped = wrapTrackingSecret(freshToken, input.idempotencyKey)
   const expiresOn = trackingExpiresOn(input.date)
 
+  const settingsRef = db.collection(collections.restaurantSettings).doc(settingsDocId)
+  const dayRef = db.collection(collections.reservationDays).doc(input.date)
+
   const outcome = await db.runTransaction(async (tx) => {
     const current = await tx.get(ref)
     if (current.exists) {
@@ -197,6 +204,11 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
         trackingToken: recoverTrackingToken(access?.get("wrapped"), access?.get("revokedAt"), input.idempotencyKey),
       }
     }
+
+    const settingsSnap = await tx.get(settingsRef)
+    const daySnap = await tx.get(dayRef)
+    const admission = admitStored(settingsSnap.data(), daySnap.exists ? daySnap.data() : null, input.date)
+    if (!admission.ok) throw new ReservationError(422, admission.code, admission.message)
 
     const rate = await tx.get(rateRef)
     const used = Number(rate.data()?.count ?? 0)
@@ -445,9 +457,16 @@ async function transitionReservation(session: StaffSession | null, input: Transi
 
     const oldRef = oldDate && oldZone ? db.collection(collections.reservationHolds).doc(`${oldDate}_${oldZone}`) : null
     const newRef = confirms && targetZone ? db.collection(collections.reservationHolds).doc(`${targetDate}_${targetZone}`) : null
+    const otherRef =
+      confirms && targetZone
+        ? db.collection(collections.reservationHolds).doc(`${targetDate}_${targetZone === "salon" ? "terrace" : "salon"}`)
+        : null
+    const dayRef = confirms ? db.collection(collections.reservationDays).doc(targetDate) : null
     const settingsSnap = confirms ? await tx.get(settingsRef) : null
     const oldSnap = oldRef && (releases || confirms) ? await tx.get(oldRef) : null
     const newSnap = newRef && (!oldRef || newRef.path !== oldRef.path) ? await tx.get(newRef) : oldSnap
+    const otherSnap = otherRef ? await tx.get(otherRef) : null
+    const daySnap = dayRef ? await tx.get(dayRef) : null
     const trackingId = typeof data.trackingId === "string" ? data.trackingId : ""
     const accessRef = trackingId ? db.collection(collections.reservationAccess).doc(trackingId) : null
     const accessSnap = accessRef ? await tx.get(accessRef) : null
@@ -469,6 +488,20 @@ async function transitionReservation(session: StaffSession | null, input: Transi
         startMin: hours * 60 + minutes,
       })
       if (!plan.ok) throw new ReservationError(409, `capacity_${plan.reason}`, capacityMessage(plan.reason))
+      const startMin = hours * 60 + minutes
+      const day = readDayOverride(daySnap?.exists ? daySnap.data() : null, targetDate)
+      if (daySnap?.exists && !day) {
+        throw new ReservationError(409, "capacity_unconfigured", "La excepción de ese día no se pudo leer. La solicitud sigue pendiente.")
+      }
+      const limits = limitsStored(settingsSnap?.data(), day)
+      const counted = [
+        ...Object.values(bookings),
+        ...Object.entries(bookingsOf(otherSnap?.data()))
+          .filter(([id]) => id !== input.id)
+          .map((entry) => entry[1]),
+      ]
+      const quota = quotaReason(counted, startMin, limits.daily, limits.slot)
+      if (quota) throw new ReservationError(409, `capacity_${quota}`, capacityMessage(quota))
       const nextBookings = { ...bookingsOf(newSnap?.data()) }
       if (oldRef && newRef && oldRef.path !== newRef.path) {
         const previous = { ...bookingsOf(oldSnap?.data()) }

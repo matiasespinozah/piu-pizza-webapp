@@ -30,7 +30,7 @@ type PublicReservationInput = {
 
 const maxPayloadChars = 4000
 
-function readPublicBody(raw: string, now = new Date()): PublicReservationInput {
+function readPublicBody(raw: string, now = new Date(), rules?: Parameters<typeof validateContact>[2]): PublicReservationInput {
   if (raw.length > maxPayloadChars) {
     throw new ReservationError(400, "invalid", "La solicitud es demasiado grande.")
   }
@@ -56,7 +56,7 @@ function readPublicBody(raw: string, now = new Date()): PublicReservationInput {
     customerPhone: parsed.data.customerPhone,
     notes: parsed.data.notes ?? "",
   }
-  const errors = validateContact(draft, now)
+  const errors = validateContact(draft, now, rules)
   const message = Object.values(errors)[0]
   if (message) throw new ReservationError(422, "invalid", message)
 

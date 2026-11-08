@@ -18,6 +18,7 @@ const collections = {
   reservationRate: "reservationRate",
   reservationAccess: "reservationAccess",
   reservationStatusRate: "reservationStatusRate",
+  reservationDays: "reservationDays",
 } as const
 
 const settingsDocId = "operations"
