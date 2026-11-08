@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { HeartIcon, MenuIcon, ShoppingBagIcon, UserIcon } from "lucide-react"
 
+import { CatalogEditor } from "@/components/features/admin/catalog/catalog-editor"
 import { ProductImage } from "@/components/features/menu/product-image"
 import { FloorEditor } from "@/components/features/admin/tables/floor-editor"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -71,6 +72,44 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
     </section>
   )
 }
+
+const sampleCategories = [
+  {
+    id: "muestra",
+    slug: "muestra",
+    name: "Categoría de muestra",
+    description: "Texto de ejemplo del muestrario.",
+    sortOrder: 1,
+    isVisible: true,
+  },
+]
+
+const sampleProducts = [
+  {
+    id: "muestra-1",
+    categoryId: "muestra",
+    name: "Producto de muestra",
+    description: "Ejemplo del panel. No está en la carta.",
+    priceClp: 1000,
+    imageUrl: null,
+    availability: "available" as const,
+    isFeatured: false,
+    isVisible: true,
+    sortOrder: 1,
+  },
+  {
+    id: "muestra-2",
+    categoryId: "muestra",
+    name: "Producto oculto de muestra",
+    description: "",
+    priceClp: 2000,
+    imageUrl: null,
+    availability: "unavailable" as const,
+    isFeatured: true,
+    isVisible: false,
+    sortOrder: 2,
+  },
+]
 
 export default function UiShowcasePage() {
   if (process.env.NODE_ENV === "production") notFound()
@@ -389,6 +428,13 @@ export default function UiShowcasePage() {
               confirmedCount={0}
               pendingTruncated={false}
             />
+          </Block>
+
+          <Block title="Carta del panel">
+            <Text className="mb-4">
+              Ejemplo del editor. Guardar llama al API local y pide sesión; estos nombres no están en la carta.
+            </Text>
+            <CatalogEditor categories={sampleCategories} products={sampleProducts} />
           </Block>
 
           <Block title="Feedback y utilidades">
