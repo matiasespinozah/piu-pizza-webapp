@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { HeartIcon, MenuIcon, ShoppingBagIcon, UserIcon } from "lucide-react"
 
 import { ProductImage } from "@/components/features/menu/product-image"
+import { FloorEditor } from "@/components/features/admin/tables/floor-editor"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,6 +50,8 @@ import { TextLink } from "@/components/ui/text-link"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Caption, Display, Eyebrow, Heading, Lead, Text } from "@/components/ui/typography"
+import { emptyDay } from "@/lib/reservations/day-policy"
+import { defaultOperationRules } from "@/lib/reservations/operations"
 import { ToastDemo } from "./toast-demo"
 
 /**
@@ -372,6 +375,20 @@ export default function UiShowcasePage() {
             <div className="mt-6">
               <ToastDemo />
             </div>
+          </Block>
+
+          <Block title="Mesas del panel">
+            <Text className="mb-4">Ejemplo vacío. Guardar aquí no escribe en Firestore ni completa las mesas que faltan.</Text>
+            <FloorEditor
+              preview
+              rules={defaultOperationRules()}
+              date="2026-11-09"
+              day={emptyDay("2026-11-09")}
+              bookings={[]}
+              pendingCount={0}
+              confirmedCount={0}
+              pendingTruncated={false}
+            />
           </Block>
 
           <Block title="Feedback y utilidades">

@@ -3,6 +3,9 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 
 import { planAssignment, readCapacity } from "@/lib/reservations/capacity"
+import { admitRequest, quotaReason } from "@/lib/reservations/day-policy"
+import { criticalFingerprint, declaredTables, defaultOperationRules, informedGroups, operationsDocument, readinessIssues } from "@/lib/reservations/operations"
+import { confirmedClock } from "@/lib/reservations/schedule"
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
@@ -149,6 +152,71 @@ test("la mesa se asigna de a una y no se confirma sin configuración", () => {
     }).reason,
     "insufficient"
   )
+})
+
+test("juntar mesas solo ocurre cuando la regla y las mesas lo permiten", () => {
+  const pair = [
+    { id: "a", zone: "salon", seats: 4, blocked: false, combinable: true },
+    { id: "d", zone: "salon", seats: 4, blocked: false, combinable: true },
+  ]
+  const open = { serviceMinutes: 90, maxCombinedTables: 2, tables: pair }
+  const joined = planAssignment({ config: open, bookings: {}, zone: "salon", partySize: 6, startMin: 17 * 60 })
+  assert.equal(joined.ok && joined.tableIds.join(), "a,d")
+  assert.equal(
+    planAssignment({
+      config: { ...open, maxCombinedTables: 1 },
+      bookings: {},
+      zone: "salon",
+      partySize: 6,
+      startMin: 17 * 60,
+    }).reason,
+    "insufficient",
+  )
+  const busy = { one: { tableIds: ["a"], startMin: 17 * 60, endMin: 18 * 60 + 30, zone: "salon" } }
+  assert.equal(planAssignment({ config: open, bookings: busy, zone: "salon", partySize: 6, startMin: 17 * 60 }).reason, "overlap")
+  const closed = { ...open, tables: pair.map((table) => ({ ...table, reservable: false })) }
+  assert.equal(planAssignment({ config: closed, bookings: {}, zone: "salon", partySize: 2, startMin: 17 * 60 }).reason, "unreservable")
+})
+
+test("la configuración guardada no queda lista para confirmar y no inventa las mesas que faltan", () => {
+  const document = operationsDocument(defaultOperationRules())
+  assert.equal(document.productionReady, false)
+  assert.equal(document.capacityReady, false)
+  assert.equal(document.walkInTables, null)
+  assert.equal(document.serviceMinutes, 90)
+  assert.equal(document.dailyLimit.mode, "unset")
+  assert.equal(document.tables.length, 0)
+  const salonInformed = informedGroups.salon.of4 + informedGroups.salon.of3 + informedGroups.salon.of2
+  const terraceInformed = informedGroups.terrace.of4 + informedGroups.terrace.of2
+  assert.equal(declaredTables.salon - salonInformed, 8)
+  assert.equal(declaredTables.terrace - terraceInformed, 6)
+  const slots = preferenceSlots("2026-11-09", now, { ...confirmedClock, lastSeatingTime: "21:00" })
+  assert.equal(slots.at(-1), "21:00")
+  assert.equal(slots.includes("21:30"), false)
+})
+
+test("pausar, cerrar un día y los topes no confirman de más", () => {
+  const rules = defaultOperationRules()
+  const monday = "2026-11-09"
+  assert.equal(admitRequest({ ...rules, receptionPaused: true }, null, monday).code, "paused")
+  assert.equal(admitRequest(rules, { ...rules, date: monday, closed: true, full: false, hours: null, lastSeatingTime: null, daily: { mode: "inherit", max: null }, slot: { mode: "inherit", max: null }, notice: null, updatedBy: null, updatedAt: null }, monday).ok, false)
+  const bookings = [{ tableIds: ["a"], startMin: 17 * 60, endMin: 18 * 60 + 30, zone: "salon" }]
+  assert.equal(quotaReason(bookings, 19 * 60, 1, null), "daily")
+  assert.equal(quotaReason(bookings, 17 * 60, null, 1), "slot")
+  assert.equal(quotaReason(bookings, 19 * 60, null, 1), null)
+  const ready = {
+    ...rules,
+    clock: { ...rules.clock, lastSeatingTime: "21:00" },
+    anticipation: { weekdayLeadHours: 2, weekendPreviousDayCutoff: "18:00" },
+    dailyLimit: { mode: "none", max: null },
+    slotLimit: { mode: "none", max: null },
+    walkInTables: 0,
+    tables: [{ id: "mesa-1", label: "Mesa 1", zone: "salon", seats: 4, seatsMax: null, blocked: false, reservable: true, combinable: false, smoker: false }],
+  }
+  assert.equal(readinessIssues(ready).length, 0)
+  const fingerprint = criticalFingerprint(ready)
+  assert.equal(operationsDocument({ ...ready, productionReady: true, validatedFingerprint: fingerprint }).productionReady, true)
+  assert.equal(operationsDocument({ ...ready, productionReady: true, validatedFingerprint: fingerprint, serviceMinutes: 60 }).productionReady, false)
 })
 
 test("las transiciones cerradas no vuelven atrás", () => {

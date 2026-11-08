@@ -3,7 +3,7 @@ import { cn } from "cn"
 
 import { FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { maxPartyFor, reservationConfig, zoneConfig } from "@/lib/reservations/configuration"
+import { maxPartyFor, reservationConfig } from "@/lib/reservations/configuration"
 import type { ReservationDraft, ReservationErrors, ReservationZone } from "@/lib/reservations/types"
 
 const zoneIcons = {
@@ -15,12 +15,20 @@ type ReservationDateStepProps = {
   draft: ReservationDraft
   errors: ReservationErrors
   today: string
+  maxParty?: { salon: number; terrace: number }
   onChange: (patch: Partial<ReservationDraft>) => void
 }
 
-function ReservationDateStep({ draft, errors, today, onChange }: ReservationDateStepProps) {
+function partyCap(zone: ReservationZone | null, maxParty?: { salon: number; terrace: number }) {
+  if (!maxParty) return maxPartyFor(zone)
+  if (zone === "terrace") return maxParty.terrace
+  if (zone === "salon") return maxParty.salon
+  return Math.max(maxParty.salon, maxParty.terrace)
+}
+
+function ReservationDateStep({ draft, errors, today, maxParty, onChange }: ReservationDateStepProps) {
   const min = reservationConfig.partySize.min
-  const max = maxPartyFor(draft.zone)
+  const max = partyCap(draft.zone, maxParty)
 
   return (
     <div className="flex flex-col gap-5">
@@ -99,7 +107,7 @@ function ReservationDateStep({ draft, errors, today, onChange }: ReservationDate
                 )}
                 onClick={() => {
                   const nextZone = zone.id as ReservationZone
-                  const cap = zoneConfig(nextZone).maxPartySize
+                  const cap = partyCap(nextZone, maxParty)
                   onChange({
                     zone: nextZone,
                     ...(draft.partySize > cap ? { partySize: cap } : {}),
@@ -109,7 +117,7 @@ function ReservationDateStep({ draft, errors, today, onChange }: ReservationDate
                 <Icon aria-hidden className="size-5" />
                 <span className="font-heading text-lg leading-none font-bold">{zone.label}</span>
                 <span className={cn("text-sm", selected ? "text-cream/80" : "text-olive-strong")}>
-                  {zone.description} Hasta {zone.maxPartySize}.
+                  {zone.description} Hasta {partyCap(zone.id, maxParty)}.
                 </span>
               </button>
             )

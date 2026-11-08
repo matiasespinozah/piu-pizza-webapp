@@ -1,25 +1,27 @@
 import { cn } from "cn"
 
 import { FieldError } from "@/components/ui/field"
-import { formatVisitDate, isClosedDay, preferenceSlots } from "@/lib/reservations/schedule"
+import { formatVisitDate, openingWindow, preferenceSlots, type ReservationClock, type VisitHours } from "@/lib/reservations/schedule"
 import type { ReservationDraft, ReservationErrors } from "@/lib/reservations/types"
 
 type ReservationTimeStepProps = {
   draft: ReservationDraft
   errors: ReservationErrors
+  clock: ReservationClock
+  visit?: VisitHours | null
   onChange: (preferredTime: string) => void
 }
 
-function ReservationTimeStep({ draft, errors, onChange }: ReservationTimeStepProps) {
-  const closed = Boolean(draft.date) && isClosedDay(draft.date)
-  const slots = draft.date ? preferenceSlots(draft.date) : []
+function ReservationTimeStep({ draft, errors, clock, visit = null, onChange }: ReservationTimeStepProps) {
+  const closed = Boolean(draft.date) && openingWindow(draft.date, clock, visit) === null
+  const slots = draft.date ? preferenceSlots(draft.date, new Date(), clock, visit) : []
 
   return (
     <fieldset className="flex flex-col gap-4">
       <legend className="sr-only">Horario de preferencia</legend>
       {draft.date ? <p className="font-heading text-lg font-bold text-olive">{formatVisitDate(draft.date)}</p> : null}
 
-      {closed ? <p className="text-base text-olive">Los domingos no abrimos. Elige otro día en Tu visita.</p> : null}
+      {closed ? <p className="text-base text-olive">Ese día no hay horario de reservas. Elige otra fecha en Tu visita.</p> : null}
       {!closed && slots.length === 0 ? (
         <p className="text-base text-olive">Hoy ya no quedan horarios. Prueba con otro día.</p>
       ) : null}

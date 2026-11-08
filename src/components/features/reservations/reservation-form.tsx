@@ -13,6 +13,8 @@ import { reservationWhatsappMessage, zoneConfig } from "@/lib/reservations/confi
 import { formatVisitDate, todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { normalizeChileMobile, validateContact, validateTime, validateVisit } from "@/lib/reservations/validation"
 import type { PublicReceipt } from "@/lib/reservations/views"
+import { admitRequest, visitException, type DayOverride } from "@/lib/reservations/day-policy"
+import { defaultOperationRules, publicRules } from "@/lib/reservations/operations"
 import type { ReservationDraft, ReservationErrors, ReservationStep } from "@/lib/reservations/types"
 
 const whatsappHref = `https://wa.me/56928873619?text=${encodeURIComponent(reservationWhatsappMessage)}`
@@ -34,6 +36,8 @@ const stepTitle = {
 } as const
 
 function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
+  const [rules, setRules] = useState(publicRules(defaultOperationRules()))
+  const [day, setDay] = useState<DayOverride | null>(null)
   const [step, setStep] = useState<ReservationStep>(1)
   const [draft, setDraft] = useState<ReservationDraft>(initialDraft)
   const [errors, setErrors] = useState<ReservationErrors>({})
@@ -51,8 +55,42 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   const titleId = useId()
 
   useEffect(() => {
+    let active = true
+    void fetch("/api/reservations")
+      .then((response) => response.json())
+      .then((payload: { rules?: ReturnType<typeof publicRules> }) => {
+        if (active && payload.rules?.clock) setRules(payload.rules)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!draft.date) return
+    let active = true
+    void fetch(`/api/reservations?date=${draft.date}`)
+      .then((response) => response.json())
+      .then((payload: { rules?: ReturnType<typeof publicRules>; day?: DayOverride | null }) => {
+        if (!active) return
+        if (payload.rules?.clock) setRules(payload.rules)
+        if (payload.day) setDay(payload.day)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [draft.date])
+
+  useEffect(() => {
     headingRef.current?.focus({ preventScroll: true })
   }, [step])
+
+  const phone = normalizeChileMobile(draft.customerPhone) ?? ""
+  const visitRules = { ...rules, day }
+  const admission = draft.date ? admitRequest(rules, day, draft.date) : rules.receptionPaused ? admitRequest(rules, null, "2099-01-05") : { ok: true as const }
+  const blocked = !admission.ok
 
   function patch(next: Partial<ReservationDraft>) {
     setDraft((current) => ({ ...current, ...next }))
@@ -65,7 +103,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   }
 
   function goNext() {
-    const nextErrors = step === 1 ? validateVisit(draft) : validateTime(draft)
+    const nextErrors = step === 1 ? validateVisit(draft, new Date(), visitRules) : validateTime(draft, new Date(), visitRules)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
     setStep((current) => (current === 1 ? 2 : 3))
@@ -83,8 +121,8 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   }
 
   async function send() {
-    if (!receptionEnabled || sending) return
-    const nextErrors = validateContact(draft)
+    if (!receptionEnabled || sending || blocked) return
+    const nextErrors = validateContact(draft, new Date(), visitRules)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
     if (!requestKey.current) requestKey.current = crypto.randomUUID()
@@ -118,8 +156,6 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
       setSending(false)
     }
   }
-
-  const phone = normalizeChileMobile(draft.customerPhone) ?? ""
 
   if (!receptionEnabled) {
     return (
@@ -217,9 +253,20 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
           {stepTitle[step]}
         </h2>
         <p className="mb-4 text-sm text-olive-strong">Enviar no confirma la mesa. El equipo de PIÙ la revisa antes.</p>
-        {step === 1 ? <ReservationDateStep draft={draft} errors={errors} today={today} onChange={patch} /> : null}
+        {!admission.ok ? (
+          <p role="status" className="mb-4 rounded-2xl border border-olive-line bg-cream px-4 py-3 text-base text-olive">
+            {admission.message}
+          </p>
+        ) : null}
+        {step === 1 ? <ReservationDateStep draft={draft} errors={errors} today={today} maxParty={rules.maxParty} onChange={patch} /> : null}
         {step === 2 ? (
-          <ReservationTimeStep draft={draft} errors={errors} onChange={(preferredTime) => patch({ preferredTime })} />
+          <ReservationTimeStep
+            draft={draft}
+            errors={errors}
+            clock={rules.clock}
+            visit={visitException(day)}
+            onChange={(preferredTime) => patch({ preferredTime })}
+          />
         ) : null}
         {step === 3 ? (
           <div className="flex flex-col gap-5">
@@ -245,11 +292,11 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
           </Button>
         ) : null}
         {step < 3 ? (
-          <Button type="submit" variant="accent" size="lg" className="h-12 flex-1">
+          <Button type="submit" variant="accent" size="lg" className="h-12 flex-1" disabled={blocked}>
             Continuar
           </Button>
         ) : (
-          <Button type="submit" variant="accent" size="lg" className="h-12 flex-1" disabled={!receptionEnabled || sending}>
+          <Button type="submit" variant="accent" size="lg" className="h-12 flex-1" disabled={!receptionEnabled || sending || blocked}>
             {sending ? "Enviando…" : "Enviar solicitud"}
           </Button>
         )}
