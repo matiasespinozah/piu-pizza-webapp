@@ -35,14 +35,14 @@ function useCopied() {
 function ReservationReference({ code, size = "lg" }: { code: string; size?: "lg" | "md" }) {
   const { state, copy } = useCopied()
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-olive-soft px-4 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-olive px-4 py-3 text-cream shadow-tactile">
       <div className="min-w-0">
-        <p className="font-label text-[0.6875rem] tracking-[0.14em] text-olive-muted uppercase">Referencia</p>
+        <p className="font-label text-[0.625rem] tracking-[0.18em] text-cream/70 uppercase">Referencia</p>
         <p
           className={
             size === "lg"
-              ? "font-heading text-[1.75rem] leading-tight font-extrabold tracking-wide text-olive"
-              : "font-heading text-xl leading-tight font-extrabold tracking-wide text-olive"
+              ? "font-heading text-[1.75rem] leading-tight font-extrabold tracking-wider"
+              : "font-heading text-2xl leading-tight font-extrabold tracking-wider"
           }
         >
           {code}
@@ -52,6 +52,7 @@ function ReservationReference({ code, size = "lg" }: { code: string; size?: "lg"
         type="button"
         variant="ghost"
         size="icon"
+        className="rounded-full border border-cream/25 text-cream hover:bg-cream/10 focus-visible:outline-cream"
         aria-label={state === "copied" ? "Referencia copiada" : `Copiar ${code}`}
         onClick={() => void copy(code)}
       >

@@ -157,10 +157,10 @@ function ReservationStatus() {
     <div className="mx-auto flex w-full min-w-0 max-w-lg flex-col gap-5">
       <header className="flex flex-col gap-1">
         <p className="font-label text-xs font-semibold tracking-[0.14em] text-terracotta uppercase">PIÙ Pizza & Dolce</p>
-        <h1 className="font-heading text-3xl font-extrabold text-olive">Tu reserva</h1>
+        <h1 className="font-heading text-4xl leading-none font-extrabold tracking-tight text-olive">Tu reserva</h1>
       </header>
       {unavailable ? (
-        <div className="reservation-status-in flex flex-col gap-4 rounded-3xl border border-olive-line bg-surface-raised px-5 py-6 shadow-lift sm:px-7">
+        <div className="reservation-status-in flex flex-col gap-4 rounded-[1.75rem] border border-olive-line bg-surface-raised px-5 py-6 shadow-lift sm:px-7">
           <div className="flex flex-col gap-1">
             <h2 className="font-heading text-xl font-bold text-olive">Seguimiento no disponible</h2>
             <p className="text-base text-olive-strong">Por ahora consulta tu reserva por WhatsApp. Te respondemos rápido.</p>
@@ -175,18 +175,24 @@ function ReservationStatus() {
         <div
           role="status"
           aria-label="Buscando tu reserva"
-          className="flex flex-col gap-4 rounded-3xl border border-olive-line bg-surface-raised px-5 py-6 shadow-lift sm:px-7"
+          className="overflow-hidden rounded-[1.75rem] border border-olive-line bg-surface-raised shadow-lift"
         >
-          <div className="flex items-center gap-3">
-            <Skeleton className="size-12 rounded-full" />
-            <div className="flex flex-1 flex-col gap-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-6 w-32" />
+          <div className="flex flex-col gap-4 bg-olive-hover px-5 pt-5 pb-6 sm:px-7">
+            <Skeleton className="h-7 w-28 rounded-full" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="size-16 rounded-2xl" />
+              <div className="flex flex-1 flex-col gap-2">
+                <Skeleton className="h-8 w-36" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
             </div>
           </div>
-          <Skeleton className="h-4 w-4/5" />
-          <Skeleton className="h-16 w-full rounded-2xl" />
-          <Skeleton className="h-36 w-full rounded-2xl" />
+          <div className="flex flex-col gap-4 px-5 py-6 sm:px-7">
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+          </div>
         </div>
       ) : status && checkedAt ? (
         <ReservationStatusCard

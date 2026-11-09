@@ -41,6 +41,18 @@ El fondo principal es un **crema verdoso** (`#E8E9D9`), y el texto, las formas y
 | `--surface-raised` | `#F0F0E4` | Superficie clara secundaria, opcional; no sustituye el fondo base |
 | `--focus-ring` | `rgba(43,52,31,0.60)` | Indicador de foco visible |
 
+### Colores de estado (solo reservas)
+Comunican el estado de una reserva en `/reservas/estado` y `/admin/reservas`. Son tonos tierra, apagados, para convivir con el crema y el oliva. No se usan como decoración, fondos de sección ni CTA, y siempre van con ícono y texto: el color nunca es la única señal.
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--status-waiting` / `-solid` / `-soft` | `#8A5A0B` / `#D99A26` / `#F3E2B6` | Pendiente, cambio propuesto (ámbar) |
+| `--status-good` / `-solid` / `-soft` | `#2F6B31` / `#4A8A3F` / `#D7E6C8` | Confirmada (verde) |
+| `--status-done-solid` | `#2B5E2A` | Llegó / En PIÙ / finalizada (verde fuerte con check) |
+| `--status-closed` / `-soft` | `#9A3F31` / `#F0D9D1` | Rechazada (rojo suave). Cancelada usa oliva neutro |
+
+El texto va en la variante oscura sobre la `-soft`; en crema sobre `--status-good-solid` y `--status-done-solid`; y en oliva sobre `--status-waiting-solid` (el crema no tiene contraste suficiente sobre ámbar).
+
 **Regla cromática:** mínimo 80–90 % de la interfaz en crema y verde oliva; la fotografía aporta el resto del color. Los elementos interactivos no deben depender del color únicamente para comunicar su estado. Evitar usar texto de bajo contraste sobre el fondo. Para texto pequeño, preferir `--brand-olive` o `--olive-strong`.
 
 ### Tokens CSS de referencia
