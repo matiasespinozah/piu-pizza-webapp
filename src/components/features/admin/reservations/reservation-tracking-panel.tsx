@@ -2,17 +2,21 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Link2, Link2Off, RefreshCw } from "lucide-react"
+import { cn } from "cn"
 
+import { DetailSection } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { CopyTrackingLink } from "@/components/features/reservations/reservation-tracking-actions"
 import { Button } from "@/components/ui/button"
 import { formatVisitDate } from "@/lib/reservations/schedule"
 import type { ReservationDetail } from "@/lib/reservations/views"
 
-function trackingLabel(tracking: ReservationDetail["tracking"]) {
-  if (tracking.state === "missing") return "Esta solicitud no tiene enlace de seguimiento."
-  if (tracking.state === "revoked") return "El enlace de seguimiento fue revocado."
-  if (tracking.state === "expired") return `El enlace venció el ${tracking.expiresOn ? formatVisitDate(tracking.expiresOn) : "—"}.`
-  return `El enlace está vigente hasta el ${tracking.expiresOn ? formatVisitDate(tracking.expiresOn) : "—"}.`
+function trackingView(tracking: ReservationDetail["tracking"]) {
+  const until = "expiresOn" in tracking && tracking.expiresOn ? formatVisitDate(tracking.expiresOn) : "—"
+  if (tracking.state === "missing") return { pill: "Sin enlace", detail: "Esta solicitud no tiene enlace de seguimiento.", tone: "bg-olive-hover text-olive-strong" }
+  if (tracking.state === "revoked") return { pill: "Revocado", detail: "El enlace fue revocado.", tone: "bg-status-closed-soft text-status-closed" }
+  if (tracking.state === "expired") return { pill: "Vencido", detail: `Venció el ${until}.`, tone: "bg-status-waiting-soft text-status-waiting" }
+  return { pill: "Vigente", detail: `Sirve hasta el ${until}.`, tone: "bg-status-good-soft text-status-good" }
 }
 
 function ReservationTrackingPanel({ reservation }: { reservation: ReservationDetail }) {
@@ -55,33 +59,65 @@ function ReservationTrackingPanel({ reservation }: { reservation: ReservationDet
     }
   }
 
+  const view = trackingView(reservation.tracking)
+
   return (
-    <section className="flex flex-col gap-3 border-t border-olive-line pt-4">
-      <h3 className="font-heading text-base font-bold">Seguimiento del cliente</h3>
-      <p className="text-sm text-olive-muted">{trackingLabel(reservation.tracking)}</p>
-      <p className="text-sm text-olive-muted">
-        El enlace no se puede reconstruir. Si la persona lo perdió, genera otro: el anterior deja de servir. Léelo una sola vez.
-      </p>
+    <DetailSection
+      icon={Link2}
+      title="Seguimiento del cliente"
+      aside={<span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", view.tone)}>{view.pill}</span>}
+    >
+      <p className="text-sm text-olive-strong">{view.detail}</p>
       {issued ? (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold text-olive">Enlace nuevo. Cópialo ahora. No queda guardado en el panel.</p>
+        <div className="flex flex-col gap-3 rounded-2xl border border-status-good-solid/40 bg-status-good-soft/50 p-3">
+          <p className="text-sm font-semibold text-status-good">Enlace nuevo. Cópialo ahora: no queda guardado en el panel.</p>
           <CopyTrackingLink token={issued} />
           <Button type="button" variant="secondary" className="h-12 w-full" onClick={() => setIssued(null)}>
             Ya lo anoté
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Button type="button" variant="secondary" className="h-12" disabled={pending} onClick={() => void run("issue_tracking")}>
-            {armed === "issue_tracking" ? "Sí, generar otro enlace" : "Generar enlace"}
-          </Button>
-          <Button type="button" variant="secondary" className="h-12" disabled={pending || reservation.tracking.state === "missing"} onClick={() => void run("revoke_tracking")}>
-            {armed === "revoke_tracking" ? "Sí, revocar el enlace" : "Revocar enlace"}
-          </Button>
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className={cn("h-12", armed === "issue_tracking" && "ring-2 ring-olive ring-offset-2 ring-offset-surface-raised")}
+              disabled={pending}
+              aria-pressed={armed === "issue_tracking"}
+              onClick={() => void run("issue_tracking")}
+            >
+              <RefreshCw aria-hidden />
+              {armed === "issue_tracking" ? "Sí, generar" : "Generar enlace"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className={cn(
+                "h-12 text-status-closed",
+                armed === "revoke_tracking" && "ring-2 ring-status-closed ring-offset-2 ring-offset-surface-raised",
+              )}
+              disabled={pending || reservation.tracking.state === "missing"}
+              aria-pressed={armed === "revoke_tracking"}
+              onClick={() => void run("revoke_tracking")}
+            >
+              <Link2Off aria-hidden />
+              {armed === "revoke_tracking" ? "Sí, revocar" : "Revocar"}
+            </Button>
+          </div>
+          <p className="text-xs text-olive-muted">
+            {armed
+              ? "Toca otra vez para confirmar."
+              : "El enlace no se puede recuperar. Si se perdió, genera otro: el anterior deja de servir."}
+          </p>
+        </>
       )}
-      {message ? <p className="text-sm text-olive-strong">{message}</p> : null}
-    </section>
+      {message ? (
+        <p className="text-sm font-semibold text-status-closed" role="alert">
+          {message}
+        </p>
+      ) : null}
+    </DetailSection>
   )
 }
 

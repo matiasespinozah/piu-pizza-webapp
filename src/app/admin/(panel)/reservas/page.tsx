@@ -1,12 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { AlertCircle, CalendarCheck, CalendarRange, ChevronDown, Clock, Inbox, Search, SlidersHorizontal } from "lucide-react"
 
-import { ReservationActions } from "@/components/features/admin/reservations/reservation-actions"
-import { ReservationTrackingPanel } from "@/components/features/admin/reservations/reservation-tracking-panel"
-import { Eyebrow, Heading, Text } from "@/components/ui/typography"
-import { zoneConfig } from "@/lib/reservations/configuration"
-import { formatVisitDate } from "@/lib/reservations/schedule"
-import { statusLabel } from "@/lib/reservations/views"
+import { ReservationListCard, SummaryTile } from "@/components/features/admin/reservations/reservation-admin-ui"
+import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
+import { Button } from "@/components/ui/button"
+import { Eyebrow, Heading } from "@/components/ui/typography"
 import { requireSection } from "@/server/auth/access"
 import { getReservationForStaff, listReservationsForStaff } from "@/server/reservations/service"
 
@@ -25,17 +24,8 @@ function one(value: string | string[] | undefined) {
   return typeof value === "string" ? value : undefined
 }
 
-const actionLabel: Record<string, string> = {
-  received: "Recibida",
-  confirm: "Confirmó",
-  reject: "Rechazó",
-  propose: "Propuso un cambio",
-  cancel: "Canceló",
-  arrive: "Marcó llegada",
-  complete: "Finalizó",
-  tracking_issued: "Generó un enlace",
-  tracking_revoked: "Revocó el enlace",
-}
+const fieldClass =
+  "h-11 w-full min-w-0 rounded-xl border border-input bg-cream px-3 text-base text-olive outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
 
 function hrefOf(params: Record<string, string | undefined>) {
   const search = new URLSearchParams()
@@ -61,170 +51,162 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
   const selectedId = one(params.id)
   const detail = result.ready && selectedId ? await getReservationForStaff(session, selectedId).catch(() => null) : null
   const filters = { date: query.date, status: query.status, zone: query.zone, view: query.view, q: query.q }
+  const extraFilters = [query.date, query.status, query.zone].filter(Boolean).length
+  const anyFilter = extraFilters > 0 || Boolean(query.q) || Boolean(query.view)
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <header className="flex flex-col gap-2">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+      <header className="flex flex-col gap-1">
         <Eyebrow>PIÙ · reservas</Eyebrow>
         <Heading as="h1" size="h3">
           Solicitudes
         </Heading>
-        <Text>
-          Una solicitud pendiente no reserva una mesa. La confirmación la hace el equipo, y solo cuando hay una mesa
-          válida.
-        </Text>
+        <p className="text-sm text-olive-muted">Pendiente no reserva mesa. La confirma el equipo, con una mesa válida.</p>
       </header>
 
       {!result.ready ? (
-        <p className="rounded-xl border border-olive-line bg-surface-raised p-4 text-sm text-olive-strong">
+        <p className="flex items-start gap-3 rounded-2xl border border-olive-line bg-surface-raised p-4 text-sm text-olive-strong">
+          <Inbox aria-hidden className="mt-0.5 size-5 shrink-0 text-olive-muted" />
           La recepción de reservas sigue desactivada. No hay solicitudes reales que mostrar.
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryLink href={hrefOf({ view: "attention" })} label="Requieren atención" value={result.summary?.attention} />
-          <SummaryLink href={hrefOf({ view: "pending" })} label="Pendientes" value={result.summary?.pending} />
-          <SummaryLink href={hrefOf({ view: "today" })} label="Confirmadas hoy" value={result.summary?.confirmedToday} />
-          <SummaryLink href={hrefOf({ view: "upcoming" })} label="Próximas confirmadas" value={result.summary?.upcoming} />
+        <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          <SummaryTile
+            href={hrefOf({ view: "attention" })}
+            label="Requieren atención"
+            value={result.summary?.attention}
+            icon={AlertCircle}
+            iconClass="bg-terracotta text-cream"
+            active={query.view === "attention"}
+          />
+          <SummaryTile
+            href={hrefOf({ view: "pending" })}
+            label="Pendientes"
+            value={result.summary?.pending}
+            icon={Clock}
+            iconClass="bg-status-waiting-soft text-status-waiting"
+            active={query.view === "pending"}
+          />
+          <SummaryTile
+            href={hrefOf({ view: "today" })}
+            label="Confirmadas hoy"
+            value={result.summary?.confirmedToday}
+            icon={CalendarCheck}
+            iconClass="bg-status-good-soft text-status-good"
+            active={query.view === "today"}
+          />
+          <SummaryTile
+            href={hrefOf({ view: "upcoming" })}
+            label="Próximas confirmadas"
+            value={result.summary?.upcoming}
+            icon={CalendarRange}
+            iconClass="bg-olive text-cream"
+            active={query.view === "upcoming"}
+          />
         </ul>
       )}
 
-      <form method="get" action="/admin/reservas" className="flex flex-wrap items-end gap-3">
-        <label className="flex w-full min-w-0 flex-col gap-1 text-sm font-semibold sm:w-auto sm:min-w-[10rem] sm:flex-1">
-          Fecha
-          <input name="date" type="date" defaultValue={query.date} className="h-11 w-full min-w-0 rounded-lg border border-input px-3 [min-inline-size:0]" />
-        </label>
-        <label className="flex w-full min-w-0 flex-col gap-1 text-sm font-semibold sm:w-auto sm:min-w-[10rem] sm:flex-1">
-          Estado
-          <select name="status" defaultValue={query.status ?? ""} className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent px-3">
-            <option value="">Todos</option>
-            <option value="pending">Pendiente</option>
-            <option value="confirmed">Confirmada</option>
-            <option value="reschedule_requested">Cambio propuesto</option>
-            <option value="rejected">Rechazada</option>
-            <option value="cancelled">Cancelada</option>
-            <option value="arrived">Llegó</option>
-            <option value="completed">Finalizada</option>
-          </select>
-        </label>
-        <label className="flex w-full min-w-0 flex-col gap-1 text-sm font-semibold sm:w-auto sm:min-w-[8rem] sm:flex-1">
-          Zona
-          <select name="zone" defaultValue={query.zone ?? ""} className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent px-3">
-            <option value="">Todas</option>
-            <option value="salon">Salón</option>
-            <option value="terrace">Terraza</option>
-          </select>
-        </label>
-        <label className="flex w-full min-w-0 flex-col gap-1 text-sm font-semibold sm:w-auto sm:min-w-[12rem] sm:flex-[2]">
-          Nombre o referencia
-          <input name="q" defaultValue={query.q} className="h-11 w-full min-w-0 rounded-lg border border-input px-3" />
-        </label>
+      <form method="get" action="/admin/reservas" className="flex flex-col gap-2 rounded-2xl border border-olive-line bg-surface-raised p-2.5 shadow-tactile sm:p-3">
+        <div className="flex gap-2">
+          <label className="relative min-w-0 flex-1">
+            <span className="sr-only">Nombre o referencia</span>
+            <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-olive-muted" />
+            <input name="q" defaultValue={query.q} placeholder="Nombre o referencia" className={`${fieldClass} pl-9`} />
+          </label>
+          <Button type="submit" className="h-11 shrink-0 rounded-xl">
+            Filtrar
+          </Button>
+        </div>
+        <details className="group" open={extraFilters > 0}>
+          <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-2 text-sm font-semibold text-olive outline-none select-none focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+            <SlidersHorizontal aria-hidden className="size-4" />
+            Fecha, estado y zona
+            {extraFilters > 0 ? (
+              <span className="inline-flex size-5 items-center justify-center rounded-full bg-olive text-[0.6875rem] text-cream">{extraFilters}</span>
+            ) : null}
+            <ChevronDown aria-hidden className="ml-auto size-4 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="grid grid-cols-1 gap-3 px-1 pt-1 pb-1 sm:grid-cols-3">
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
+              Fecha
+              <input name="date" type="date" defaultValue={query.date} className={`${fieldClass} [min-inline-size:0]`} />
+            </label>
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
+              Estado
+              <select name="status" defaultValue={query.status ?? ""} className={fieldClass}>
+                <option value="">Todos</option>
+                <option value="pending">Pendiente</option>
+                <option value="confirmed">Confirmada</option>
+                <option value="reschedule_requested">Cambio propuesto</option>
+                <option value="rejected">Rechazada</option>
+                <option value="cancelled">Cancelada</option>
+                <option value="arrived">Llegó</option>
+                <option value="completed">Finalizada</option>
+              </select>
+            </label>
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
+              Zona
+              <select name="zone" defaultValue={query.zone ?? ""} className={fieldClass}>
+                <option value="">Todas</option>
+                <option value="salon">Salón</option>
+                <option value="terrace">Terraza</option>
+              </select>
+            </label>
+          </div>
+        </details>
         {query.view ? <input type="hidden" name="view" value={query.view} /> : null}
-        <button type="submit" className="h-11 rounded-lg bg-olive px-4 font-semibold text-cream">
-          Filtrar
-        </button>
-        <Link href="/admin/reservas" className="inline-flex h-11 items-center px-2 text-sm font-semibold underline">
-          Limpiar
-        </Link>
+        {anyFilter ? (
+          <Link href="/admin/reservas" className="inline-flex h-9 items-center self-start px-2 text-sm font-semibold text-olive underline underline-offset-4">
+            Limpiar filtros
+          </Link>
+        ) : null}
       </form>
 
       {result.ready ? (
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <ul className="flex flex-col gap-3">
-            {result.items.length === 0 ? <li className="text-sm text-olive-muted">No hay solicitudes con ese filtro.</li> : null}
-            {result.items.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={hrefOf({ ...filters, id: item.id })}
-                  className="flex flex-col gap-1 rounded-xl border border-olive-line bg-surface-raised p-4 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  <span className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-heading text-base font-bold">{item.customerName}</span>
-                    <span className="rounded-full bg-olive-wash px-2 py-1 text-xs font-semibold">{statusLabel[item.status]}</span>
-                  </span>
-                  <span className="text-sm text-olive-strong">
-                    {formatVisitDate(item.date)} · {item.preferredTime} · {item.partySize} personas · {zoneConfig(item.preferredZone).label}
-                  </span>
-                  <span className="font-label text-xs text-olive-muted">
-                    {item.referenceCode} · solicitada {item.createdAt.slice(0, 16).replace("T", " ")}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
           {detail ? (
-            <article className="flex flex-col gap-4 rounded-xl border border-olive-line bg-surface-raised p-4">
-              <header>
-                <h2 className="font-heading text-xl font-bold">{detail.customerName}</h2>
-                <p className="text-sm text-olive-muted">{statusLabel[detail.status]} · {detail.referenceCode}</p>
-              </header>
-              <dl className="grid grid-cols-1 gap-2 text-sm">
-                <div>
-                  <dt className="text-olive-muted">Cuándo</dt>
-                  <dd>{formatVisitDate(detail.date)} · {detail.preferredTime}</dd>
-                </div>
-                <div>
-                  <dt className="text-olive-muted">Personas y zona</dt>
-                  <dd>{detail.partySize} · {zoneConfig(detail.preferredZone).label}</dd>
-                </div>
-                <div>
-                  <dt className="text-olive-muted">Celular</dt>
-                  <dd>{detail.customerPhone}</dd>
-                </div>
-                <div>
-                  <dt className="text-olive-muted">Observaciones</dt>
-                  <dd>{detail.notes || "Sin observaciones."}</dd>
-                </div>
-                <div>
-                  <dt className="text-olive-muted">Mesa asignada</dt>
-                  <dd>{detail.assignedTableIds.length > 0 ? detail.assignedTableIds.join(", ") : "Todavía no hay mesa."}</dd>
-                </div>
-              </dl>
-              <a
-                href={`tel:${detail.customerPhone.replaceAll(" ", "")}`}
-                className="inline-flex h-12 items-center justify-center rounded-lg border border-olive font-semibold"
-              >
-                Llamar
-              </a>
-              <p className="text-sm text-olive-muted">Esto abre el teléfono. PIÙ no envía un mensaje automático ni marca al cliente como avisado.</p>
-              <ReservationActions reservation={detail} />
-              <ReservationTrackingPanel reservation={detail} />
-              <section>
-                <h3 className="font-heading text-base font-bold">Historial</h3>
-                <ol className="mt-2 flex flex-col gap-2">
-                  {detail.events.map((event, index) => (
-                    <li key={`${event.at}-${index}`} className="text-sm">
-                      <span className="font-semibold">{actionLabel[event.action] ?? event.action}</span>
-                      <span className="text-olive-muted">
-                        {" "}
-                        {event.fromStatus ? statusLabel[event.fromStatus] : "—"} → {statusLabel[event.toStatus]}
-                        {event.actorUid ? ` · ${event.actorUid}` : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            </article>
+            <ReservationDetailPanel
+              detail={detail}
+              backHref={hrefOf(filters)}
+              className="order-first lg:order-none lg:col-start-2 lg:row-start-1"
+            />
           ) : (
-            <p className="text-sm text-olive-muted">Elige una solicitud para ver el celular, las observaciones y el historial.</p>
+            <div className="hidden flex-col items-center gap-3 rounded-3xl border border-dashed border-olive-line px-6 py-10 text-center lg:col-start-2 lg:row-start-1 lg:flex">
+              <span className="flex size-12 items-center justify-center rounded-2xl bg-olive-hover text-olive">
+                <Inbox aria-hidden className="size-6" />
+              </span>
+              <p className="text-sm text-olive-muted">Elige una solicitud para ver el contacto, las acciones y el historial.</p>
+            </div>
           )}
-          {result.nextCursor ? (
-            <Link href={hrefOf({ ...filters, cursor: result.nextCursor })} className="text-sm font-semibold underline lg:col-span-2">
-              Ver más
-            </Link>
-          ) : null}
+
+          <div className="flex min-w-0 flex-col gap-2.5 lg:col-start-1 lg:row-start-1">
+            <p className="px-1 text-xs font-semibold text-olive-muted">
+              {result.items.length === 0 ? "Sin resultados" : `${result.items.length} ${result.items.length === 1 ? "solicitud" : "solicitudes"}`}
+            </p>
+            <ul className="flex flex-col gap-2.5">
+              {result.items.length === 0 ? (
+                <li className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-olive-line px-6 py-10 text-center">
+                  <Search aria-hidden className="size-6 text-olive-soft" />
+                  <p className="text-sm text-olive-muted">No hay solicitudes con ese filtro.</p>
+                </li>
+              ) : null}
+              {result.items.map((item) => (
+                <li key={item.id}>
+                  <ReservationListCard item={item} href={`${hrefOf({ ...filters, id: item.id })}#detalle`} selected={item.id === selectedId} />
+                </li>
+              ))}
+            </ul>
+            {result.nextCursor ? (
+              <Link
+                href={hrefOf({ ...filters, cursor: result.nextCursor })}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-olive-line text-sm font-semibold text-olive"
+              >
+                Ver más
+              </Link>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>
-  )
-}
-
-function SummaryLink({ href, label, value }: { href: string; label: string; value: number | null | undefined }) {
-  return (
-    <li>
-      <Link href={href} className="block rounded-xl border border-olive-line bg-surface-raised p-4">
-        <span className="block text-sm text-olive-muted">{label}</span>
-        <span className="mt-2 block font-heading text-2xl font-bold">{value == null ? "No disponible" : value}</span>
-      </Link>
-    </li>
   )
 }

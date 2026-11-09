@@ -33,8 +33,28 @@
     animation: reservation-step-in 260ms ease both;
   }
 
-  .reservation-progress-active {
-    animation: piu-progress-pulse 1.8s ease-in-out infinite;
+  .reservation-status-icon {
+    animation: piu-badge-pop 520ms 120ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+
+  .reservation-step-halo {
+    animation: piu-step-halo 2s ease-out infinite;
+  }
+
+  .reservation-step-done {
+    animation: piu-badge-pop 560ms 240ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+}
+
+@keyframes piu-step-halo {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
   }
 }
 
@@ -82,16 +102,6 @@
   to {
     opacity: 0;
     transform: scale(1.7);
-  }
-}
-
-@keyframes piu-progress-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
   }
 }
 

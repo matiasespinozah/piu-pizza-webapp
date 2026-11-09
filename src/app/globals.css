@@ -34,6 +34,17 @@
   --surface-raised: #f0f0e4;
   --focus-ring: rgba(43, 52, 31, 0.6);
 
+  /* Estados de reserva (DESIGN.md §2 · Colores de estado). Solo para estados, nunca decorativos. */
+  --status-waiting: #8a5a0b;
+  --status-waiting-solid: #d99a26;
+  --status-waiting-soft: #f3e2b6;
+  --status-good: #2f6b31;
+  --status-good-solid: #4a8a3f;
+  --status-good-soft: #d7e6c8;
+  --status-done-solid: #2b5e2a;
+  --status-closed: #9a3f31;
+  --status-closed-soft: #f0d9d1;
+
   /* Elevación (DESIGN.md §6) */
   --shadow-tactile: inset 0 0.5px rgba(255, 255, 255, 0.18), 0 1px 2px rgba(43, 52, 31, 0.08);
   --shadow-lift: 0 3px 12px rgba(43, 52, 31, 0.12);
@@ -76,6 +87,15 @@
   --color-olive-hover: var(--olive-hover);
   --color-olive-wash: var(--olive-wash);
   --color-surface-raised: var(--surface-raised);
+  --color-status-waiting: var(--status-waiting);
+  --color-status-waiting-solid: var(--status-waiting-solid);
+  --color-status-waiting-soft: var(--status-waiting-soft);
+  --color-status-good: var(--status-good);
+  --color-status-good-solid: var(--status-good-solid);
+  --color-status-good-soft: var(--status-good-soft);
+  --color-status-done-solid: var(--status-done-solid);
+  --color-status-closed: var(--status-closed);
+  --color-status-closed-soft: var(--status-closed-soft);
 
   /* Colores semánticos (los usan los componentes de shadcn) */
   --color-background: var(--background);

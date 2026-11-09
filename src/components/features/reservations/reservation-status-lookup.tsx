@@ -23,15 +23,20 @@ function ReservationStatusLookup({
 }) {
   return (
     <form
-      className="reservation-status-in flex flex-col gap-4 rounded-3xl border border-olive-line bg-surface-raised px-5 py-6 shadow-lift sm:px-7"
+      className="reservation-status-in flex flex-col gap-4 rounded-[1.75rem] border border-olive-line bg-surface-raised px-5 py-6 shadow-lift sm:px-7"
       onSubmit={(event) => {
         event.preventDefault()
         onSubmit()
       }}
     >
-      <div className="flex flex-col gap-1">
-        <h2 className="font-heading text-xl font-bold text-olive">Pega tu enlace de seguimiento</h2>
-        <p className="text-sm text-olive-muted">Lo recibiste al enviar tu solicitud.</p>
+      <div className="flex items-center gap-4">
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-olive text-cream shadow-lift">
+          <Link2 aria-hidden className="size-7" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-heading text-xl leading-tight font-bold text-olive">Pega tu enlace de seguimiento</h2>
+          <p className="mt-1 text-sm text-olive-muted">Lo recibiste al enviar tu solicitud.</p>
+        </div>
       </div>
       <div className="relative">
         <Link2 aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-olive-muted" />
@@ -56,7 +61,7 @@ function ReservationStatusLookup({
           {error}
         </p>
       ) : null}
-      <Button type="submit" variant="accent" size="lg" className="w-full" loading={pending}>
+      <Button type="submit" variant="accent" size="lg" className="h-14 w-full text-base shadow-lift" loading={pending}>
         Consultar
       </Button>
       <p className="text-center text-sm text-olive-muted">
