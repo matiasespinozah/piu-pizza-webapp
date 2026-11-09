@@ -26,6 +26,7 @@ Los tokens semánticos de shadcn (`primary`, `muted`, `border`, …) están mape
 
 ## Reglas
 - **Nunca** blanco puro, negro, grises (`zinc-*`, `gray-*`, `neutral-*`), azules, rojos ni gradientes. Nada de colores arbitrarios (`bg-[#…]`).
+- **Única excepción: estados de reserva.** `ReservationStatusBadge` y el stepper de `/reservas/estado` usan los tokens `status-*` (ámbar, verde, verde fuerte, rojo suave) de DESIGN.md §2 · Colores de estado, a través de `src/lib/reservations/status-tone.ts`. No los uses fuera de estados de reserva, y siempre con ícono y texto.
 - Botón primario = `<Button>`; secundario = `<Button variant="secondary">`. No estilizar `<button>` a mano.
 - Titulares con `<Heading>` / `<Display>`; no poner `text-5xl font-black` sueltos.
 - **No reconstruir el logo con texto.** `<Logo>` es un placeholder hasta tener el SVG oficial.
