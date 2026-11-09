@@ -94,7 +94,7 @@ test.beforeEach(async () => {
 test("una solicitud válida queda pendiente y el teléfono no sale en la respuesta", async () => {
   const result = await send(payload())
   assert.equal(result.receipt.status, "pending")
-  assert.match(result.receipt.referenceCode, /^PIU-/)
+  assert.match(result.receipt.referenceCode, /^PIU-\d{4}$/)
   assert.equal(JSON.stringify(result.receipt).includes("2887"), false)
   assert.equal(typeof result.trackingToken, "string")
   const stored = await getDb().collection("reservations").doc(result.id).get()

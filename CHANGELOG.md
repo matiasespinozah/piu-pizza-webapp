@@ -24,6 +24,13 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- La referencia visible de una solicitud pasa a `PIU-` y cuatro números, por ejemplo `PIU-2021`. Si ese número ya existe, se elige otro. El enlace privado de seguimiento no cambia y la referencia corta no abre `/reservas/estado`.
+- La confirmación de una solicitud queda en una tarjeta compacta: confeti breve en oliva y terracota, ícono animado, «¡Solicitud recibida!», la referencia con botón para copiarla, fecha, hora, personas y zona con íconos, y los botones «Ver estado de mi reserva» y «Copiar enlace». Ya no muestra la URL completa.
+- `/reservas/estado` abre la reserva directamente desde el enlace, con el estado destacado, una línea de avance (Recibida, Confirmada, En PIÙ) y acciones según el estado: cómo llegar, WhatsApp o una nueva solicitud. Sin enlace, pide pegarlo en un solo campo. Las animaciones se apagan si el sistema pide menos movimiento.
+
+### Corregido
+
+- `PIU_RESERVATION_STATUS` y `PIU_RESERVATIONS_WRITES` aceptan `on` con espacios o en mayúsculas, como puede quedar guardado desde la consola de App Hosting. Siguen exigiendo `PIU_FIREBASE_DATA=on`.
 - `/admin/mesas` queda en cuatro bloques: mesas del salón y la terraza (19 y 15 al inicio, con cuántas aceptan reserva web), duración de la reserva, horario de cada día y pausa o día completo. El cupo cuenta reservas superpuestas durante esa duración. Un grupo de más de 4 personas sigue pendiente. Guardar no borra reservas ni enciende la recepción pública.
 - `/admin/carta` se reorganiza en cuadros: al entrar se elige «Productos» o «Categorías», con accesos a Agotados, Ocultos y Sin foto. Los productos se ven como tarjetas con foto, precio y estado, filtradas por buscador y categoría; tocar una abre el editor y el menú «⋯» cambia precio, disponibilidad, visibilidad y orden. Las categorías también son tarjetas y llevan a sus productos. La foto se puede elegir al crear el producto.
 - Una foto de producto ausente sigue usando la ilustración de PIÙ. Una descripción vacía no se rellena con ingredientes.

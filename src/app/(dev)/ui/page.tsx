@@ -5,6 +5,7 @@ import { HeartIcon, MenuIcon, ShoppingBagIcon, UserIcon } from "lucide-react"
 import { CatalogEditor } from "@/components/features/admin/catalog/catalog-editor"
 import { ProductImage } from "@/components/features/menu/product-image"
 import { FloorEditor } from "@/components/features/admin/tables/floor-editor"
+import { ReservationScreensPreview } from "@/components/features/reservations/reservation-screens-preview"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -428,6 +429,11 @@ export default function UiShowcasePage() {
               confirmedCount={0}
               pendingTruncated={false}
             />
+          </Block>
+
+          <Block title="Reserva recibida y seguimiento">
+            <Text className="mb-4">Ejemplo con datos ficticios. No consulta el servidor.</Text>
+            <ReservationScreensPreview />
           </Block>
 
           <Block title="Carta del panel">

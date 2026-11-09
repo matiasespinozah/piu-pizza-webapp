@@ -21,7 +21,7 @@ El documento queda en `reservations/{clave}` con estado `pending`. La misma clav
 
 Un contador en `reservationRate` limita 8 solicitudes por hora y por origen, sin guardar la dirección. El tope vive en Firestore, así que vale con varias instancias.
 
-La respuesta pública trae la referencia `PIU-…`, la fecha, la hora, las personas y la zona. No trae el celular. Esa referencia no abre la solicitud.
+La respuesta pública trae la referencia visible `PIU-` y cuatro números, por ejemplo `PIU-2021`, además de la fecha, la hora, las personas y la zona. No trae el celular. Si ese número ya existe, se prueba otro dentro de la misma operación. Esa referencia no abre la solicitud: el seguimiento sigue usando el enlace con secreto.
 
 Si la respuesta del alta se pierde, el mismo navegador puede reintentar con la misma clave y los mismos datos. El servidor devuelve el mismo enlace, porque lo puede descifrar con esa clave. Quien solo tiene la referencia `PIU-…` no lo recupera. Si la persona cerró la página y no guardó el enlace, el equipo lo genera de nuevo desde el panel. El anterior deja de servir.
 
