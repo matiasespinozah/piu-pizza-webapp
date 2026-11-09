@@ -12,6 +12,7 @@ import { confirmedClock, defaultWeek, isClosedDay, openingWindow, preferenceSlot
 import { canTransition } from "@/lib/reservations/transitions"
 import { clientAddress } from "@/lib/reservations/client-address"
 import { createTrackingSecret, hashTrackingSecret, trackingExpired, trackingExpiresOn, unwrapTrackingSecret, wrapTrackingSecret } from "@/lib/reservations/tracking"
+import { claimPublicReference, formatPublicReference } from "@/lib/reservations/reference"
 import { parseTrackingCredential, publicReservationStatus } from "@/lib/reservations/tracking-link"
 import { reservationStatusEnabled, reservationWritesEnabled } from "@/lib/reservations/writes"
 import { requestIsTrusted } from "@/lib/auth/session-policy"
@@ -311,6 +312,8 @@ test("el seguimiento no se enciende con las escrituras y el secreto no sale de c
   assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: "on" }), false)
   assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: "on", PIU_RESERVATIONS_WRITES: "on" }), false)
   assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: "on", FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080" }), true)
+  assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: " ON ", PIU_FIREBASE_DATA: "on" }), true)
+  assert.equal(reservationStatusEnabled({ PIU_RESERVATION_STATUS: "true", PIU_FIREBASE_DATA: "on" }), false)
   assert.equal(
     reservationStatusEnabled({
       PIU_RESERVATION_STATUS: "on",
@@ -333,6 +336,15 @@ test("el seguimiento no se enciende con las escrituras y el secreto no sale de c
   assert.equal(unwrapTrackingSecret(wrapTrackingSecret(token, key), "otra-clave-distinta-de-32"), null)
 
   assert.equal(parseTrackingCredential("PIU-ABCD2345").kind, "reference")
+  assert.equal(parseTrackingCredential("PIU-2021").kind, "reference")
+  assert.equal(formatPublicReference(2021), "PIU-2021")
+  assert.equal(formatPublicReference(7), "PIU-0007")
+  assert.equal(claimPublicReference(new Set(["PIU-2021"]), () => 2021), null)
+  const sequence = [2021, 2021, 4410]
+  assert.equal(
+    claimPublicReference(new Set(["PIU-2021"]), () => sequence.shift() ?? 0),
+    "PIU-4410",
+  )
   assert.equal(parseTrackingCredential("https://piu.example/reservas/estado?token=" + token).kind, "malformed")
   assert.deepEqual(parseTrackingCredential(`https://piu.example/reservas/estado#${token}`), { kind: "token", token })
 
@@ -369,9 +381,13 @@ test("el seguimiento no se enciende con las escrituras y el secreto no sale de c
   const card = readFileSync(new URL("../src/components/features/reservations/reservation-status-card.tsx", import.meta.url), "utf8")
   assert.equal(card.includes("Aceptar cambio"), false)
   const form = readFileSync(new URL("../src/components/features/reservations/reservation-form.tsx", import.meta.url), "utf8")
+  const success = readFileSync(new URL("../src/components/features/reservations/reservation-success.tsx", import.meta.url), "utf8")
   const actions = readFileSync(new URL("../src/components/features/reservations/reservation-tracking-actions.tsx", import.meta.url), "utf8")
-  assert.ok(form.indexOf('data-reservation-enabled="off"') < form.indexOf("<CopyTrackingLink"))
-  assert.match(actions, /Copiar enlace de seguimiento/)
+  assert.ok(form.indexOf('data-reservation-enabled="off"') < form.indexOf("<ReservationSuccess"))
+  assert.match(success, /<CopyTrackingLink/)
+  assert.match(actions, /Copiar enlace/)
+  assert.match(actions, /Ver estado de mi reserva/)
+  assert.equal(actions.includes("<Input"), false)
   for (const file of [
     "src/server/reservations/tracking.ts",
     "src/server/reservations/status-request.ts",

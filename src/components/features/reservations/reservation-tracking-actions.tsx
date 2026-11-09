@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { Check, Copy, Link2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { trackingHref } from "@/lib/reservations/tracking-link"
 
 function absoluteTrackingHref(token: string) {
@@ -12,39 +12,75 @@ function absoluteTrackingHref(token: string) {
   return new URL(path, window.location.origin).href
 }
 
-function CopyTrackingLink({ token }: { token: string }) {
-  const href = absoluteTrackingHref(token)
-  const [copied, setCopied] = useState(false)
-  const [manual, setManual] = useState(false)
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(href)
-      setCopied(true)
-      setManual(false)
-    } catch {
-      setCopied(false)
-      setManual(true)
-    }
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
   }
+}
 
+function useCopied() {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle")
+  async function copy(text: string) {
+    const ok = await copyText(text)
+    setState(ok ? "copied" : "failed")
+    if (ok) window.setTimeout(() => setState("idle"), 2200)
+  }
+  return { state, copy }
+}
+
+/** Referencia visible con botón para copiarla. No abre el seguimiento. */
+function ReservationReference({ code, size = "lg" }: { code: string; size?: "lg" | "md" }) {
+  const { state, copy } = useCopied()
   return (
-    <div className="flex min-w-0 flex-col gap-3">
-      <p className="text-sm text-olive-strong">
-        Guarda este enlace para revisar el estado de tu solicitud cuando quieras. No lo compartas con otras personas.
-      </p>
-      <Input readOnly value={href} aria-label="Enlace de seguimiento" className="font-label text-sm" onFocus={(event) => event.currentTarget.select()} />
-      <Button type="button" variant="secondary" className="h-12 w-full" onClick={() => void copy()}>
-        {copied ? "Enlace copiado" : "Copiar enlace de seguimiento"}
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-olive-soft px-4 py-2">
+      <div className="min-w-0">
+        <p className="font-label text-[0.6875rem] tracking-[0.14em] text-olive-muted uppercase">Referencia</p>
+        <p
+          className={
+            size === "lg"
+              ? "font-heading text-[1.75rem] leading-tight font-extrabold tracking-wide text-olive"
+              : "font-heading text-xl leading-tight font-extrabold tracking-wide text-olive"
+          }
+        >
+          {code}
+        </p>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={state === "copied" ? "Referencia copiada" : `Copiar ${code}`}
+        onClick={() => void copy(code)}
+      >
+        {state === "copied" ? <Check aria-hidden className="size-5" /> : <Copy aria-hidden className="size-5" />}
       </Button>
-      {manual ? <p className="text-sm text-olive-strong">No se pudo copiar solo. Selecciona el enlace y cópialo a mano.</p> : null}
-      <Button asChild variant="accent" className="h-12 w-full">
-        <a href={trackingHref(token)} rel="noreferrer">
-          Consultar estado
-        </a>
-      </Button>
+      <span className="sr-only" aria-live="polite">
+        {state === "copied" ? "Referencia copiada" : ""}
+      </span>
     </div>
   )
 }
 
-export { CopyTrackingLink }
+/** Abre el seguimiento y copia el enlace privado sin mostrarlo entero. */
+function CopyTrackingLink({ token }: { token: string }) {
+  const { state, copy } = useCopied()
+  return (
+    <div className="flex flex-col gap-2">
+      <Button asChild variant="accent" size="lg" className="w-full">
+        <a href={trackingHref(token)}>Ver estado de mi reserva</a>
+      </Button>
+      <Button type="button" variant="secondary" size="lg" className="w-full" onClick={() => void copy(absoluteTrackingHref(token))}>
+        {state === "copied" ? <Check aria-hidden /> : <Link2 aria-hidden />}
+        {state === "copied" ? "Enlace copiado" : "Copiar enlace"}
+      </Button>
+      <p className="min-h-5 text-center text-xs text-olive-muted" aria-live="polite">
+        {state === "failed" ? "No se pudo copiar. Abre «Ver estado» y guarda esa página." : "Guarda el enlace: es tu acceso privado."}
+      </p>
+    </div>
+  )
+}
+
+export { CopyTrackingLink, ReservationReference }

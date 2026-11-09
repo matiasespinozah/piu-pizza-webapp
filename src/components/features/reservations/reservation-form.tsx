@@ -7,10 +7,10 @@ import { ReservationDateStep } from "@/components/features/reservations/reservat
 import { ReservationProgress } from "@/components/features/reservations/reservation-progress"
 import { ReservationSummary } from "@/components/features/reservations/reservation-summary"
 import { ReservationTimeStep } from "@/components/features/reservations/reservation-time-step"
-import { CopyTrackingLink } from "@/components/features/reservations/reservation-tracking-actions"
+import { ReservationSuccess } from "@/components/features/reservations/reservation-success"
 import { Button } from "@/components/ui/button"
-import { reservationWhatsappMessage, zoneConfig } from "@/lib/reservations/configuration"
-import { formatVisitDate, todayIsoInSantiago } from "@/lib/reservations/schedule"
+import { reservationWhatsappMessage } from "@/lib/reservations/configuration"
+import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { normalizeChileMobile, validateContact, validateTime, validateVisit } from "@/lib/reservations/validation"
 import type { PublicReceipt } from "@/lib/reservations/views"
 import { admitRequest, visitException, type DayOverride } from "@/lib/reservations/day-policy"
@@ -181,52 +181,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   }
 
   if (receipt) {
-    return (
-      <section className="rounded-3xl border border-olive-line bg-surface-raised px-4 py-6 shadow-lift" aria-live="polite">
-        <h2 className="font-heading text-2xl font-bold text-olive">¡Recibimos tu solicitud!</h2>
-        <p className="mt-3 text-base text-olive-strong">
-          El equipo de PIÙ revisará tu solicitud. Tu mesa todavía no está confirmada.
-        </p>
-        <dl className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-olive-muted">Fecha</dt>
-            <dd className="font-semibold">{formatVisitDate(receipt.date)}</dd>
-          </div>
-          <div>
-            <dt className="text-olive-muted">Horario</dt>
-            <dd className="font-semibold">{receipt.preferredTime}</dd>
-          </div>
-          <div>
-            <dt className="text-olive-muted">Personas</dt>
-            <dd className="font-semibold">{receipt.partySize}</dd>
-          </div>
-          <div>
-            <dt className="text-olive-muted">Zona</dt>
-            <dd className="font-semibold">{zoneConfig(receipt.preferredZone).label}</dd>
-          </div>
-          <div className="sm:col-span-2">
-            <dt className="text-olive-muted">Solicitud</dt>
-            <dd className="font-label font-semibold">{receipt.referenceCode}</dd>
-          </div>
-        </dl>
-        <div className="mt-5">
-          {trackingToken ? (
-            <CopyTrackingLink token={trackingToken} />
-          ) : (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-olive-strong">
-                No pudimos entregar el enlace de seguimiento. Anota la referencia {receipt.referenceCode} y escríbenos para que el equipo te ayude.
-              </p>
-              <Button asChild variant="accent" className="h-12 w-full">
-                <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
-                  Escribir por WhatsApp
-                </a>
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
-    )
+    return <ReservationSuccess receipt={receipt} trackingToken={trackingToken} whatsappHref={whatsappHref} />
   }
 
   return (

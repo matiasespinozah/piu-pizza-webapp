@@ -1,6 +1,6 @@
 import "server-only"
 
-import { createHash, randomBytes } from "node:crypto"
+import { createHash, randomInt } from "node:crypto"
 import { Timestamp, type Firestore, type Query } from "firebase-admin/firestore"
 
 import type { StaffSession } from "@/lib/auth/roles"
@@ -10,6 +10,7 @@ import { planAssignment, readCapacity, type HoldBooking } from "@/lib/reservatio
 import { admitStored, limitsStored, quotaReason, readDayOverride } from "@/lib/reservations/day-policy"
 import { ReservationError } from "@/lib/reservations/errors"
 import type { PublicReservationInput } from "@/lib/reservations/public-request"
+import { claimPublicReference } from "@/lib/reservations/reference"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { canTransition, nextStatus, type StaffAction } from "@/lib/reservations/transitions"
 import type { ReservationStatus, ReservationZone } from "@/lib/reservations/types"
@@ -54,11 +55,6 @@ function assertWritable() {
   if (!reservationWritesEnabled()) {
     throw new ReservationError(503, "disabled", "Las reservas en línea no están disponibles.")
   }
-}
-
-function referenceCode() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-  return `PIU-${[...randomBytes(8)].map((byte) => alphabet[byte % alphabet.length]).join("")}`
 }
 
 function fingerprint(input: PublicReservationInput) {
@@ -217,8 +213,21 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       throw new ReservationError(429, "rate", "Recibimos demasiadas solicitudes. Inténtalo más tarde.")
     }
 
+    const taken = new Set<string>()
+    let referenceCode: string | null = null
+    for (let attempt = 0; attempt < 8 && !referenceCode; attempt += 1) {
+      const candidate = claimPublicReference(taken, () => randomInt(0, 10000), 1)
+      if (!candidate) break
+      const existing = await tx.get(db.collection(collections.reservations).where("referenceCode", "==", candidate).limit(1))
+      if (existing.empty) referenceCode = candidate
+      else taken.add(candidate)
+    }
+    if (!referenceCode) {
+      throw new ReservationError(503, "reference", "No pudimos asignar una referencia. Inténtalo otra vez.")
+    }
+
     const data = {
-      referenceCode: referenceCode(),
+      referenceCode,
       status: "pending",
       date: input.date,
       preferredTime: input.preferredTime,
