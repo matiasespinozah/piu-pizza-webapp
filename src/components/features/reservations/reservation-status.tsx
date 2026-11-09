@@ -4,9 +4,13 @@ import { useEffect, useRef, useState } from "react"
 
 import { ReservationStatusCard } from "@/components/features/reservations/reservation-status-card"
 import { ReservationStatusLookup } from "@/components/features/reservations/reservation-status-lookup"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { reservationStatusWhatsappMessage } from "@/lib/reservations/configuration"
 import type { PublicReservationStatus } from "@/lib/reservations/tracking-link"
 
 const storageKey = "piu.reservation.tracking"
+const statusWhatsappHref = `https://wa.me/56928873619?text=${encodeURIComponent(reservationStatusWhatsappMessage)}`
 let capturedSecret = ""
 
 type StatusResponse = { ok: true; status: PublicReservationStatus } | { ok: false; message?: string }
@@ -68,6 +72,8 @@ function ReservationStatus() {
   const [error, setError] = useState("")
   const [refreshError, setRefreshError] = useState("")
   const [pending, setPending] = useState(false)
+  const [checking, setChecking] = useState(true)
+  const [unavailable, setUnavailable] = useState(false)
 
   async function consult(credential: string, refreshing: boolean) {
     const value = credential.trim()
@@ -98,6 +104,10 @@ function ReservationStatus() {
         return
       }
       const message = body && "message" in body && body.message ? body.message : "No pudimos consultar el estado."
+      if (response.status === 503) {
+        setUnavailable(true)
+        return
+      }
       if (response.status === 404 || response.status === 400) {
         forget()
         shown.current = null
@@ -107,28 +117,35 @@ function ReservationStatus() {
         return
       }
       if (refreshing && shown.current) {
-        setRefreshError("No pudimos actualizar. Lo que ves es de la consulta anterior, no de este intento.")
+        setRefreshError("No pudimos actualizar. Mostramos la última consulta.")
         return
       }
       setError(message)
     } catch {
       if (refreshing && shown.current) {
-        setRefreshError("No pudimos actualizar. Lo que ves es de la consulta anterior, no de este intento.")
+        setRefreshError("No pudimos actualizar. Mostramos la última consulta.")
         return
       }
       setError("No pudimos consultar. Revisa tu conexión e inténtalo otra vez.")
     } finally {
       setPending(false)
+      setChecking(false)
     }
   }
 
   useEffect(() => {
     const initial = credentialFromLocation()
     if (initial.rejectedQuery) {
-      queueMicrotask(() => setError("Ese enlace no sirve: el secreto tiene que ir después del #. Ábrelo tal como lo guardaste."))
+      queueMicrotask(() => {
+        setError("Ese enlace está incompleto. Ábrelo tal como lo guardaste.")
+        setChecking(false)
+      })
       return
     }
-    if (!initial.credential) return
+    if (!initial.credential) {
+      queueMicrotask(() => setChecking(false))
+      return
+    }
     secret.current = initial.credential
     remember(initial.credential)
     queueMicrotask(() => {
@@ -137,14 +154,41 @@ function ReservationStatus() {
   }, [])
 
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-xl flex-col gap-6">
-      <header>
-        <p className="font-label text-xs font-semibold tracking-wide text-terracotta uppercase">PIÙ Pizza & Dolce</p>
-        <h1 className="mt-2 font-heading text-3xl font-bold text-olive">Consulta tu reserva</h1>
-        <p className="mt-3 text-base text-olive-strong">Revisa el estado de tu solicitud en PIÙ Pizza & Dolce.</p>
-        <p className="mt-2 text-sm text-olive-muted">Tu mesa estará reservada únicamente cuando el restaurante confirme tu solicitud.</p>
+    <div className="mx-auto flex w-full min-w-0 max-w-lg flex-col gap-5">
+      <header className="flex flex-col gap-1">
+        <p className="font-label text-xs font-semibold tracking-[0.14em] text-terracotta uppercase">PIÙ Pizza & Dolce</p>
+        <h1 className="font-heading text-3xl font-extrabold text-olive">Tu reserva</h1>
       </header>
-      {status && checkedAt ? (
+      {unavailable ? (
+        <div className="reservation-status-in flex flex-col gap-4 rounded-3xl border border-olive-line bg-surface-raised px-5 py-6 shadow-lift sm:px-7">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-heading text-xl font-bold text-olive">Seguimiento no disponible</h2>
+            <p className="text-base text-olive-strong">Por ahora consulta tu reserva por WhatsApp. Te respondemos rápido.</p>
+          </div>
+          <Button asChild variant="accent" size="lg" className="w-full">
+            <a href={statusWhatsappHref} target="_blank" rel="noopener noreferrer">
+              Escribir por WhatsApp
+            </a>
+          </Button>
+        </div>
+      ) : checking ? (
+        <div
+          role="status"
+          aria-label="Buscando tu reserva"
+          className="flex flex-col gap-4 rounded-3xl border border-olive-line bg-surface-raised px-5 py-6 shadow-lift sm:px-7"
+        >
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-12 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-6 w-32" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-36 w-full rounded-2xl" />
+        </div>
+      ) : status && checkedAt ? (
         <ReservationStatusCard
           status={status}
           checkedAt={checkedAt}

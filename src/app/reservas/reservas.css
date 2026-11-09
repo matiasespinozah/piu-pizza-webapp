@@ -1,6 +1,97 @@
+.reservation-confetti-piece {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .reservation-step {
     animation: reservation-step-in 180ms ease;
+  }
+
+  .reservation-confetti-piece {
+    animation-name: piu-confetti-fall;
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.2, 1);
+    animation-fill-mode: forwards;
+  }
+
+  .reservation-success-badge {
+    animation: piu-badge-pop 520ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+
+  .reservation-success-check {
+    animation: piu-check-in 360ms 260ms ease-out both;
+  }
+
+  .reservation-success-ring {
+    animation: piu-ring 900ms 300ms ease-out both;
+  }
+
+  .reservation-success-copy {
+    animation: reservation-step-in 360ms 220ms ease both;
+  }
+
+  .reservation-status-in {
+    animation: reservation-step-in 260ms ease both;
+  }
+
+  .reservation-progress-active {
+    animation: piu-progress-pulse 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes piu-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0) rotate(0deg);
+  }
+  14% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), 270px, 0) rotate(var(--spin));
+  }
+}
+
+@keyframes piu-badge-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes piu-check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-18deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes piu-ring {
+  from {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes piu-progress-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
   }
 }
 

@@ -5,6 +5,8 @@ import { ReservationStatus } from "@/components/features/reservations/reservatio
 import { SiteHeader } from "@/components/features/site-header"
 import { Container } from "@/components/ui/layout"
 
+import "../reservas.css"
+
 export const metadata: Metadata = {
   title: "Consulta tu reserva",
   description: "Revisa el estado de tu solicitud en PIÙ Pizza & Dolce.",
@@ -17,7 +19,7 @@ export default function ReservationStatusPage() {
     <div data-reservation-status="" className="overflow-x-clip bg-cream">
       <SiteHeader page="reservas" />
       <main className="pt-[calc(env(safe-area-inset-top)+4.5rem)] pb-16">
-        <Container className="py-8">
+        <Container className="py-6 sm:py-10">
           <ReservationStatus />
         </Container>
       </main>

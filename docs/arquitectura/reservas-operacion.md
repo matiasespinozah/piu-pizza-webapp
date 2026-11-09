@@ -29,7 +29,7 @@ El historial dice quién hizo cada cambio. No se puede borrar desde el panel.
 
 En el detalle aparece si el enlace está vigente, vencido, revocado o si esa solicitud no tiene. «Generar enlace» muestra uno nuevo una sola vez. El anterior deja de funcionar. «Revocar enlace» lo apaga sin crear otro.
 
-No se le pide el celular para buscarlo en la web. La referencia `PIU-…` tampoco abre la consulta. Las solicitudes antiguas, de antes de este enlace, siguen en el panel y no quedan públicas. Si hace falta, se les genera un enlace a mano.
+No se le pide el celular para buscarlo en la web. La referencia corta `PIU-` y cuatro números tampoco abre la consulta. Las solicitudes antiguas, de antes de este enlace, siguen en el panel y no quedan públicas. Si hace falta, se les genera un enlace a mano.
 
 El cliente mira `/reservas/estado`. Ve si sigue pendiente, si la mesa quedó confirmada, si se propuso otro horario, si se rechazó, si se canceló, si ya llegó o si la visita terminó. No ve el celular, el nombre ni las notas. No puede aceptar el cambio desde la página: se resuelve por teléfono o WhatsApp, y el equipo lo registra en el panel.
 
