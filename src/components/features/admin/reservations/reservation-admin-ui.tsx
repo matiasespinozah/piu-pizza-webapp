@@ -4,6 +4,8 @@ import { ChevronRight, MapPin, Users, type LucideIcon } from "lucide-react"
 import { cn } from "cn"
 
 import { ReservationStatusBadge } from "@/components/features/reservations/reservation-status-badge"
+
+import "../admin-shell.css"
 import { zoneConfig } from "@/lib/reservations/configuration"
 import { statusTone, type StatusTone } from "@/lib/reservations/status-tone"
 import type { ReservationEvent, ReservationListItem } from "@/lib/reservations/views"
@@ -56,8 +58,8 @@ function SummaryTile({
         href={href}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex h-full min-h-24 flex-col justify-between gap-3 rounded-2xl border bg-surface-raised p-3.5 shadow-tactile transition-shadow outline-none hover:shadow-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:p-4",
-          active ? "border-olive ring-1 ring-olive" : "border-olive-line",
+          "admin-card flex h-full min-h-24 flex-col justify-between gap-3 p-3.5 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          active && "ring-2 ring-olive",
         )}
       >
         <span className="flex items-start justify-between gap-2">
@@ -88,10 +90,7 @@ function ReservationListCard({
   const tone = statusTone[item.status]
   return (
     <article
-      className={cn(
-        "relative overflow-hidden rounded-2xl border bg-surface-raised shadow-tactile",
-        selected ? "border-olive ring-1 ring-olive" : "border-olive-line",
-      )}
+      className={cn("admin-card relative overflow-hidden", selected && "ring-2 ring-olive")}
     >
       <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", toneBar[tone])} />
       <Link
@@ -104,8 +103,8 @@ function ReservationListCard({
           <span className="mt-1 text-[0.6875rem] leading-tight text-olive-muted capitalize">{shortDate(item.date)}</span>
         </span>
         <span className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
-          <span className="flex min-w-0 items-start justify-between gap-2">
-            <span className="truncate font-heading text-base leading-tight font-bold text-olive">{item.customerName}</span>
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="min-w-0 font-heading text-base leading-tight font-bold text-olive">{item.customerName}</span>
             <ReservationStatusBadge status={item.status} label={statusLabel[item.status]} />
           </span>
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-olive-strong">

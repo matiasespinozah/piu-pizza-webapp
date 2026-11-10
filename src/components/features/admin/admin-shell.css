@@ -1,0 +1,37 @@
+/* Superficies del panel. El marfil es más claro que el crema de la web pública y solo se usa aquí. */
+.admin-sheet {
+  background: #f3f1e6;
+}
+
+.admin-card {
+  background: #fcfbf7;
+  border: 1px solid rgba(43, 52, 31, 0.06);
+  border-radius: 1.35rem;
+  box-shadow: 0 8px 24px rgba(43, 52, 31, 0.05);
+}
+
+.admin-date-pill {
+  background: #fcfbf7;
+  border: 1px solid rgba(43, 52, 31, 0.08);
+  box-shadow: 0 1px 2px rgba(43, 52, 31, 0.04);
+}
+
+.admin-action-secondary {
+  background: #f7f1e8;
+  color: #9c422f;
+}
+
+.admin-control {
+  box-sizing: border-box;
+  height: 2.75rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(43, 52, 31, 0.1);
+  background: #fcfbf7;
+  padding-inline: 0.75rem;
+  font-size: 1rem;
+  color: #2b341f;
+}

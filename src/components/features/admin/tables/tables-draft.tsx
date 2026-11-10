@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { adminRequestHeader, adminRequestValue } from "@/lib/auth/session-policy"
-import { criticalFingerprint, type OperationRules } from "@/lib/reservations/operations"
+import { criticalFingerprint, type FloorSection, type OperationRules } from "@/lib/reservations/operations"
 import type { DayOverride } from "@/lib/reservations/day-policy"
 import type { Weekday } from "@/lib/reservations/schedule"
 
@@ -65,7 +65,7 @@ function useTablesDraft(rules: OperationRules, confirmedCount: number, preview: 
     return true
   }
 
-  async function save(next: OperationRules, force = false) {
+  async function save(next: OperationRules, section: FloorSection, force = false) {
     const problem = sectorProblem(next.sectors)
     if (problem || next.serviceMinutes === null || next.serviceMinutes < 30 || next.serviceMinutes > 300) {
       setError(problem || "La duración tiene que estar entre 30 y 300 minutos.")
@@ -92,7 +92,7 @@ function useTablesDraft(rules: OperationRules, confirmedCount: number, preview: 
       setMessage("Vista previa. Aquí no se escribe en Firestore.")
       return
     }
-    const saved = await post({ action: "save", rules: rulesPayload(next) })
+    const saved = await post({ action: "save", section, rules: rulesPayload(next) })
     setPending(false)
     if (!saved) return
     setDraft(next)
