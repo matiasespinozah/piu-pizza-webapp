@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { AlertCircle, CalendarCheck, CalendarRange, ChevronDown, Clock, Inbox, Search, SlidersHorizontal } from "lucide-react"
+import { AlertCircle, CalendarCheck, CalendarRange, Clock, Inbox, Search } from "lucide-react"
 
 import { ReservationListCard, SummaryTile } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
+import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
 import { Button } from "@/components/ui/button"
 import { Eyebrow, Heading } from "@/components/ui/typography"
 import { requireSection } from "@/server/auth/access"
@@ -51,16 +52,20 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
   const selectedId = one(params.id)
   const detail = result.ready && selectedId ? await getReservationForStaff(session, selectedId).catch(() => null) : null
   const filters = { date: query.date, status: query.status, zone: query.zone, view: query.view, q: query.q }
-  const extraFilters = [query.date, query.status, query.zone].filter(Boolean).length
-  const anyFilter = extraFilters > 0 || Boolean(query.q) || Boolean(query.view)
+  const anyFilter = Boolean(query.date || query.status || query.zone || query.q || query.view)
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
       <header className="flex flex-col gap-1">
         <Eyebrow>PIÙ · reservas</Eyebrow>
-        <Heading as="h1" size="h3">
-          Solicitudes
-        </Heading>
+        <div className="flex items-end justify-between gap-3">
+          <Heading as="h1" size="h3">
+            Reservas
+          </Heading>
+          <Link href="/admin/reservas/disponibilidad" className="text-sm font-semibold text-olive underline-offset-4 hover:underline">
+            Disponibilidad
+          </Link>
+        </div>
         <p className="text-sm text-olive-muted">Pendiente no reserva mesa. La confirma el equipo, con una mesa válida.</p>
       </header>
 
@@ -117,16 +122,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
             Filtrar
           </Button>
         </div>
-        <details className="group" open={extraFilters > 0}>
-          <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-2 text-sm font-semibold text-olive outline-none select-none focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
-            <SlidersHorizontal aria-hidden className="size-4" />
-            Fecha, estado y zona
-            {extraFilters > 0 ? (
-              <span className="inline-flex size-5 items-center justify-center rounded-full bg-olive text-[0.6875rem] text-cream">{extraFilters}</span>
-            ) : null}
-            <ChevronDown aria-hidden className="ml-auto size-4 transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="grid grid-cols-1 gap-3 px-1 pt-1 pb-1 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
               Fecha
               <input name="date" type="date" defaultValue={query.date} className={`${fieldClass} [min-inline-size:0]`} />
@@ -152,8 +148,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
                 <option value="terrace">Terraza</option>
               </select>
             </label>
-          </div>
-        </details>
+        </div>
         {query.view ? <input type="hidden" name="view" value={query.view} /> : null}
         {anyFilter ? (
           <Link href="/admin/reservas" className="inline-flex h-9 items-center self-start px-2 text-sm font-semibold text-olive underline underline-offset-4">
@@ -168,7 +163,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
             <ReservationDetailPanel
               detail={detail}
               backHref={hrefOf(filters)}
-              className="order-first lg:order-none lg:col-start-2 lg:row-start-1"
+              className="order-first lg:sticky lg:top-4 lg:order-none lg:col-start-2 lg:row-start-1"
             />
           ) : (
             <div className="hidden flex-col items-center gap-3 rounded-3xl border border-dashed border-olive-line px-6 py-10 text-center lg:col-start-2 lg:row-start-1 lg:flex">
@@ -190,11 +185,19 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
                   <p className="text-sm text-olive-muted">No hay solicitudes con ese filtro.</p>
                 </li>
               ) : null}
-              {result.items.map((item) => (
-                <li key={item.id}>
-                  <ReservationListCard item={item} href={`${hrefOf({ ...filters, id: item.id })}#detalle`} selected={item.id === selectedId} />
-                </li>
-              ))}
+              {result.items.map((item) => {
+                const href = `${hrefOf({ ...filters, id: item.id })}#detalle`
+                return (
+                  <li key={item.id}>
+                    <ReservationListCard
+                      item={item}
+                      href={href}
+                      selected={item.id === selectedId}
+                      actions={<ReservationQuickActions id={item.id} status={item.status} revision={item.revision} detailHref={href} />}
+                    />
+                  </li>
+                )
+              })}
             </ul>
             {result.nextCursor ? (
               <Link
