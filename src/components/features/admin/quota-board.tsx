@@ -17,13 +17,13 @@ function QuotaLegend() {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-olive-strong">
       <li className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-status-good-solid" /> Alta disponibilidad
+        <span className="size-2.5 rounded-full bg-status-good-solid" /> Buena disponibilidad
       </li>
       <li className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-status-waiting-solid" /> Ocupación media
+        <span className="size-2.5 rounded-full bg-status-waiting-solid" /> Disponibilidad reducida
       </li>
       <li className="inline-flex items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-status-closed" /> Pocos cupos web
+        <span className="size-2.5 rounded-full bg-status-closed" /> Sin cupos web
       </li>
     </ul>
   )
@@ -33,38 +33,58 @@ function QuotaGrid({ rows, zone }: { rows: QuotaRow[]; zone: "all" | "salon" | "
   const showSalon = zone !== "terrace"
   const showTerrace = zone !== "salon"
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[18rem] border-separate border-spacing-y-1.5 text-sm">
-        <caption className="sr-only">Cupos web ocupados por horario y sector. No es la ocupación física del local.</caption>
+    <>
+      <ul className="flex min-w-0 flex-col gap-2 lg:hidden">
+        {rows.map((row) => (
+          <li key={row.time} className="grid min-w-0 grid-cols-[3.25rem_minmax(0,1fr)] items-stretch gap-2">
+            <span className="flex items-center font-heading text-sm font-extrabold text-olive">{row.time}</span>
+            <span className={cn("grid min-w-0 gap-2", showSalon && showTerrace ? "grid-cols-2" : "grid-cols-1")}>
+              {showSalon ? <QuotaCellView cell={row.salon} label="Salón" /> : null}
+              {showTerrace ? <QuotaCellView cell={row.terrace} label="Terraza" /> : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <table className="hidden w-full border-separate border-spacing-y-1 text-sm lg:table">
+        <caption className="sr-only">Cupos web por horario y sector. No es la ocupación física del local.</caption>
         <thead>
           <tr className="text-left text-xs text-olive-muted">
-            <th className="px-1 py-1 font-semibold">Hora</th>
-            {showSalon ? <th className="px-1 py-1 font-semibold">Salón</th> : null}
-            {showTerrace ? <th className="px-1 py-1 font-semibold">Terraza</th> : null}
+            <th className="px-2 py-1 font-semibold">Hora</th>
+            {showSalon ? <th className="px-2 py-1 font-semibold">Salón</th> : null}
+            {showTerrace ? <th className="px-2 py-1 font-semibold">Terraza</th> : null}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.time}>
-              <th className="px-1 py-1 text-left font-heading text-sm font-bold text-olive">{row.time}</th>
-              {showSalon ? <QuotaCellView cell={row.salon} label="Salón" /> : null}
-              {showTerrace ? <QuotaCellView cell={row.terrace} label="Terraza" /> : null}
+              <th className="px-2 py-1 text-left font-heading text-sm font-extrabold text-olive">{row.time}</th>
+              {showSalon ? (
+                <td className="px-2 py-1">
+                  <QuotaCellView cell={row.salon} label="usados / cupos web" />
+                </td>
+              ) : null}
+              {showTerrace ? (
+                <td className="px-2 py-1">
+                  <QuotaCellView cell={row.terrace} label="usados / cupos web" />
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </>
   )
 }
 
 function QuotaCellView({ cell, label }: { cell: QuotaCell; label: string }) {
+  const free = Math.max(0, cell.web - cell.used)
   return (
-    <td className="px-1 py-0.5">
-      <span className={cn("flex min-h-11 flex-col justify-center rounded-xl px-3 py-1.5", toneClass[quotaTone(cell)])}>
-        <span className="font-heading text-sm leading-tight font-bold">{cellLabel(cell)}</span>
-        <span className="text-[0.6875rem]">cupos web · {label}</span>
+    <span className={cn("flex min-h-11 min-w-0 flex-col justify-center rounded-xl px-2.5 py-1.5", toneClass[quotaTone(cell)])}>
+      <span className="truncate font-heading text-sm leading-tight font-bold">{cell.web <= 0 ? "Sin cupo" : `${free} libres`}</span>
+      <span className="truncate text-[0.6875rem]">
+        {label} · {cellLabel(cell)}
       </span>
-    </td>
+    </span>
   )
 }
 

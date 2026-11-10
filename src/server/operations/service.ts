@@ -8,8 +8,10 @@ import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
 import type { HoldBooking } from "@/lib/reservations/capacity"
 import { emptyDay, readDayOverride, type DayOverride } from "@/lib/reservations/day-policy"
 import {
+  applyFloorSection,
   criticalFingerprint,
   defaultOperationRules,
+  type FloorSection,
   operationsDocument,
   readinessIssues,
   readOperationRules,
@@ -130,11 +132,16 @@ async function readFloor(session: StaffSession | null, date: string) {
   return { rules, bookings, pendingCount, confirmedCount, pendingTruncated: pending.size === 50, day }
 }
 
-async function saveFloor(session: StaffSession | null, input: unknown) {
+const floorSectionInput = z.enum(["hours", "rules", "zones", "messages", "reception"])
+
+async function saveFloor(session: StaffSession | null, input: unknown, sectionInput?: unknown) {
   const actor = assertStaff(session, floorRoles)
   assertFirebaseDataEnabled()
   const parsed = rulesInput.safeParse(input)
   if (!parsed.success) throw new FloorError(400, "Revisa las mesas y los horarios. Hay un dato vacío o fuera de rango.")
+  const sectionParsed = sectionInput == null ? null : floorSectionInput.safeParse(sectionInput)
+  if (sectionParsed && !sectionParsed.success) throw new FloorError(400, "Esa sección no se puede guardar.")
+  const section: FloorSection | null = sectionParsed?.success ? sectionParsed.data : null
   for (const day of Object.values(parsed.data.week)) {
     if (day.opensAt >= day.closesAt) throw new FloorError(400, "La apertura tiene que ser anterior al cierre.")
   }
@@ -152,7 +159,7 @@ async function saveFloor(session: StaffSession | null, input: unknown) {
     throw new FloorError(409, "La configuración guardada no se pudo leer. No se sobrescribió.")
   }
   const stored = readOperationRules(current.data()) ?? defaultOperationRules()
-  const rules: OperationRules = {
+  const incoming: OperationRules = {
     ...stored,
     serviceMinutes: parsed.data.serviceMinutes,
     receptionPaused: parsed.data.receptionPaused,
@@ -167,6 +174,9 @@ async function saveFloor(session: StaffSession | null, input: unknown) {
     },
     tables: stored.tables,
   }
+  const rules = section ? applyFloorSection(stored, incoming, section) : incoming
+  if (section === "hours") rules.clock = clockFromWeek(rules.week, stored.clock)
+  if (section && section !== "hours") rules.clock = stored.clock
   rules.validatedFingerprint = stored.validatedFingerprint
   rules.productionReady = stored.validatedFingerprint === criticalFingerprint(rules)
   rules.updatedBy = actor.displayName || actor.email || "Personal"

@@ -61,26 +61,26 @@ function ReservationQuickActions({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {deciding ? (
-          <Button type="button" size="sm" className="h-10" disabled={pending} onClick={() => void run("confirm")}>
+          <Button type="button" size="sm" className="h-11 min-w-0" disabled={pending} onClick={() => void run("confirm")}>
             <Check aria-hidden />
             {armed === "confirm" ? "Sí, confirmar" : "Confirmar"}
           </Button>
         ) : null}
         {canArrive ? (
-          <Button type="button" size="sm" className="h-10" disabled={pending} onClick={() => void run("arrive")}>
+          <Button type="button" size="sm" className="h-11 min-w-0" disabled={pending} onClick={() => void run("arrive")}>
             <Check aria-hidden />
-            {armed === "arrive" ? "Sí, marcar llegada" : "Llegó"}
+            {armed === "arrive" ? "Sí, llegó" : "Llegó"}
           </Button>
         ) : null}
         {deciding ? (
-          <Button type="button" variant="secondary" size="sm" className="h-10 text-status-closed" disabled={pending} onClick={() => void run("reject")}>
+          <Button type="button" variant="secondary" size="sm" className="h-11 min-w-0 text-status-closed" disabled={pending} onClick={() => void run("reject")}>
             <X aria-hidden />
             {armed === "reject" ? "Sí, rechazar" : "Rechazar"}
           </Button>
         ) : null}
-        <Button asChild variant="ghost" size="sm" className="h-10">
+        <Button asChild variant="secondary" size="sm" className="admin-action-secondary h-11 min-w-0">
           <Link href={detailHref}>
             <CalendarClock aria-hidden />
             Reagendar

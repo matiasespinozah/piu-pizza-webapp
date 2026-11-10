@@ -33,10 +33,10 @@ export async function POST(request: Request) {
   const gate = await readStaffGate()
   if (gate.status !== 200) return NextResponse.json({ ok: false }, { status: gate.status, headers: noStore })
 
-  const body = (await request.json().catch(() => null)) as { action?: unknown; rules?: unknown; day?: unknown } | null
+  const body = (await request.json().catch(() => null)) as { action?: unknown; rules?: unknown; day?: unknown; section?: unknown } | null
   try {
     if (body?.action === "save") {
-      const rules = await saveFloor(gate.session, body.rules)
+      const rules = await saveFloor(gate.session, body.rules, body.section)
       revalidateTag("operations", "max")
       return NextResponse.json({ ok: true, productionReady: rules.productionReady }, { headers: noStore })
     }

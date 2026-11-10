@@ -44,36 +44,27 @@ export default async function DisponibilidadPage({
     : null
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-4">
       <header className="flex items-end justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <Heading as="h1" size="h3">
             Disponibilidad
           </Heading>
-          <p className="text-sm text-olive-muted">Cupos web por horario. No es la ocupación física del local.</p>
+          <p className="text-sm text-olive-muted">Cupos web libres por horario. No son mesas físicas.</p>
         </div>
-        <Link href="/admin/reservas" className="text-sm font-semibold text-olive underline-offset-4 hover:underline">
+        <Link href="/admin/reservas" className="inline-flex h-11 shrink-0 items-center text-sm font-semibold text-terracotta">
           Reservas
         </Link>
       </header>
 
-      <form method="get" className="grid grid-cols-1 gap-2 rounded-2xl border border-olive-line bg-surface-raised p-3 shadow-tactile sm:grid-cols-[1fr_1fr_auto]">
+      <form method="get" className="admin-card grid min-w-0 grid-cols-1 gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
           Fecha
-          <input
-            name="date"
-            type="date"
-            defaultValue={date}
-            className="h-11 w-full min-w-0 rounded-xl border border-input bg-cream px-3 [min-inline-size:0]"
-          />
+          <input name="date" type="date" defaultValue={date} className="admin-control" />
         </label>
         <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
           Zona
-          <select
-            name="zone"
-            defaultValue={zone}
-            className="h-11 w-full rounded-xl border border-input bg-cream px-3"
-          >
+          <select name="zone" defaultValue={zone} className="admin-control">
             <option value="all">Todas las zonas</option>
             <option value="salon">Salón</option>
             <option value="terrace">Terraza</option>
@@ -85,23 +76,28 @@ export default async function DisponibilidadPage({
       </form>
 
       {!floor ? (
-        <p className="rounded-2xl border border-olive-line bg-surface-raised p-4 text-sm text-olive-strong">
-          La configuración de mesas no está conectada en este entorno.
-        </p>
+        <p className="admin-card p-4 text-sm text-olive-strong">La configuración de mesas no está conectada en este entorno.</p>
       ) : floor.day.closed || rows === null ? (
-        <p className="rounded-2xl border border-dashed border-olive-line px-4 py-8 text-center text-sm text-olive-muted">
+        <p className="admin-card px-4 py-8 text-center text-sm text-olive-muted">
           {floor.day.closed ? "Ese día está cerrado para reservas en línea." : "Falta el horario o la duración de una reserva para armar la grilla."}
         </p>
       ) : rows.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-olive-line px-4 py-8 text-center text-sm text-olive-muted">Ese día no tiene franjas de reserva.</p>
+        <p className="admin-card px-4 py-8 text-center text-sm text-olive-muted">Ese día no tiene franjas de reserva.</p>
       ) : (
-        <section className="rounded-2xl border border-olive-line bg-surface-raised p-3 shadow-tactile sm:p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-olive-muted">
-            <p>
-              Salón {floor.rules.sectors.salon.web} cupos web · Terraza {floor.rules.sectors.terrace.web} cupos web
-              {floor.day.full ? " · día marcado completo" : ""}
+        <section className="admin-card min-w-0 p-3 sm:p-4">
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <p className="rounded-2xl bg-[#f3f1e6] px-3 py-2">
+              <span className="block text-xs text-olive-muted">Salón</span>
+              <span className="font-heading text-xl font-extrabold text-olive">{floor.rules.sectors.salon.web}</span>
+              <span className="block text-xs text-olive-muted">cupos web</span>
+            </p>
+            <p className="rounded-2xl bg-[#f3f1e6] px-3 py-2">
+              <span className="block text-xs text-olive-muted">Terraza</span>
+              <span className="font-heading text-xl font-extrabold text-olive">{floor.rules.sectors.terrace.web}</span>
+              <span className="block text-xs text-olive-muted">cupos web</span>
             </p>
           </div>
+          {floor.day.full ? <p className="mb-3 text-sm font-semibold text-status-waiting">Día marcado completo. No entran solicitudes nuevas.</p> : null}
           <QuotaGrid rows={rows} zone={zone} />
           <div className="mt-4">
             <QuotaLegend />

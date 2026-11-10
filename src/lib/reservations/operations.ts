@@ -428,6 +428,17 @@ function rawLimits(value: unknown) {
   }
 }
 
+type FloorSection = "hours" | "rules" | "zones" | "messages" | "reception"
+
+/** Copia solo la sección editada. El resto queda como está guardado ahora. */
+function applyFloorSection(stored: OperationRules, incoming: OperationRules, section: FloorSection): OperationRules {
+  if (section === "hours") return { ...stored, week: incoming.week }
+  if (section === "rules") return { ...stored, serviceMinutes: incoming.serviceMinutes }
+  if (section === "zones") return { ...stored, sectors: incoming.sectors }
+  if (section === "messages") return { ...stored, notices: incoming.notices }
+  return { ...stored, receptionPaused: incoming.receptionPaused }
+}
+
 function receptionPausedOf(value: unknown) {
   return Boolean(value && typeof value === "object" && (value as Record<string, unknown>).receptionPaused === true)
 }
@@ -445,6 +456,7 @@ function publicRules(rules: OperationRules) {
 }
 
 export {
+  applyFloorSection,
   capacityFromRules,
   criticalFingerprint,
   declaredTables,
@@ -461,4 +473,4 @@ export {
   receptionPausedOf,
   tableUse,
 }
-export type { CapMode, DiningTable, OperationRules, PublicNotice, PublicNotices, ReservationCap, SectorLayout, SectorTables }
+export type { CapMode, DiningTable, FloorSection, OperationRules, PublicNotice, PublicNotices, ReservationCap, SectorLayout, SectorTables }

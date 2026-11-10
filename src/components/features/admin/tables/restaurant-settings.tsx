@@ -1,7 +1,8 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import Link from "next/link"
+import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -12,27 +13,50 @@ import { Heading, Text } from "@/components/ui/typography"
 import type { OperationRules, SectorTables } from "@/lib/reservations/operations"
 import type { WeekSchedule, Weekday } from "@/lib/reservations/schedule"
 
+import "../admin-shell.css"
 import { Status } from "./floor-editor"
 import { dayLabels, sectorProblem, useTablesDraft, whole } from "./tables-draft"
 
-function RestaurantSettings({ rules, confirmedCount }: { rules: OperationRules; confirmedCount: number }) {
-  const form = useTablesDraft(rules, confirmedCount, false)
+type SectionId = "hours" | "rules" | "zones" | "messages"
+
+function RestaurantSettings({
+  rules,
+  confirmedCount,
+  preview = false,
+}: {
+  rules: OperationRules
+  confirmedCount: number
+  preview?: boolean
+}) {
+  const form = useTablesDraft(rules, confirmedCount, preview)
   const { draft, setDraft } = form
+  const [open, setOpen] = useState<SectionId | null>(null)
   const minutes = draft.serviceMinutes ?? 90
   const problem = sectorProblem(draft.sectors)
+  const save = (section: "hours" | "rules" | "zones" | "messages") => void form.save(draft, section, form.confirmCritical)
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-      <header className="flex flex-col gap-1">
+    <div className="mx-auto grid w-full max-w-3xl min-w-0 grid-cols-1 gap-3 lg:max-w-[76rem] lg:grid-cols-2 lg:items-start lg:gap-4">
+      <header className="lg:col-span-2">
         <Heading as="h1" size="h3">
           Configuración
         </Heading>
-        <Text tone="muted">Reglas permanentes del local. La pausa del día y “reservas completas” se manejan en Mesas.</Text>
+        <Text tone="muted">La pausa y el día completo se manejan en Mesas.</Text>
       </header>
-      <Status form={form} />
+      <div className="lg:col-span-2">
+        <Status form={form} />
+      </div>
 
-      <SettingsBlock title="Horarios de atención" detail="Se repiten cada semana hasta que los cambies.">
-        <ul className="flex flex-col gap-3">
+      <ConfigCard
+        title="Horarios de atención"
+        summary={weekSummary(draft.week)}
+        open={open === "hours"}
+        onToggle={() => setOpen(open === "hours" ? null : "hours")}
+        pending={form.pending}
+        onSave={() => save("hours")}
+        wide
+      >
+        <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-x-6">
           {dayLabels.map((day) => {
             const row = draft.week[day.id]
             return (
@@ -47,26 +71,33 @@ function RestaurantSettings({ rules, confirmedCount }: { rules: OperationRules; 
                 <div className="grid grid-cols-2 gap-2">
                   <Field>
                     <FieldLabel htmlFor={`${day.id}-open`}>Apertura</FieldLabel>
-                    <Input id={`${day.id}-open`} type="time" className="h-11" value={row.opensAt} onChange={(event) => setWeek(setDraft, draft.week, day.id, { opensAt: event.target.value })} />
+                    <Input id={`${day.id}-open`} type="time" className="admin-control" value={row.opensAt} onChange={(event) => setWeek(setDraft, draft.week, day.id, { opensAt: event.target.value })} />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor={`${day.id}-close`}>Cierre</FieldLabel>
-                    <Input id={`${day.id}-close`} type="time" className="h-11" value={row.closesAt} onChange={(event) => setWeek(setDraft, draft.week, day.id, { closesAt: event.target.value })} />
+                    <Input id={`${day.id}-close`} type="time" className="admin-control" value={row.closesAt} onChange={(event) => setWeek(setDraft, draft.week, day.id, { closesAt: event.target.value })} />
                   </Field>
                 </div>
               </li>
             )
           })}
         </ul>
-      </SettingsBlock>
+      </ConfigCard>
 
-      <SettingsBlock title="Reglas de reservas" detail="La confirmación sigue siendo manual: el equipo confirma cuando hay cupo válido.">
+      <ConfigCard
+        title="Reglas de reservas"
+        summary={`${minutes} min por reserva · entre semana ${draft.anticipation.weekdayLeadHours == null ? "sin anticipación definida" : `${draft.anticipation.weekdayLeadHours} h`}`}
+        open={open === "rules"}
+        onToggle={() => setOpen(open === "rules" ? null : "rules")}
+        pending={form.pending}
+        onSave={() => save("rules")}
+      >
         <Field>
           <FieldLabel htmlFor="service-minutes">Duración de cada reserva, en minutos</FieldLabel>
           <Input
             id="service-minutes"
             inputMode="numeric"
-            className="h-11 max-w-40"
+            className="admin-control max-w-40"
             value={String(minutes)}
             onChange={(event) => {
               const value = Number(event.target.value)
@@ -75,54 +106,105 @@ function RestaurantSettings({ rules, confirmedCount }: { rules: OperationRules; 
           />
         </Field>
         <p className="text-sm text-olive-muted">
-          Anticipación mínima entre semana: {draft.anticipation.weekdayLeadHours == null ? "sin definir" : `${draft.anticipation.weekdayLeadHours} h`}. Corte de fin de
-          semana: {draft.anticipation.weekendPreviousDayCutoff ?? "sin definir"}. Esos dos valores no se editan en esta pantalla.
+          Corte de fin de semana: {draft.anticipation.weekendPreviousDayCutoff ?? "sin definir"}. La anticipación no se cambia aquí. La recepción se pausa en Mesas.
         </p>
-        <p className="text-sm text-olive-muted">Recepción {draft.receptionPaused ? "en pausa" : "activa"}. Se cambia desde Mesas, durante el servicio.</p>
-      </SettingsBlock>
+      </ConfigCard>
 
-      <SettingsBlock title="Zonas y cupos web" detail="Las mesas que no quedan para la web se atienden por orden de llegada.">
+      <ConfigCard
+        title="Zonas y cupos"
+        summary={`Salón ${draft.sectors.salon.web} de ${draft.sectors.salon.total} · Terraza ${draft.sectors.terrace.web} de ${draft.sectors.terrace.total}`}
+        open={open === "zones"}
+        onToggle={() => setOpen(open === "zones" ? null : "zones")}
+        pending={form.pending}
+        disabled={Boolean(problem)}
+        onSave={() => save("zones")}
+      >
         <div className="grid gap-3 sm:grid-cols-2">
           <SectorFields title="Salón" value={draft.sectors.salon} onChange={(salon) => setDraft({ ...draft, sectors: { ...draft.sectors, salon } })} />
           <SectorFields title="Terraza" value={draft.sectors.terrace} onChange={(terrace) => setDraft({ ...draft, sectors: { ...draft.sectors, terrace } })} />
         </div>
         {problem ? <FieldError>{problem}</FieldError> : null}
-        <Link href="/admin/mesas" className="text-sm font-semibold text-olive underline-offset-4 hover:underline">
+        <Link href="/admin/mesas" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta">
           Operación del día en Mesas
         </Link>
-      </SettingsBlock>
+      </ConfigCard>
 
-      <SettingsBlock title="Mensajes al cliente" detail="Se muestran en la página de reservas cuando corresponde.">
+      <ConfigCard
+        title="Mensajes al cliente"
+        summary="Recepción pausada, día completo, día sin reservas y local cerrado."
+        open={open === "messages"}
+        onToggle={() => setOpen(open === "messages" ? null : "messages")}
+        pending={form.pending}
+        onSave={() => save("messages")}
+      >
+        <NoticeField id="notice-paused" label="Recepción pausada" value={draft.notices.paused.text} onChange={(text) => setNotice(setDraft, "paused", text)} />
         <NoticeField id="notice-full" label="Día completo" value={draft.notices.full.text} onChange={(text) => setNotice(setDraft, "full", text)} />
-        <NoticeField id="notice-paused" label="Recepción en pausa" value={draft.notices.paused.text} onChange={(text) => setNotice(setDraft, "paused", text)} />
-        <NoticeField id="notice-closed" label="Día sin reservas en línea" value={draft.notices.closedDay.text} onChange={(text) => setNotice(setDraft, "closedDay", text)} />
+        <NoticeField id="notice-closed" label="Día sin reservas" value={draft.notices.closedDay.text} onChange={(text) => setNotice(setDraft, "closedDay", text)} />
         <NoticeField id="notice-venue" label="Local cerrado" value={draft.notices.venueClosed.text} onChange={(text) => setNotice(setDraft, "venueClosed", text)} />
-      </SettingsBlock>
+      </ConfigCard>
 
-      <Button type="button" size="lg" loading={form.pending} disabled={Boolean(problem)} onClick={() => void form.save(draft, form.confirmCritical)}>
-        Guardar configuración
-      </Button>
-
-      <SettingsBlock title="Usuarios y permisos" detail="Las cuentas del equipo todavía no se crean desde el sitio.">
-        <p className="text-sm text-olive-strong">El primer propietario se asigna fuera del panel. Desde aquí no se cambian roles.</p>
-        <Link href="/admin/personal" className="inline-flex h-11 items-center text-sm font-semibold text-olive underline-offset-4 hover:underline">
+      <section className="admin-card p-4 lg:col-span-2">
+        <h2 className="font-heading text-lg font-bold">Usuarios y permisos</h2>
+        <p className="mt-1 text-sm text-olive-strong">Las cuentas del equipo todavía no se crean desde el sitio.</p>
+        <Link href="/admin/personal" className="mt-2 inline-flex h-11 items-center text-sm font-semibold text-terracotta">
           Ver el estado de Personal
         </Link>
-      </SettingsBlock>
+      </section>
     </div>
   )
 }
 
-function SettingsBlock({ title, detail, children }: { title: string; detail: string; children: ReactNode }) {
+function ConfigCard({
+  title,
+  summary,
+  open,
+  onToggle,
+  onSave,
+  pending,
+  disabled = false,
+  wide = false,
+  children,
+}: {
+  title: string
+  summary: string
+  open: boolean
+  onToggle: () => void
+  onSave: () => void
+  pending: boolean
+  disabled?: boolean
+  wide?: boolean
+  children: ReactNode
+}) {
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-olive-line bg-surface-raised p-4 shadow-tactile">
-      <div>
-        <h2 className="font-heading text-lg font-bold">{title}</h2>
-        <p className="text-sm text-olive-muted">{detail}</p>
+    <section className={cn("admin-card p-4", wide && "lg:col-span-2")}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="font-heading text-lg font-bold">{title}</h2>
+          <p className="mt-1 text-sm text-olive-strong">{summary}</p>
+        </div>
+        <Button type="button" variant="secondary" className="admin-action-secondary h-11 shrink-0" aria-expanded={open} onClick={onToggle}>
+          {open ? "Cerrar" : "Editar"}
+        </Button>
       </div>
-      {children}
+      {open ? (
+        <div className="mt-4 flex flex-col gap-3 border-t border-olive-line pt-4">
+          {children}
+          <Button type="button" className="h-11" loading={pending} disabled={disabled} onClick={onSave}>
+            Guardar
+          </Button>
+        </div>
+      ) : null}
     </section>
   )
+}
+
+function weekSummary(week: OperationRules["week"]) {
+  const openDays = dayLabels.filter((day) => week[day.id].open)
+  if (openDays.length === 0) return "Todos los días cerrados"
+  const first = week[openDays[0].id]
+  const same = openDays.every((day) => week[day.id].opensAt === first.opensAt && week[day.id].closesAt === first.closesAt)
+  const names = openDays.map((day) => day.label.slice(0, 3)).join(", ")
+  return same ? `${names} · ${first.opensAt}–${first.closesAt}` : `${openDays.length} días con horario propio`
 }
 
 function SectorFields({ title, value, onChange }: { title: string; value: SectorTables; onChange: (value: SectorTables) => void }) {

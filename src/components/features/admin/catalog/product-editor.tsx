@@ -164,7 +164,7 @@ function ProductEditor({ open, categories, product, defaultCategoryId, onOpenCha
       <Sheet open={open} onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}>
         <SheetContent
           side="right"
-          className="w-full gap-0 overflow-hidden bg-background p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-lg"
+          className="admin-sheet h-dvh w-full max-w-none gap-0 overflow-hidden p-0 data-[side=right]:w-full data-[side=right]:max-w-none data-[side=right]:sm:max-w-lg data-[side=right]:lg:max-w-2xl"
         >
           <SheetHeader className="border-b border-olive-line pr-14">
             <SheetTitle>{product ? "Editar producto" : "Nuevo producto"}</SheetTitle>

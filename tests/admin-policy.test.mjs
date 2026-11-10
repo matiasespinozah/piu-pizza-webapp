@@ -155,9 +155,10 @@ test("el endpoint no acepta rol ni un destino en la URL", () => {
 
 test("el inicio no inventa métricas ni lee Firestore", () => {
   const page = text("src/app/admin/(panel)/page.tsx")
-  assert.match(page, /La recepción de reservas sigue desactivada/)
+  const view = text("src/components/features/admin/admin-dashboard.tsx")
+  assert.match(view, /La recepción de reservas sigue desactivada/)
   assert.doesNotMatch(page, /getFirestore|firebase-admin/)
-  assert.doesNotMatch(page, /\b\d+\s+reservas\b/i)
+  assert.doesNotMatch(page + view, /\b\d+\s+reservas\b/i)
 })
 
 test("el primer superadmin conserva los otros claims", () => {
