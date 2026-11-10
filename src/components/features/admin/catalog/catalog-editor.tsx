@@ -19,7 +19,6 @@ import {
 import { cn } from "cn"
 
 import { ProductImage } from "@/components/features/menu/product-image"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -44,7 +43,7 @@ import type { AdminCategory, AdminProduct } from "@/lib/catalog/types"
 
 import { CategoryEditor } from "./category-editor"
 import { categoryInput, postCatalog, productInput } from "./catalog-requests"
-import { CategoryFlag, ProductFlags } from "./catalog-status"
+import { CategoryFlag } from "./catalog-status"
 import { ProductEditor } from "./product-editor"
 
 type View = "home" | "products" | "categories"
@@ -62,7 +61,7 @@ const shortcutLabel: Record<Shortcut, string> = {
 function CatalogEditor({ categories, products }: { categories: AdminCategory[]; products: AdminProduct[] }) {
   const router = useRouter()
   const pendingScroll = useRef<number | null>(null)
-  const [view, setView] = useState<View>("home")
+  const [view, setView] = useState<View>("products")
   const [query, setQuery] = useState("")
   const [categoryId, setCategoryId] = useState("all")
   const [shortcut, setShortcut] = useState<Shortcut>("none")
@@ -112,8 +111,6 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
 
   const canReorder = categoryId !== "all" && !query.trim() && shortcut === "none"
   const defaultCategoryId = categoryId !== "all" ? categoryId : (orderedCategories[0]?.id ?? "")
-  const productsTitle = categoryId !== "all" ? (names.get(categoryId) ?? "Categoría") : shortcutLabel[shortcut]
-
   function openProducts(next: { categoryId?: string; shortcut?: Shortcut } = {}) {
     setCategoryId(next.categoryId ?? "all")
     setShortcut(next.shortcut ?? "none")
@@ -215,7 +212,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col gap-1">
               <Heading as="h1" size="h3">
-                {view === "categories" ? "Categorías" : productsTitle}
+                {view === "categories" ? "Categorías" : "Carta"}
               </Heading>
               <Text tone="muted">
                 {view === "categories"
@@ -229,14 +226,20 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
                 Nueva categoría
               </Button>
             ) : (
-              <Button
-                type="button"
-                disabled={!defaultCategoryId}
-                onClick={() => setProductSession({ key: `new-${Date.now()}`, product: null })}
-              >
-                <PlusIcon aria-hidden />
-                Nuevo producto
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" onClick={() => openView("categories")}>
+                  Categorías
+                </Button>
+                <Button
+                  type="button"
+                  variant="accent"
+                  disabled={!defaultCategoryId}
+                  onClick={() => setProductSession({ key: `new-${Date.now()}`, product: null })}
+                >
+                  <PlusIcon aria-hidden />
+                  Agregar producto
+                </Button>
+              </div>
             )}
           </div>
         </header>
@@ -406,7 +409,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
               <Text>No hay productos con ese filtro.</Text>
             </div>
           ) : (
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <ul className="flex flex-col gap-3">
               {visibleProducts.map((product, index) => (
                 <li key={product.id}>
                   <ProductTile
@@ -601,38 +604,47 @@ function ProductTile({
   return (
     <article
       aria-busy={busy}
-      className="flex h-full flex-col overflow-hidden rounded-2xl border border-olive-line bg-surface-raised"
+      className="flex flex-col gap-3 rounded-2xl border border-olive-line bg-surface-raised p-3 shadow-tactile sm:flex-row sm:items-center"
     >
       <button
         type="button"
         onClick={onEdit}
         disabled={busy}
         aria-label={`Editar ${product.name}`}
-        className="flex flex-1 flex-col text-left outline-none hover:bg-olive-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
+        className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
       >
-        <span className="relative block">
-          <ProductImage
-            src={product.imageUrl}
-            name={product.name}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className={cn("rounded-none", muted && "opacity-60")}
-          />
-          {product.isVisible ? null : (
-            <span className="absolute top-2 left-2">
-              <Badge variant="solid">Oculto</Badge>
-            </span>
-          )}
+        <span className="relative size-16 shrink-0 overflow-hidden rounded-xl">
+          <ProductImage src={product.imageUrl} name={product.name} sizes="64px" className={cn("size-16 rounded-xl object-cover", muted && "opacity-60")} />
         </span>
-        <span className="flex flex-1 flex-col gap-1 p-3">
-          {showCategory ? <span className="truncate text-xs text-olive-muted">{categoryName}</span> : null}
-          <span className="line-clamp-2 font-heading text-base leading-tight font-bold">{product.name}</span>
-          <span className="mt-auto pt-1 font-label text-sm font-bold text-terracotta">{formatCLP(product.priceClp)}</span>
+        <span className="min-w-0 flex-1">
+          {showCategory ? <span className="block truncate text-xs text-olive-muted">{categoryName}</span> : null}
+          <span className="block truncate font-heading text-base leading-tight font-bold">{product.name}</span>
+          <span className="mt-0.5 line-clamp-2 text-sm text-olive-muted">{product.description}</span>
         </span>
       </button>
-      <div className="flex items-center justify-between gap-1 border-t border-olive-line py-1 pr-1 pl-3">
-        <span className="min-w-0">
-          <ProductFlags product={{ ...product, isVisible: true }} />
-        </span>
+      <div className="flex items-center justify-between gap-2 sm:shrink-0">
+        <span className="font-label text-sm font-bold text-olive">{formatCLP(product.priceClp)}</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={product.availability === "available"}
+          aria-label={product.availability === "available" ? `Marcar ${product.name} agotado` : `Marcar ${product.name} disponible`}
+          disabled={busy}
+          onClick={onAvailability}
+          className={cn(
+            "relative h-7 w-12 shrink-0 rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            product.availability === "available" ? "bg-status-good-solid" : "bg-olive-soft",
+          )}
+        >
+          <span className={cn("absolute top-0.5 size-6 rounded-full bg-cream shadow-tactile", product.availability === "available" ? "right-0.5" : "left-0.5")} />
+        </button>
+        <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onEdit}>
+          <PencilIcon aria-hidden />
+          Editar
+        </Button>
+        <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onVisibility}>
+          {product.isVisible ? "Ocultar" : "Mostrar"}
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button type="button" variant="ghost" size="icon" disabled={busy} aria-label={`Más opciones de ${product.name}`}>

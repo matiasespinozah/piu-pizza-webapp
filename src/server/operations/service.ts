@@ -5,6 +5,7 @@ import { z } from "zod"
 import type { StaffSession } from "@/lib/auth/roles"
 import { collections, settingsDocId } from "@/lib/firebase/model"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
+import type { HoldBooking } from "@/lib/reservations/capacity"
 import { emptyDay, readDayOverride, type DayOverride } from "@/lib/reservations/day-policy"
 import {
   criticalFingerprint,
@@ -15,6 +16,7 @@ import {
   type OperationRules,
 } from "@/lib/reservations/operations"
 import { clockFromWeek } from "@/lib/reservations/schedule"
+import type { ReservationZone } from "@/lib/reservations/types"
 import { assertStaff } from "@/server/auth/authorization"
 import { assertFirebaseDataEnabled } from "@/server/firebase/guard"
 import { getDb } from "@/server/firebase/firestore"
@@ -56,6 +58,9 @@ const rulesInput = z
     serviceMinutes: z.number().int().min(30).max(300),
     receptionPaused: z.boolean(),
     fullNotice: z.string().trim().min(8).max(400),
+    pausedNotice: z.string().trim().min(8).max(400).optional(),
+    closedDayNotice: z.string().trim().min(8).max(400).optional(),
+    venueClosedNotice: z.string().trim().min(8).max(400).optional(),
     sectors: z.object({ salon: sectorInput, terrace: sectorInput }).strict(),
     week: z
       .object({
@@ -116,7 +121,10 @@ async function readFloor(session: StaffSession | null, date: string) {
     db.collection(collections.reservations).where("date", "==", date).limit(50).get(),
     getDayOverride(date),
   ])
-  const bookings = [...bookingsOf(salon.data() as Record<string, unknown> | undefined), ...bookingsOf(terrace.data() as Record<string, unknown> | undefined)]
+  const bookings = [
+    ...bookingsOf(salon.data() as Record<string, unknown> | undefined, "salon"),
+    ...bookingsOf(terrace.data() as Record<string, unknown> | undefined, "terrace"),
+  ]
   const pendingCount = pending.docs.filter((item) => item.get("status") === "pending").length
   const confirmedCount = pending.docs.filter((item) => item.get("status") === "confirmed").length
   return { rules, bookings, pendingCount, confirmedCount, pendingTruncated: pending.size === 50, day }
@@ -151,7 +159,12 @@ async function saveFloor(session: StaffSession | null, input: unknown) {
     sectors: parsed.data.sectors,
     week: parsed.data.week,
     clock: clockFromWeek(parsed.data.week, stored.clock),
-    notices: { ...stored.notices, full: { enabled: true, text: parsed.data.fullNotice } },
+    notices: {
+      full: { enabled: true, text: parsed.data.fullNotice },
+      paused: { enabled: true, text: parsed.data.pausedNotice ?? stored.notices.paused.text },
+      closedDay: { enabled: true, text: parsed.data.closedDayNotice ?? stored.notices.closedDay.text },
+      venueClosed: { enabled: true, text: parsed.data.venueClosedNotice ?? stored.notices.venueClosed.text },
+    },
     tables: stored.tables,
   }
   rules.validatedFingerprint = stored.validatedFingerprint
@@ -242,15 +255,16 @@ function auditEntry(actor: StaffSession, action: string, targetPath: string, sum
   }
 }
 
-function bookingsOf(data: Record<string, unknown> | undefined) {
+function bookingsOf(data: Record<string, unknown> | undefined, zone: ReservationZone): (HoldBooking & { id: string })[] {
   const raw = data?.bookings
   if (!raw || typeof raw !== "object") return []
-  return Object.entries(raw as Record<string, { tableIds?: string[]; startMin?: number; endMin?: number; zone?: string }>).flatMap(
+  return Object.entries(raw as Record<string, { tableIds?: string[]; startMin?: number; endMin?: number; slots?: number }>).flatMap(
     ([id, booking]) => {
       if (!booking || !Array.isArray(booking.tableIds) || typeof booking.startMin !== "number" || typeof booking.endMin !== "number") {
         return []
       }
-      return [{ id, tableIds: booking.tableIds, startMin: booking.startMin, endMin: booking.endMin, zone: booking.zone ?? "" }]
+      const slots = typeof booking.slots === "number" && Number.isInteger(booking.slots) && booking.slots > 0 ? booking.slots : undefined
+      return [{ id, tableIds: booking.tableIds, startMin: booking.startMin, endMin: booking.endMin, zone, slots }]
     },
   )
 }

@@ -109,6 +109,7 @@ test("las rutas del panel exigen sesión y la sección que corresponde", () => {
   const pages = {
     "src/app/admin/(panel)/page.tsx": "inicio",
     "src/app/admin/(panel)/reservas/page.tsx": "reservas",
+    "src/app/admin/(panel)/reservas/disponibilidad/page.tsx": "reservas",
     "src/app/admin/(panel)/mesas/page.tsx": "mesas",
     "src/app/admin/(panel)/carta/page.tsx": "carta",
     "src/app/admin/(panel)/configuracion/page.tsx": "configuracion",
