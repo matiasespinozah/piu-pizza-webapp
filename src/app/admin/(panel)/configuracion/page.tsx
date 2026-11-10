@@ -1,7 +1,10 @@
 import type { Metadata } from "next"
 
-import { AdminSoon } from "@/components/features/admin/admin-soon"
+import { RestaurantSettings } from "@/components/features/admin/tables/restaurant-settings"
+import { Heading, Text } from "@/components/ui/typography"
+import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { requireSection } from "@/server/auth/access"
+import { readFloor } from "@/server/operations/service"
 
 export const instant = false
 
@@ -11,11 +14,19 @@ export const metadata: Metadata = {
 }
 
 export default async function AdminConfiguracionPage() {
-  await requireSection("configuracion")
-  return (
-    <AdminSoon
-      title="Configuración"
-      detail="Los horarios y las reglas del local siguen en el código del sitio. Esta pantalla no los modifica."
-    />
-  )
+  const session = await requireSection("configuracion")
+  const floor = await readFloor(session, todayIsoInSantiago()).catch(() => null)
+
+  if (!floor) {
+    return (
+      <section className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+        <Heading as="h1" size="h3">
+          Configuración
+        </Heading>
+        <Text>Este proceso no está conectado a Firestore. Desde aquí no se cambian horarios ni cupos.</Text>
+      </section>
+    )
+  }
+
+  return <RestaurantSettings rules={floor.rules} confirmedCount={floor.confirmedCount} />
 }

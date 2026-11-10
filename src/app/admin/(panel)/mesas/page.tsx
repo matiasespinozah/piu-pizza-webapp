@@ -48,6 +48,7 @@ export default async function AdminMesasPage({
       pendingCount={floor.pendingCount}
       pendingTruncated={floor.pendingTruncated}
       confirmedCount={floor.confirmedCount}
+      canEditSettings={session.role === "superadmin"}
     />
   )
 }

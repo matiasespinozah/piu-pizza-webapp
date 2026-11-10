@@ -221,5 +221,5 @@ function better(next: SeatTable[], current: SeatTable[] | null) {
   return next.map((table) => table.id).join() < current.map((table) => table.id).join()
 }
 
-export { planAssignment, readCapacity }
+export { occupiedSlots, planAssignment, readCapacity }
 export type { CapacityConfig, HoldBooking }

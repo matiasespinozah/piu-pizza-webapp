@@ -74,41 +74,56 @@ function SummaryTile({
   )
 }
 
-function ReservationListCard({ item, href, selected }: { item: ReservationListItem; href: string; selected: boolean }) {
+function ReservationListCard({
+  item,
+  href,
+  selected,
+  actions,
+}: {
+  item: ReservationListItem
+  href: string
+  selected: boolean
+  actions?: ReactNode
+}) {
   const tone = statusTone[item.status]
   return (
-    <Link
-      href={href}
-      aria-current={selected ? "true" : undefined}
+    <article
       className={cn(
-        "relative flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-surface-raised p-3 pl-4 shadow-tactile transition-shadow outline-none hover:shadow-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "relative overflow-hidden rounded-2xl border bg-surface-raised shadow-tactile",
         selected ? "border-olive ring-1 ring-olive" : "border-olive-line",
       )}
     >
       <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", toneBar[tone])} />
-      <span className="flex w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-cream py-2 text-center">
-        <span className="font-heading text-lg leading-none font-extrabold text-olive">{item.preferredTime}</span>
-        <span className="mt-1 text-[0.6875rem] leading-tight text-olive-muted capitalize">{shortDate(item.date)}</span>
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
-        <span className="flex min-w-0 items-baseline justify-between gap-2">
-          <span className="truncate font-heading text-base leading-tight font-bold text-olive">{item.customerName}</span>
-          <span className="shrink-0 font-label text-[0.6875rem] tracking-wide text-olive-muted">{item.referenceCode}</span>
+      <Link
+        href={href}
+        aria-current={selected ? "true" : undefined}
+        className="flex items-stretch gap-3 p-3 pl-4 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+      >
+        <span className="flex w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-cream py-2 text-center">
+          <span className="font-heading text-lg leading-none font-extrabold text-olive">{item.preferredTime}</span>
+          <span className="mt-1 text-[0.6875rem] leading-tight text-olive-muted capitalize">{shortDate(item.date)}</span>
         </span>
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-olive-strong">
-          <ReservationStatusBadge status={item.status} label={statusLabel[item.status]} />
-          <span className="inline-flex items-center gap-1">
-            <Users aria-hidden className="size-3.5 text-olive-muted" />
-            {item.partySize}
+        <span className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
+          <span className="flex min-w-0 items-start justify-between gap-2">
+            <span className="truncate font-heading text-base leading-tight font-bold text-olive">{item.customerName}</span>
+            <ReservationStatusBadge status={item.status} label={statusLabel[item.status]} />
           </span>
-          <span className="inline-flex items-center gap-1">
-            <MapPin aria-hidden className="size-3.5 text-olive-muted" />
-            {zoneConfig(item.preferredZone).label}
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-olive-strong">
+            <span className="inline-flex items-center gap-1">
+              <Users aria-hidden className="size-3.5 text-olive-muted" />
+              {item.partySize}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <MapPin aria-hidden className="size-3.5 text-olive-muted" />
+              {zoneConfig(item.preferredZone).label}
+            </span>
+            <span className="font-label text-xs text-olive-muted">{item.referenceCode}</span>
           </span>
         </span>
-      </span>
-      <ChevronRight aria-hidden className="size-4 shrink-0 self-center text-olive-soft" />
-    </Link>
+        <ChevronRight aria-hidden className="size-4 shrink-0 self-center text-olive-soft" />
+      </Link>
+      {actions ? <div className="border-t border-olive-line px-3 py-2">{actions}</div> : null}
+    </article>
   )
 }
 
