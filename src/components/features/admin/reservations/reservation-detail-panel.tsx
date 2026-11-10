@@ -27,19 +27,19 @@ const actionLabel: Record<string, string> = {
 /** Ficha de una solicitud: visita, contacto, observaciones, mesa, acciones, seguimiento e historial. */
 function ReservationDetailPanel({ detail, backHref, className }: { detail: ReservationDetail; backHref: string; className?: string }) {
   return (
-    <article id="detalle" className={cn("scroll-mt-4 overflow-hidden rounded-3xl border border-olive-line bg-surface-raised shadow-lift", className)}>
-      <header className="flex flex-col gap-3 bg-olive px-4 py-4 text-cream sm:px-5">
+    <article id="detalle" className={cn("admin-card scroll-mt-4 overflow-hidden", className)}>
+      <header className="flex flex-col gap-3 px-4 py-4 sm:px-5">
         <Link
           href={backHref}
-          className="inline-flex h-8 items-center gap-1 self-start rounded-full text-xs font-semibold text-cream/80 underline-offset-4 hover:underline lg:hidden"
+          className="inline-flex h-11 items-center gap-1 self-start text-sm font-semibold text-olive lg:hidden"
         >
-          <ArrowLeft aria-hidden className="size-3.5" />
+          <ArrowLeft aria-hidden className="size-4" />
           Volver a la lista
         </Link>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-heading text-2xl leading-tight font-extrabold break-words">{detail.customerName}</h2>
-            <p className="mt-0.5 font-label text-xs tracking-[0.14em] text-cream/70">{detail.referenceCode}</p>
+            <h2 className="font-heading text-2xl leading-tight font-extrabold break-words text-olive">{detail.customerName}</h2>
+            <p className="mt-0.5 font-label text-xs tracking-[0.14em] text-olive-muted">{detail.referenceCode}</p>
           </div>
           <ReservationStatusBadge status={detail.status} label={statusLabel[detail.status]} size="md" />
         </div>
@@ -64,7 +64,7 @@ function ReservationDetailPanel({ detail, backHref, className }: { detail: Reser
             </a>
           </Button>
         </div>
-        <p className="text-xs text-olive-muted">Abre el teléfono. No avisa al cliente ni lo marca como avisado.</p>
+        <p className="text-xs text-olive-muted">Abre el teléfono. No avisa al cliente.</p>
       </DetailSection>
 
       <DetailSection icon={MessageSquareText} title="Observaciones">

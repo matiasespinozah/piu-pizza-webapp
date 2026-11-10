@@ -1,10 +1,17 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { HeartIcon, MenuIcon, ShoppingBagIcon, UserIcon } from "lucide-react"
+import { AlertCircle, CalendarCheck, Clock, HeartIcon, MenuIcon, ShoppingBagIcon, UserIcon, Users } from "lucide-react"
 
+import "@/components/features/admin/admin-shell.css"
+import { AdminDashboardPreview } from "@/components/features/admin/admin-dashboard-preview"
+import { AdminDashboard } from "@/components/features/admin/admin-dashboard"
 import { CatalogEditor } from "@/components/features/admin/catalog/catalog-editor"
+import { QuotaGrid, QuotaLegend } from "@/components/features/admin/quota-board"
+import { ReservationListCard } from "@/components/features/admin/reservations/reservation-admin-ui"
+import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
 import { ProductImage } from "@/components/features/menu/product-image"
 import { FloorEditor } from "@/components/features/admin/tables/floor-editor"
+import { RestaurantSettings } from "@/components/features/admin/tables/restaurant-settings"
 import { ReservationScreensPreview } from "@/components/features/reservations/reservation-screens-preview"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
@@ -54,6 +61,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Caption, Display, Eyebrow, Heading, Lead, Text } from "@/components/ui/typography"
 import { emptyDay } from "@/lib/reservations/day-policy"
 import { defaultOperationRules } from "@/lib/reservations/operations"
+import { webQuotaRows } from "@/lib/reservations/web-quota"
 import { ToastDemo } from "./toast-demo"
 
 /**
@@ -114,6 +122,14 @@ const sampleProducts = [
 
 export default function UiShowcasePage() {
   if (process.env.NODE_ENV === "production") notFound()
+  const sampleRules = defaultOperationRules()
+  const sampleQuota = webQuotaRows({
+    date: "2026-11-13",
+    week: sampleRules.week,
+    serviceMinutes: sampleRules.serviceMinutes,
+    web: { salon: sampleRules.sectors.salon.web, terrace: sampleRules.sectors.terrace.web },
+    bookings: [],
+  })
 
   return (
     <main>
@@ -417,6 +433,72 @@ export default function UiShowcasePage() {
             </div>
           </Block>
 
+          <Block title="Dashboard móvil">
+            <Text className="mb-4">Ejemplo visual. Las cifras no salen del restaurante.</Text>
+            <AdminDashboardPreview />
+            <Text className="mt-8 mb-4">La misma pantalla, con la composición de escritorio. Cifras de ejemplo.</Text>
+            <AdminDashboard
+              today="2026-11-10"
+              ready
+              metrics={[
+                { title: "Reservas de hoy", value: 4, icon: CalendarCheck, href: "/admin/reservas?view=today" },
+                { title: "Solicitudes pendientes", value: 2, icon: Clock, href: "/admin/reservas?view=pending" },
+                { title: "Reservas confirmadas", value: 6, icon: Users, href: "/admin/reservas?view=upcoming" },
+                { title: "Requieren atención", value: 2, icon: AlertCircle, href: "/admin/reservas?view=attention" },
+              ]}
+              upcoming={[
+                {
+                  id: "muestra-1",
+                  referenceCode: "PIU-2021",
+                  status: "confirmed",
+                  date: "2026-11-10",
+                  preferredTime: "20:30",
+                  partySize: 4,
+                  preferredZone: "salon",
+                  customerName: "María Torres",
+                  createdAt: "2026-11-10T12:00:00.000Z",
+                  revision: 1,
+                },
+              ]}
+              alerts={[{ id: "pending", text: "Ejemplo: 2 solicitudes pendientes de confirmar.", tone: "waiting" }]}
+              rows={sampleQuota}
+              closed={false}
+            />
+          </Block>
+
+          <Block title="Reservas móvil">
+            <Text className="mb-4">Ejemplo visual. No es una solicitud del restaurante.</Text>
+            <ReservationListCard
+              item={{
+                id: "muestra",
+                referenceCode: "PIU-2021",
+                status: "pending",
+                date: "2026-11-13",
+                preferredTime: "20:30",
+                partySize: 4,
+                preferredZone: "salon",
+                customerName: "María Torres",
+                createdAt: "2026-11-10T12:00:00.000Z",
+                revision: 1,
+              }}
+              href="#reservas-muestra"
+              selected={false}
+              actions={<ReservationQuickActions id="muestra" status="pending" revision={1} detailHref="#reservas-muestra" />}
+            />
+          </Block>
+
+          <Block title="Disponibilidad móvil">
+            <Text className="mb-4">Ejemplo de cupos web con el horario de referencia. No lee reservas reales.</Text>
+            {sampleQuota ? (
+              <div className="admin-card p-3">
+                <QuotaGrid rows={sampleQuota} zone="all" />
+                <div className="mt-4">
+                  <QuotaLegend />
+                </div>
+              </div>
+            ) : null}
+          </Block>
+
           <Block title="Mesas del panel">
             <Text className="mb-4">Ejemplo. Guardar aquí no escribe en Firestore.</Text>
             <FloorEditor
@@ -434,6 +516,11 @@ export default function UiShowcasePage() {
           <Block title="Reserva recibida y seguimiento">
             <Text className="mb-4">Ejemplo con datos ficticios. No consulta el servidor.</Text>
             <ReservationScreensPreview />
+          </Block>
+
+          <Block title="Configuración del panel">
+            <Text className="mb-4">Ejemplo. Guardar aquí no escribe en Firestore.</Text>
+            <RestaurantSettings preview rules={defaultOperationRules()} confirmedCount={0} />
           </Block>
 
           <Block title="Carta del panel">

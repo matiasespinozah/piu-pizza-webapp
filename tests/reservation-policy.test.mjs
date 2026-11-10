@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs"
 
 import { planAssignment, readCapacity } from "@/lib/reservations/capacity"
 import { admitRequest, quotaReason } from "@/lib/reservations/day-policy"
-import { criticalFingerprint, declaredTables, defaultOperationRules, informedGroups, knownSingleTableSeats, operationsDocument, readinessIssues, readOperationRules } from "@/lib/reservations/operations"
+import { applyFloorSection, criticalFingerprint, declaredTables, defaultOperationRules, informedGroups, knownSingleTableSeats, operationsDocument, readinessIssues, readOperationRules } from "@/lib/reservations/operations"
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
@@ -396,4 +396,15 @@ test("el seguimiento no se enciende con las escrituras y el secreto no sale de c
   ]) {
     assert.doesNotMatch(readFileSync(new URL(`../${file}`, import.meta.url), "utf8"), /console\.(log|info|debug|warn|error)/)
   }
+})
+
+test("guardar una sección no trae de vuelta el resto desde una copia vieja", () => {
+  const stored = defaultOperationRules()
+  stored.week = { ...stored.week, mon: { ...stored.week.mon, opensAt: "12:00" } }
+  const stale = defaultOperationRules()
+  stale.sectors = { ...stale.sectors, salon: { ...stale.sectors.salon, web: 3 } }
+  const next = applyFloorSection(stored, stale, "zones")
+  assert.equal(next.sectors.salon.web, 3)
+  assert.equal(next.week.mon.opensAt, "12:00")
+  assert.equal(next.serviceMinutes, stored.serviceMinutes)
 })

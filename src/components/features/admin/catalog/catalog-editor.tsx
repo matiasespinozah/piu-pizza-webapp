@@ -41,9 +41,10 @@ import { formatCLP } from "@/components/ui/price"
 import { Heading, Text } from "@/components/ui/typography"
 import type { AdminCategory, AdminProduct } from "@/lib/catalog/types"
 
+import "../admin-shell.css"
 import { CategoryEditor } from "./category-editor"
 import { categoryInput, postCatalog, productInput } from "./catalog-requests"
-import { CategoryFlag } from "./catalog-status"
+import { CategoryFlag, ProductFlags } from "./catalog-status"
 import { ProductEditor } from "./product-editor"
 
 type View = "home" | "products" | "categories"
@@ -55,7 +56,7 @@ const shortcutLabel: Record<Shortcut, string> = {
   none: "Todos los productos",
   soldOut: "Agotados",
   hidden: "Ocultos",
-  noPhoto: "Sin foto",
+  noPhoto: "Sin fotografía",
 }
 
 function CatalogEditor({ categories, products }: { categories: AdminCategory[]; products: AdminProduct[] }) {
@@ -195,7 +196,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-4 lg:max-w-[76rem]">
       {view === "home" ? (
         <header className="flex flex-col gap-1">
           <Heading as="h1" size="h3">
@@ -204,42 +205,38 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
           <Text tone="muted">Elige qué quieres revisar.</Text>
         </header>
       ) : (
-        <header className="flex flex-col gap-3">
-          <Button type="button" variant="ghost" size="sm" className="-ml-3 self-start" onClick={() => openView("home")}>
-            <ArrowLeftIcon aria-hidden />
-            Carta
-          </Button>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex flex-col gap-1">
+        <header className="flex min-w-0 flex-col gap-3">
+          {view === "categories" ? (
+            <Button type="button" variant="ghost" size="sm" className="-ml-3 self-start" onClick={() => openView("products")}>
+              <ArrowLeftIcon aria-hidden />
+              Carta
+            </Button>
+          ) : null}
+          <div className="flex min-w-0 items-end justify-between gap-3">
+            <div className="min-w-0">
               <Heading as="h1" size="h3">
                 {view === "categories" ? "Categorías" : "Carta"}
               </Heading>
               <Text tone="muted">
-                {view === "categories"
-                  ? `${categories.length} categorías. Toca una para ver sus productos.`
-                  : `${visibleProducts.length} de ${products.length} productos`}
+                {view === "categories" ? `${categories.length} categorías` : `${visibleProducts.length} de ${products.length}`}
               </Text>
             </div>
             {view === "categories" ? (
-              <Button type="button" onClick={() => setCategorySession({ key: `new-${Date.now()}`, category: null })}>
+              <Button type="button" className="h-11 shrink-0" onClick={() => setCategorySession({ key: `new-${Date.now()}`, category: null })}>
                 <PlusIcon aria-hidden />
-                Nueva categoría
+                Nueva
               </Button>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="secondary" onClick={() => openView("categories")}>
-                  Categorías
-                </Button>
-                <Button
-                  type="button"
-                  variant="accent"
-                  disabled={!defaultCategoryId}
-                  onClick={() => setProductSession({ key: `new-${Date.now()}`, product: null })}
-                >
-                  <PlusIcon aria-hidden />
-                  Agregar producto
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="accent"
+                className="h-11 shrink-0"
+                disabled={!defaultCategoryId}
+                onClick={() => setProductSession({ key: `new-${Date.now()}`, product: null })}
+              >
+                <PlusIcon aria-hidden />
+                Agregar
+              </Button>
             )}
           </div>
         </header>
@@ -377,8 +374,8 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
             />
           </div>
 
-          <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-            <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="group" aria-label="Categoría">
+          <div className="min-w-0 overflow-x-auto pb-1">
+            <div className="flex w-max gap-2" role="group" aria-label="Categoría">
               <Chip pressed={categoryId === "all"} onClick={() => setCategoryId("all")}>
                 Todas
               </Chip>
@@ -390,12 +387,18 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Estado">
+          <div className="flex min-w-0 flex-wrap gap-2" role="group" aria-label="Estado">
+            <Chip pressed={shortcut === "none"} onClick={() => setShortcut("none")}>
+              Todos
+            </Chip>
             {(["soldOut", "hidden", "noPhoto"] as const).map((key) => (
-              <Chip key={key} pressed={shortcut === key} onClick={() => setShortcut((current) => (current === key ? "none" : key))}>
+              <Chip key={key} pressed={shortcut === key} onClick={() => setShortcut(key)}>
                 {shortcutLabel[key]}
               </Chip>
             ))}
+            <Chip pressed={false} onClick={() => openView("categories")}>
+              Categorías
+            </Chip>
           </div>
 
           {canReorder ? (
@@ -409,7 +412,8 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
               <Text>No hay productos con ese filtro.</Text>
             </div>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <>
+            <ul className="flex flex-col gap-3 lg:hidden">
               {visibleProducts.map((product, index) => (
                 <li key={product.id}>
                   <ProductTile
@@ -441,6 +445,30 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
                 </li>
               ))}
             </ul>
+            <ProductTable
+              products={visibleProducts}
+              names={names}
+              busyId={busyId}
+              canReorder={canReorder}
+              onEdit={(product) => setProductSession({ key: product.id, product })}
+              onPrice={setPriceTarget}
+              onAvailability={(product) =>
+                void patchProduct(
+                  product,
+                  { availability: product.availability === "available" ? "unavailable" : "available" },
+                  product.availability === "available" ? `${product.name} quedó agotado.` : `${product.name} quedó disponible.`,
+                )
+              }
+              onVisibility={(product) =>
+                void patchProduct(
+                  product,
+                  { isVisible: !product.isVisible },
+                  product.isVisible ? `${product.name} quedó oculto.` : `${product.name} volvió a la carta.`,
+                )
+              }
+              onMove={moveProduct}
+            />
+            </>
           )}
         </div>
       ) : null}
@@ -573,6 +601,100 @@ function Chip({ pressed, onClick, children }: { pressed: boolean; onClick: () =>
   )
 }
 
+function ProductTable({
+  products,
+  names,
+  busyId,
+  canReorder,
+  onEdit,
+  onPrice,
+  onAvailability,
+  onVisibility,
+  onMove,
+}: {
+  products: AdminProduct[]
+  names: Map<string, string>
+  busyId: string | null
+  canReorder: boolean
+  onEdit: (product: AdminProduct) => void
+  onPrice: (product: AdminProduct) => void
+  onAvailability: (product: AdminProduct) => void
+  onVisibility: (product: AdminProduct) => void
+  onMove: (product: AdminProduct, direction: -1 | 1) => void
+}) {
+  return (
+    <div className="admin-card hidden overflow-x-auto lg:block">
+      <table className="w-full min-w-[40rem] text-sm">
+        <caption className="sr-only">Productos de la carta</caption>
+        <thead>
+          <tr className="border-b border-olive-line text-left text-xs text-olive-muted">
+            <th className="px-4 py-3 font-semibold">Producto</th>
+            <th className="px-3 py-3 font-semibold">Categoría</th>
+            <th className="px-3 py-3 font-semibold">Precio</th>
+            <th className="px-3 py-3 font-semibold">Disponibilidad</th>
+            <th className="px-3 py-3 font-semibold">Visibilidad</th>
+            <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product, index) => {
+            const busy = busyId === product.id
+            return (
+              <tr key={product.id} aria-busy={busy} className="border-b border-olive-line/70 last:border-b-0">
+                <td className="px-4 py-3">
+                  <button type="button" className="flex min-w-0 items-center gap-3 text-left" disabled={busy} onClick={() => onEdit(product)}>
+                    <ProductImage src={product.imageUrl} name={product.name} sizes="40px" className="size-10 rounded-lg object-cover" />
+                    <span className="min-w-0">
+                      <span className="block truncate font-heading font-bold text-olive">{product.name}</span>
+                      <span className="block max-w-64 truncate text-xs text-olive-muted">{product.description}</span>
+                    </span>
+                  </button>
+                </td>
+                <td className="px-3 py-3 text-olive-strong">{names.get(product.categoryId) ?? "Sin categoría"}</td>
+                <td className="px-3 py-3 font-semibold text-olive">{formatCLP(product.priceClp)}</td>
+                <td className="px-3 py-3">
+                  <button
+                    type="button"
+                    className="h-11 rounded-xl px-2 text-sm font-semibold text-olive underline-offset-4 hover:underline"
+                    disabled={busy}
+                    onClick={() => onAvailability(product)}
+                  >
+                    {product.availability === "available" ? "Disponible" : "Agotado"}
+                  </button>
+                </td>
+                <td className="px-3 py-3 text-olive-strong">{product.isVisible ? "Visible" : "Oculto"}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button type="button" variant="ghost" size="sm" className="h-11" disabled={busy} onClick={() => onEdit(product)}>
+                      Editar
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-11" disabled={busy} onClick={() => onPrice(product)}>
+                      Precio
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-11" disabled={busy} onClick={() => onVisibility(product)}>
+                      {product.isVisible ? "Ocultar" : "Mostrar"}
+                    </Button>
+                    {canReorder ? (
+                      <>
+                        <Button type="button" variant="ghost" size="sm" className="h-11" disabled={busy || index === 0} onClick={() => onMove(product, -1)}>
+                          Subir
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-11" disabled={busy || index === products.length - 1} onClick={() => onMove(product, 1)}>
+                          Bajar
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function ProductTile({
   product,
   categoryName,
@@ -604,14 +726,14 @@ function ProductTile({
   return (
     <article
       aria-busy={busy}
-      className="flex flex-col gap-3 rounded-2xl border border-olive-line bg-surface-raised p-3 shadow-tactile sm:flex-row sm:items-center"
+      className="admin-card flex min-w-0 flex-col gap-3 p-3"
     >
       <button
         type="button"
         onClick={onEdit}
         disabled={busy}
         aria-label={`Editar ${product.name}`}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
+        className="flex min-w-0 items-center gap-3 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
       >
         <span className="relative size-16 shrink-0 overflow-hidden rounded-xl">
           <ProductImage src={product.imageUrl} name={product.name} sizes="64px" className={cn("size-16 rounded-xl object-cover", muted && "opacity-60")} />
@@ -620,10 +742,11 @@ function ProductTile({
           {showCategory ? <span className="block truncate text-xs text-olive-muted">{categoryName}</span> : null}
           <span className="block truncate font-heading text-base leading-tight font-bold">{product.name}</span>
           <span className="mt-0.5 line-clamp-2 text-sm text-olive-muted">{product.description}</span>
+          <span className="mt-1 block font-label text-sm font-bold text-olive">{formatCLP(product.priceClp)}</span>
         </span>
       </button>
-      <div className="flex items-center justify-between gap-2 sm:shrink-0">
-        <span className="font-label text-sm font-bold text-olive">{formatCLP(product.priceClp)}</span>
+      <ProductFlags product={product} />
+      <div className="flex min-w-0 flex-col gap-2">
         <button
           type="button"
           role="switch"
@@ -631,18 +754,24 @@ function ProductTile({
           aria-label={product.availability === "available" ? `Marcar ${product.name} agotado` : `Marcar ${product.name} disponible`}
           disabled={busy}
           onClick={onAvailability}
-          className={cn(
-            "relative h-7 w-12 shrink-0 rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-            product.availability === "available" ? "bg-status-good-solid" : "bg-olive-soft",
-          )}
+          className="flex h-11 min-w-0 items-center justify-between gap-3 rounded-xl bg-[#f3f1e6] px-3 text-sm font-semibold text-olive outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <span className={cn("absolute top-0.5 size-6 rounded-full bg-cream shadow-tactile", product.availability === "available" ? "right-0.5" : "left-0.5")} />
+          <span>{product.availability === "available" ? "Disponible" : "Agotado"}</span>
+          <span
+            className={cn(
+              "relative h-7 w-12 shrink-0 rounded-full",
+              product.availability === "available" ? "bg-status-good-solid" : "bg-olive-soft",
+            )}
+          >
+            <span className={cn("absolute top-0.5 size-6 rounded-full bg-cream shadow-tactile", product.availability === "available" ? "right-0.5" : "left-0.5")} />
+          </span>
         </button>
-        <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onEdit}>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-2">
+        <Button type="button" variant="secondary" size="sm" className="admin-action-secondary h-11 min-w-0 px-2" disabled={busy} onClick={onEdit}>
           <PencilIcon aria-hidden />
           Editar
         </Button>
-        <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onVisibility}>
+        <Button type="button" variant="secondary" size="sm" className="h-11 min-w-0 px-2" disabled={busy} onClick={onVisibility}>
           {product.isVisible ? "Ocultar" : "Mostrar"}
         </Button>
         <DropdownMenu>
@@ -677,6 +806,7 @@ function ProductTile({
             ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
     </article>
   )

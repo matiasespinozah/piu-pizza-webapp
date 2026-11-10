@@ -6,7 +6,8 @@ import { ReservationListCard, SummaryTile } from "@/components/features/admin/re
 import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
 import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
 import { Button } from "@/components/ui/button"
-import { Eyebrow, Heading } from "@/components/ui/typography"
+import { Heading } from "@/components/ui/typography"
+import { cn } from "cn"
 import { requireSection } from "@/server/auth/access"
 import { getReservationForStaff, listReservationsForStaff } from "@/server/reservations/service"
 
@@ -26,7 +27,7 @@ function one(value: string | string[] | undefined) {
 }
 
 const fieldClass =
-  "h-11 w-full min-w-0 rounded-xl border border-input bg-cream px-3 text-base text-olive outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+  "admin-control outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
 
 function hrefOf(params: Record<string, string | undefined>) {
   const search = new URLSearchParams()
@@ -55,22 +56,21 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
   const anyFilter = Boolean(query.date || query.status || query.zone || query.q || query.view)
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-      <header className="flex flex-col gap-1">
-        <Eyebrow>PIÙ · reservas</Eyebrow>
-        <div className="flex items-end justify-between gap-3">
+    <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-4">
+      <header className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
           <Heading as="h1" size="h3">
             Reservas
           </Heading>
-          <Link href="/admin/reservas/disponibilidad" className="text-sm font-semibold text-olive underline-offset-4 hover:underline">
-            Disponibilidad
-          </Link>
+          <p className="text-sm text-olive-muted">Confirmar reserva una mesa. Pendiente todavía no.</p>
         </div>
-        <p className="text-sm text-olive-muted">Pendiente no reserva mesa. La confirma el equipo, con una mesa válida.</p>
+        <Link href="/admin/reservas/disponibilidad" className="inline-flex h-11 shrink-0 items-center text-sm font-semibold text-terracotta lg:hidden">
+          Cupos
+        </Link>
       </header>
 
       {!result.ready ? (
-        <p className="flex items-start gap-3 rounded-2xl border border-olive-line bg-surface-raised p-4 text-sm text-olive-strong">
+        <p className="admin-card flex items-start gap-3 p-4 text-sm text-olive-strong">
           <Inbox aria-hidden className="mt-0.5 size-5 shrink-0 text-olive-muted" />
           La recepción de reservas sigue desactivada. No hay solicitudes reales que mostrar.
         </p>
@@ -111,23 +111,23 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
         </ul>
       )}
 
-      <form method="get" action="/admin/reservas" className="flex flex-col gap-2 rounded-2xl border border-olive-line bg-surface-raised p-2.5 shadow-tactile sm:p-3">
-        <div className="flex gap-2">
-          <label className="relative min-w-0 flex-1">
+      <form method="get" action="/admin/reservas" className="admin-card flex min-w-0 flex-col gap-2 p-2.5 sm:p-3 lg:flex-row lg:flex-wrap lg:items-end">
+        <div className="flex gap-2 lg:contents">
+          <label className="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
             <span className="sr-only">Nombre o referencia</span>
             <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-olive-muted" />
             <input name="q" defaultValue={query.q} placeholder="Nombre o referencia" className={`${fieldClass} pl-9`} />
           </label>
-          <Button type="submit" className="h-11 shrink-0 rounded-xl">
+          <Button type="submit" className="h-11 shrink-0 rounded-xl lg:order-last">
             Filtrar
           </Button>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:contents">
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted lg:w-40">
               Fecha
               <input name="date" type="date" defaultValue={query.date} className={`${fieldClass} [min-inline-size:0]`} />
             </label>
-            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted lg:w-44">
               Estado
               <select name="status" defaultValue={query.status ?? ""} className={fieldClass}>
                 <option value="">Todos</option>
@@ -140,7 +140,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
                 <option value="completed">Finalizada</option>
               </select>
             </label>
-            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted">
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted lg:w-36">
               Zona
               <select name="zone" defaultValue={query.zone ?? ""} className={fieldClass}>
                 <option value="">Todas</option>
@@ -158,13 +158,11 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
       </form>
 
       {result.ready ? (
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_26rem]">
           {detail ? (
-            <ReservationDetailPanel
-              detail={detail}
-              backHref={hrefOf(filters)}
-              className="order-first lg:sticky lg:top-4 lg:order-none lg:col-start-2 lg:row-start-1"
-            />
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-[#f3f1e6] px-3.5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8 lg:sticky lg:top-6 lg:z-auto lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100svh-3rem)] lg:overflow-y-auto lg:bg-transparent lg:p-0">
+              <ReservationDetailPanel detail={detail} backHref={hrefOf(filters)} />
+            </div>
           ) : (
             <div className="hidden flex-col items-center gap-3 rounded-3xl border border-dashed border-olive-line px-6 py-10 text-center lg:col-start-2 lg:row-start-1 lg:flex">
               <span className="flex size-12 items-center justify-center rounded-2xl bg-olive-hover text-olive">
@@ -174,7 +172,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
             </div>
           )}
 
-          <div className="flex min-w-0 flex-col gap-2.5 lg:col-start-1 lg:row-start-1">
+          <div className={cn("flex min-w-0 flex-col gap-2.5 lg:col-start-1 lg:row-start-1 lg:max-h-[calc(100svh-3rem)] lg:overflow-y-auto", detail && "max-lg:hidden")}>
             <p className="px-1 text-xs font-semibold text-olive-muted">
               {result.items.length === 0 ? "Sin resultados" : `${result.items.length} ${result.items.length === 1 ? "solicitud" : "solicitudes"}`}
             </p>
