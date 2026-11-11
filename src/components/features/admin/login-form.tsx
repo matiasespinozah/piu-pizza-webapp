@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 import { EyeIcon, EyeOffIcon } from "lucide-react"
-import { inMemoryPersistence, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth"
+import { inMemoryPersistence, sendEmailVerification, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth"
 
 import { Button } from "@/components/ui/button"
 import { FieldError, FieldLabel } from "@/components/ui/field"
@@ -70,7 +70,15 @@ function LoginForm() {
       })
 
       if (response.status === 403) {
-        setError("Esta cuenta no tiene acceso al panel.")
+        const body: unknown = await response.json().catch(() => null)
+        const pendingAccess = typeof body === "object" && body !== null && "pending" in body && body.pending === true
+        const emailVerified = typeof body === "object" && body !== null && "emailVerified" in body && body.emailVerified === true
+        if (pendingAccess && !emailVerified) {
+          await sendEmailVerification(credential.user).catch(() => undefined)
+          setError("Confirma tu correo para que el propietario pueda aprobarte. Te enviamos un enlace de verificación.")
+          return
+        }
+        setError(pendingAccess ? "Tu cuenta está pendiente de aprobación." : "Esta cuenta no tiene acceso al panel.")
         return
       }
       if (!response.ok) {

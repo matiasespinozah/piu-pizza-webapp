@@ -32,6 +32,8 @@ beforeEach(async () => {
     await setDoc(doc(db, "reservations/one"), { customerName: "Ada", customerPhone: "+56911111111" })
     await setDoc(doc(db, "tables/mesa"), { label: "1", blocked: false })
     await setDoc(doc(db, "staff/staff-user"), { email: "ada@example.com" })
+    await setDoc(doc(db, "invitations/one"), { email: "ada@example.com" })
+    await setDoc(doc(db, "invitationRate/hour"), { count: 1 })
     await setDoc(doc(db, "restaurantSettings/operations"), { timeZone: "America/Santiago" })
     await setDoc(doc(db, "auditLogs/log"), { summary: "ensayo" })
   })
@@ -58,6 +60,9 @@ test("admin y superadmin no modifican reservas desde el cliente", async () => {
 
 test("nadie lee personal, mesas, ajustes ni auditoría", async () => {
   await assertFails(getDoc(doc(anon, "staff/staff-user")))
+  await assertFails(getDoc(doc(superadmin, "invitations/one")))
+  await assertFails(setDoc(doc(admin, "invitations/one"), { email: "ada@example.com" }))
+  await assertFails(getDoc(doc(guest, "invitationRate/hour")))
   await assertFails(getDoc(doc(admin, "tables/mesa")))
   await assertFails(getDoc(doc(superadmin, "restaurantSettings/operations")))
   await assertFails(getDoc(doc(guest, "auditLogs/log")))
