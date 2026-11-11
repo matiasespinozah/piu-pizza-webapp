@@ -138,6 +138,9 @@ test("la cookie es httpOnly y el panel no se cachea", () => {
   assert.match(session, /verifyIdToken\(idToken, true\)/)
   assert.match(session, /verifySessionCookie\(value, true\)/)
   assert.match(session, /decideStaffSession/)
+  assert.match(session, /liveStaffSession/)
+  assert.match(text("src/server/auth/live-session.ts"), /getUser\(/)
+  assert.match(text("src/server/auth/live-session.ts"), /user\.disabled/)
   const headers = text("next.config.ts")
   assert.match(headers, /\/admin\/:path\*/)
   assert.match(headers, /private, no-store/)
@@ -161,8 +164,23 @@ test("el inicio no inventa métricas ni lee Firestore", () => {
   assert.doesNotMatch(page + view, /\b\d+\s+reservas\b/i)
 })
 
+test("el alta por invitación no asigna rol ni publica el secreto", () => {
+  const service = text("src/server/staff/invitations.ts")
+  const join = text("src/components/features/admin/staff/join-form.tsx")
+  assert.match(service, /status: "pending"/)
+  assert.doesNotMatch(service, /setCustomUserClaims/)
+  assert.doesNotMatch(service, /updateUser/)
+  assert.match(join, /Tu cuenta está pendiente de aprobación/)
+  assert.doesNotMatch(join, /setCustomUserClaims|intendedRole/)
+  assert.match(text("src/components/features/admin/login-form.tsx"), /Tu cuenta está pendiente de aprobación/)
+  assert.match(text("src/app/admin/session/route.ts"), /pending: true/)
+  assert.match(text("src/app/admin/unirse/page.tsx"), /Cuenta de equipo/)
+  assert.doesNotMatch(text("src/app/admin/unirse/page.tsx"), /requireSection/)
+})
+
 test("el primer superadmin conserva los otros claims", () => {
   const script = text("scripts/bootstrap-superadmin.mjs")
   assert.match(script, /\.\.\.existing\.customClaims/)
   assert.match(text("src/server/auth/claims.ts"), /\.\.\.user\.customClaims/)
+  assert.match(text("src/server/auth/claims.ts"), /revokeRefreshTokens\(targetUid\)[\s\S]*setCustomUserClaims/)
 })

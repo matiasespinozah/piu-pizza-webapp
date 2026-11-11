@@ -21,7 +21,7 @@ Proyecto Firebase: **`piu-pizza-cl`** (plan Blaze). Todo en `us-central1`. Infra
 - Email y contraseña con el Web SDK, persistencia en memoria. El ID token se envía a `/admin/session` y el servidor crea la cookie `piu_session` (`httpOnly`, `secure` en producción, `sameSite=lax`, 8 horas). No va a `localStorage`.
 - Ese route exige que `Origin` coincida con el host y el encabezado `x-piu-requested-with: admin-login`. No acepta `?next=`.
 - El layout de `/admin` llama `readStaffSession()` antes de pintar HTML. `/admin/login` está fuera de ese layout. Cada página vuelve a pedir su sección con `requireSection`.
-- `verifyIdToken` y `verifySessionCookie` se llaman con `checkRevoked: true`. Cambiar un rol también ejecuta `revokeRefreshTokens`.
+- `verifyIdToken` y `verifySessionCookie` se llaman con `checkRevoked: true`. Además, cada pedido del panel lee `getUser`: el claim vigente y `disabled` mandan sobre la cookie. Una ficha pendiente, suspendida o rechazada no abre el panel. Cambiar un rol también ejecuta `revokeRefreshTokens`.
 - Los roles son `superadmin` y `admin`, en el custom claim `role`. No es un campo de Firestore. El mapa de permisos está en `src/lib/auth/permissions.ts`.
 - El procedimiento, los emuladores y lo que aún no existe están en `docs/arquitectura/admin-auth.md`.
 - Proveedores previstos: **email/contraseña** y **Google**. Este panel usa solo email/contraseña. Sin Phone Auth. MFA no está contratado: no se exige en el ingreso.

@@ -49,6 +49,7 @@ pnpm typecheck     # chequeo de tipos
 pnpm changelog:check  # changelog y versiones alineadas
 pnpm test          # superficie pública y reglas de la sesión, sin emulador
 pnpm test:auth     # sesión contra el emulador de Auth (proyecto demo-piu-pizza)
+pnpm test:staff    # invitaciones y alta pendiente contra los emuladores de Auth y Firestore
 pnpm test:rules    # reglas de Firestore contra el emulador
 pnpm test:reservations # solicitudes, cupos y transiciones contra el emulador
 pnpm test:reservation-status # seguimiento del cliente contra el emulador

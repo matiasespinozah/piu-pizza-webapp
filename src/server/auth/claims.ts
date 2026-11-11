@@ -8,27 +8,52 @@ import { appendAuditLog } from "@/server/dal/audit"
 import { getAdminApp } from "@/server/firebase/admin"
 import { assertFirebaseDataEnabled } from "@/server/firebase/guard"
 
+const uidPattern = /^[A-Za-z0-9]{10,128}$/
+
+class UnverifiedStaffError extends Error {
+  readonly code = "unverified"
+
+  constructor() {
+    super("Esa persona todavía tiene que verificar su correo.")
+    this.name = "UnverifiedStaffError"
+  }
+}
+
 /**
- * Cambia el rol de otra cuenta. Solo un SUPERADMIN, y solo desde el servidor.
- * Conserva los demás custom claims, cambia solo `role` y revoca las sesiones viejas.
- * El primer SUPERADMIN no pasa por aquí: lo asigna scripts/bootstrap-superadmin.mjs.
+ * Primero revoca las sesiones, después escribe el claim y vuelve a revocar.
+ * La segunda revocación invalida un ingreso que haya ocurrido en ese instante con el rol anterior.
+ * Si el proceso se corta, la cookie vieja ya no sirve y el propietario puede reintentar.
+ * Un rol nuevo exige correo verificado.
  */
-async function assignStaffRole(actor: StaffSession, targetUid: string, role: StaffRole) {
+async function setStaffClaim(actor: StaffSession, targetUid: string, role: StaffRole | null, summary: string) {
   assertFirebaseDataEnabled()
   assertStaff(actor, ["superadmin"])
-  if (!/^[A-Za-z0-9]{10,128}$/.test(targetUid)) {
-    throw new Error("El identificador de la cuenta no es válido.")
-  }
+  if (!uidPattern.test(targetUid)) throw new Error("El identificador de la cuenta no es válido.")
 
   const auth = getAuth(getAdminApp())
   const user = await auth.getUser(targetUid)
-  await auth.setCustomUserClaims(targetUid, { ...user.customClaims, role })
+  if (role && user.emailVerified !== true) throw new UnverifiedStaffError()
+
+  const claims = { ...user.customClaims }
+  if (role) claims.role = role
+  else delete claims.role
+
+  await auth.revokeRefreshTokens(targetUid)
+  await auth.setCustomUserClaims(targetUid, claims)
   await auth.revokeRefreshTokens(targetUid)
   await appendAuditLog(actor, {
-    action: "staff.role.assign",
+    action: role ? "staff.role.assign" : "staff.role.clear",
     targetPath: `staff/${targetUid}`,
-    summary: `Rol asignado: ${role}.`,
+    summary,
   })
 }
 
-export { assignStaffRole }
+async function assignStaffRole(actor: StaffSession, targetUid: string, role: StaffRole) {
+  await setStaffClaim(actor, targetUid, role, `Rol asignado: ${role}.`)
+}
+
+async function clearStaffRole(actor: StaffSession, targetUid: string) {
+  await setStaffClaim(actor, targetUid, null, "Se quitó el rol de personal.")
+}
+
+export { UnverifiedStaffError, assignStaffRole, clearStaffRole }

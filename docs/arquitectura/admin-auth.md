@@ -15,7 +15,19 @@ El acceso a Firestore sigue apagado (`PIU_FIREBASE_DATA` no se enciende). El ing
 7. Crea la cookie `piu_session` y el navegador cierra la sesión del SDK. Queda la cookie, no una segunda sesión persistente.
 8. Redirige a `/admin`. No existe `?next=`: cualquier destino pedido por URL se ignora.
 
-Si la contraseña no sirve, el mensaje es el mismo para una cuenta inexistente y para una contraseña mala. Solo después de una contraseña correcta el servidor puede responder que esa cuenta no tiene acceso al panel.
+Si la contraseña no sirve, el mensaje es el mismo para una cuenta inexistente y para una contraseña mala. Solo después de una contraseña correcta el servidor puede responder que esa cuenta no tiene acceso al panel. Si la ficha está pendiente y Firestore está disponible para el proceso, el mensaje es que la cuenta espera aprobación. Sin ese acceso, el mensaje sigue siendo el de una cuenta sin permiso.
+
+## Invitaciones
+
+El propietario entra a `/admin/personal` y escribe el correo. El servidor guarda el correo, el vencimiento de 48 horas y el hash del secreto. El enlace `/admin/unirse#…` se muestra una sola vez para copiarlo. No hay envío de correo propio.
+
+La persona abre el enlace y confirma el correo de la invitación. Si ese correo no existe, elige nombre y contraseña y el servidor crea la cuenta con el Admin SDK, sin `role` y con el correo sin verificar. Si el correo ya existe, el formulario pide la contraseña actual: el navegador inicia sesión y el servidor comprueba el token. No cambia la contraseña ni el nombre de Authentication. La ficha queda `pending` en ambos casos. El formulario dice: «Tu cuenta está pendiente de aprobación». Si el correo no está verificado, el navegador pide el correo de verificación. Aprobar, cambiar el rol o reactivar exige `emailVerified === true` en el servidor.
+
+Una invitación usada, vencida o revocada no crea otra cuenta. Dos altas simultáneas dejan una sola. El navegador no puede leer `invitations` ni `staff`.
+
+Este flujo escribe Firestore. `pnpm dev` lo deja apagado. No se enciende `PIU_FIREBASE_DATA` para probarlo. El ensayo es `pnpm test:staff`, contra el emulador `demo-piu-pizza`.
+
+Aprobar, rechazar, cambiar el rol, suspender y revocar el acceso se hace en `/admin/personal`, solo con un `superadmin`. El servidor escribe el claim, revoca las sesiones anteriores y anota el cambio. Suspender desactiva la cuenta: la cookie vieja deja de servir en la siguiente verificación. No se puede dejar el panel sin ningún propietario habilitado. Asignar `superadmin` pide una confirmación distinta. Un `admin` no llega a estas acciones.
 
 ## Sesión
 
@@ -30,7 +42,7 @@ Si la contraseña no sirve, el mensaje es el mismo para una cuenta inexistente y
 
 Firebase no emite una cookie de sesión de menos de 5 minutos ni de más de 14 días. Por eso el ensayo no duerme una cookie hasta vencerla: comprueba el tope de 8 horas, rechaza una caducidad ya pasada y comprueba que el servicio niega una cookie de 1 segundo.
 
-Cada página de `/admin` llama `verifySessionCookie(cookie, true)` antes de pintar HTML. Ese `true` rechaza la cookie si los refresh tokens fueron revocados. Authentication compara esa revocación en segundos: si el ingreso y la revocación caen en el mismo segundo, la cookie puede seguir vigente ese segundo. Una cookie alterada falla siempre. Si no hay sesión, o está vencida, la respuesta vuelve a `/admin/login`.
+Cada página de `/admin` llama `verifySessionCookie(cookie, true)` y después `getUser`. La cookie solo identifica a la persona. El rol y el estado `disabled` se leen de Authentication en ese pedido, no de los claims que quedaron dentro de la cookie. Authentication compara la revocación en segundos: una cookie emitida en el mismo segundo puede seguir verificándose, pero ya no autoriza con el permiso anterior. Si la ficha está pendiente, suspendida o rechazada, el panel no abre aunque el claim exista. Si no hay ficha, el claim vigente basta: el primer propietario no tiene documento `staff`. Si no hay sesión, la respuesta vuelve a `/admin/login`.
 
 Cerrar sesión es `DELETE /admin/session`. Borra la cookie y vuelve al ingreso.
 
@@ -45,7 +57,7 @@ Las páginas bajo `/admin` se envían con `Cache-Control: private, no-store`.
 
 ## Roles
 
-El claim `role` es la autoridad. No se lee de Firestore ni de un campo del formulario.
+El claim vigente en Authentication es la autoridad del rol. No se acepta el rol guardado dentro de la cookie ni un campo del formulario. Firestore no otorga el rol: solo bloquea si la ficha está pendiente, suspendida o rechazada.
 
 | Rol | Para quién | En este hito |
 |---|---|---|
@@ -81,6 +93,7 @@ Las pruebas automáticas de Auth usan el proyecto `demo-piu-pizza` y solo el emu
 ```bash
 pnpm test
 pnpm test:auth
+pnpm test:staff
 pnpm test:rules
 ```
 
@@ -88,10 +101,13 @@ pnpm test:rules
 
 `pnpm test:auth` levanta el emulador de Auth y prueba una cuenta sin claim, `admin`, `superadmin`, cookie alterada, cookie revocada, cuenta deshabilitada y el mínimo de 5 minutos del servicio.
 
+`pnpm test:staff` levanta Auth y Firestore en `demo-piu-pizza`. Prueba el alta pendiente, el vencimiento, la reutilización, la carrera de dos registros, una cuenta ya existente y la revocación. No escribe en `piu-pizza-cl`.
+
 Para probar el formulario contra el emulador, en la terminal del servidor (sin commitear estas variables):
 
 ```bash
 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
 NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-piu-pizza
 ```
@@ -136,6 +152,6 @@ No forma parte de este hito. Cuando se publique la rama:
 - MFA no está disponible. Una contraseña robada, dentro de las 8 horas y antes de una revocación, abre el panel.
 - No hay un límite de intentos propio además del de Authentication.
 - El panel no lee reservas, mesas ni productos. Las tarjetas dicen que la métrica aún no está conectada.
-- `assignStaffRole` no tiene pantalla. Sigue apagado mientras Firestore de datos esté apagado.
+- El primer `superadmin` de producción sigue saliendo del script, no de una invitación. Aprobar a otro propietario desde Personal ya está en el servidor.
 - Cada vista del panel consulta Authentication para ver si la sesión fue revocada. En un equipo chico es aceptable; no es un listener en tiempo real.
 - Google como segundo proveedor y App Check siguen sin activarse en este flujo.

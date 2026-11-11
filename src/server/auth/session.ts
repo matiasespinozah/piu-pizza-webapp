@@ -3,7 +3,8 @@ import "server-only"
 import { getAuth } from "firebase-admin/auth"
 import { cookies } from "next/headers"
 
-import { decideStaffSession, staffFromVerified } from "@/lib/auth/staff-session"
+import { decideStaffSession } from "@/lib/auth/staff-session"
+import { liveStaffSession } from "@/server/auth/live-session"
 import type { StaffSession } from "@/lib/auth/roles"
 import {
   sessionCookieName,
@@ -11,6 +12,7 @@ import {
   sessionMaxAgeMs,
 } from "@/lib/auth/session-policy"
 import { StaffAccessError } from "@/server/auth/authorization"
+import { staffAccountIsPending } from "@/server/staff/invitations"
 import { getAdminApp } from "@/server/firebase/admin"
 
 function adminAuth() {
@@ -19,14 +21,23 @@ function adminAuth() {
 
 /**
  * Crea la cookie solo si el token es reciente y ya trae un rol de personal.
- * No consulta Firestore y no usa PIU_FIREBASE_DATA.
+ * Una cuenta pendiente no recibe cookie. Si Firestore está encendido, se distingue
+ * de una cuenta sin ficha para poder decir que sigue en aprobación.
  */
 async function createStaffSession(idToken: string): Promise<StaffSession> {
   const decoded = await adminAuth().verifyIdToken(idToken, true)
   const decision = decideStaffSession(decoded)
   if (!decision.ok) {
-    if (decision.reason === "forbidden") throw new StaffAccessError()
+    if (decision.reason === "forbidden") {
+      const pending = decoded.uid ? await staffAccountIsPending(decoded.uid) : false
+      throw new StaffAccessError(pending ? "pending" : "forbidden", pending ? decoded.email_verified === true : null)
+    }
     throw new Error("La sesión de inicio ya no es válida.")
+  }
+  const live = await liveStaffSession(decoded)
+  if (!live) {
+    const pending = decoded.uid ? await staffAccountIsPending(decoded.uid) : false
+    throw new StaffAccessError(pending ? "pending" : "forbidden", pending ? decoded.email_verified === true : null)
   }
 
   const value = await adminAuth().createSessionCookie(idToken, { expiresIn: sessionMaxAgeMs })
@@ -42,7 +53,7 @@ async function createStaffSession(idToken: string): Promise<StaffSession> {
     maxAge: sessionMaxAgeMs / 1000,
   })
 
-  return decision.session
+  return live
 }
 
 async function readStaffSession(): Promise<StaffSession | null> {
@@ -53,7 +64,7 @@ async function readStaffSession(): Promise<StaffSession | null> {
   try {
     const decoded = await adminAuth().verifySessionCookie(value, true)
     if (sessionIsExpired(decoded.exp, Date.now())) return null
-    return staffFromVerified(decoded)
+    return liveStaffSession(decoded)
   } catch {
     return null
   }
@@ -69,7 +80,7 @@ async function readStaffGate(): Promise<
   try {
     const decoded = await adminAuth().verifySessionCookie(value, true)
     if (sessionIsExpired(decoded.exp, Date.now())) return { status: 401 }
-    const session = staffFromVerified(decoded)
+    const session = await liveStaffSession(decoded)
     if (!session) return { status: 403 }
     return { status: 200, session }
   } catch {

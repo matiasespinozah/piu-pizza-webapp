@@ -62,6 +62,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /invitations/{inviteId} {
+      allow read, write: if false;
+    }
+
+    match /invitationRate/{rateId} {
+      allow read, write: if false;
+    }
+
     match /restaurantSettings/{docId} {
       allow read, write: if false;
     }

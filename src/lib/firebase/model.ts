@@ -19,6 +19,8 @@ const collections = {
   reservationAccess: "reservationAccess",
   reservationStatusRate: "reservationStatusRate",
   reservationDays: "reservationDays",
+  invitations: "invitations",
+  invitationRate: "invitationRate",
 } as const
 
 const settingsDocId = "operations"
@@ -94,6 +96,24 @@ const restaurantSettingsSchema = z.object({
 const staffDirectorySchema = z.object({
   email: z.string().trim().max(120),
   displayName: z.string().trim().max(80),
+  /** pending no tiene claim. El rol del panel sigue viviendo solo en Authentication. */
+  status: z.enum(["pending", "active", "rejected", "suspended"]),
+  intendedRole: z.enum(["admin", "superadmin"]).nullable(),
+  invitedBy: z.string().trim().max(128).nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+
+const invitationSchema = z.object({
+  email: z.string().trim().max(120),
+  expiresAt: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  createdBy: z.string().trim().min(1).max(128),
+  status: z.enum(["open", "used", "revoked"]),
+  usedAt: z.string().datetime().nullable(),
+  usedBy: z.string().trim().max(128).nullable(),
+  lockId: z.string().trim().max(80).nullable(),
+  lockUntil: z.string().datetime().nullable(),
 })
 
 const auditLogSchema = z.object({
@@ -116,6 +136,7 @@ export {
   reservationSchema,
   reservationStatusSchema,
   restaurantSettingsSchema,
+  invitationSchema,
   settingsDocId,
   staffDirectorySchema,
   statusMatches,

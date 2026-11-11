@@ -7,6 +7,7 @@ import { useState } from "react"
 import { BookOpenIcon, CalendarDaysIcon, CalendarRangeIcon, HomeIcon, SettingsIcon, UserRoundIcon, UtensilsCrossedIcon, type LucideIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Logo } from "@/components/ui/logo"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { adminNav, canViewSection, type AdminSection } from "@/lib/auth/permissions"
@@ -48,7 +49,7 @@ function AdminFrame({ email, displayName, role, roleLabel, children }: AdminFram
         <aside className="sticky top-0 hidden h-svh flex-col bg-olive text-cream lg:flex">
           <Brand />
           <AdminNav items={sideItems} pathname={pathname} />
-          <Account who={who} email={email} roleLabel={roleLabel} />
+          <AccountMenu who={who} email={email} roleLabel={roleLabel} />
         </aside>
 
         <div className="min-w-0 bg-olive lg:bg-[#f3f1e6]">
@@ -161,49 +162,94 @@ function BottomNav({ items, pathname }: { items: readonly NavItem[]; pathname: s
   )
 }
 
-function Account({ who, email, roleLabel }: { who: string; email: string; roleLabel: string }) {
+function accountIdentity(who: string, email: string) {
+  const name = who && who !== email ? who : ""
+  const source = name || email || "PIÙ"
+  const parts = source.split(/[\s@._-]+/).filter(Boolean)
+  const initials = `${parts[0]?.[0] ?? "P"}${parts[1]?.[0] ?? ""}`.toLocaleUpperCase("es-CL")
+  return { name, email, initials }
+}
+
+function AccountAvatar({ initials, className }: { initials: string; className?: string }) {
   return (
-    <div className="mt-auto flex flex-col gap-3 border-t border-cream/15 p-4">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold">{who}</p>
-        {email && who !== email ? <p className="truncate text-xs text-cream/70">{email}</p> : null}
-        <p className="mt-1 text-xs font-semibold tracking-wide text-terracotta-soft uppercase">{roleLabel}</p>
+    <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-full bg-cream font-heading text-sm font-extrabold text-olive", className)}>
+      {initials}
+    </span>
+  )
+}
+
+function AccountPanel({ who, email, roleLabel }: { who: string; email: string; roleLabel: string }) {
+  const identity = accountIdentity(who, email)
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <AccountAvatar initials={identity.initials} />
+        <div className="min-w-0">
+          {identity.name ? <p className="truncate font-heading text-base font-bold text-olive">{identity.name}</p> : null}
+          {identity.email ? <p className="truncate text-sm text-olive-muted">{identity.email}</p> : null}
+          <p className="text-xs font-semibold tracking-wide text-terracotta uppercase">{roleLabel}</p>
+        </div>
       </div>
-      <LogoutButton onDark />
-      <Link href="/" className="text-sm font-semibold text-cream/70 underline-offset-4 hover:text-cream hover:underline">
+      <LogoutButton />
+      <Link href="/" className="inline-flex h-11 items-center justify-center text-sm font-semibold text-olive">
         Ver el sitio
       </Link>
     </div>
   )
 }
 
+function AccountMenu({ who, email, roleLabel }: { who: string; email: string; roleLabel: string }) {
+  const identity = accountIdentity(who, email)
+  return (
+    <div className="mt-auto border-t border-cream/15 p-3">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex size-11 items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
+            aria-label="Mi cuenta"
+          >
+            <AccountAvatar initials={identity.initials} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="start" className="admin-sheet min-w-72 rounded-2xl p-4">
+          <AccountPanel who={who} email={email} roleLabel={roleLabel} />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
+
 function AccountSheet({ who, email, roleLabel }: { who: string; email: string; roleLabel: string }) {
   const [open, setOpen] = useState(false)
+  const identity = accountIdentity(who, email)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" className="rounded-full border border-cream/30 text-cream hover:bg-cream/10" aria-label="Cuenta del equipo">
-          <UserRoundIcon />
-        </Button>
+        <button
+          type="button"
+          className="flex size-11 items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
+          aria-label="Mi cuenta"
+        >
+          <AccountAvatar initials={identity.initials} className="border border-cream/40" />
+        </button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[min(100%,20rem)] bg-background">
-        <SheetTitle className="font-heading text-xl">Cuenta</SheetTitle>
-        <SheetDescription className="sr-only">Datos de la sesión y cierre</SheetDescription>
-        <div className="mt-6 flex flex-col gap-3">
-          <p className="font-semibold text-olive">{who}</p>
-          {email ? <p className="text-sm text-olive-muted">{email}</p> : null}
-          <p className="text-xs font-semibold tracking-wide text-terracotta uppercase">{roleLabel}</p>
-          <LogoutButton />
-          <Link href="/" className="text-sm font-semibold text-olive underline-offset-4 hover:underline">
-            Ver el sitio
-          </Link>
+      <SheetContent
+        side="bottom"
+        className="admin-sheet gap-0 rounded-t-[1.75rem] px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
+      >
+        <span aria-hidden className="mx-auto mb-3 h-1 w-10 rounded-full bg-olive/15" />
+        <SheetTitle className="font-heading text-base text-olive">Mi cuenta</SheetTitle>
+        <SheetDescription className="sr-only">Nombre, correo, rol y cierre de sesión</SheetDescription>
+        <div className="mt-4">
+          <AccountPanel who={who} email={email} roleLabel={roleLabel} />
         </div>
       </SheetContent>
     </Sheet>
   )
 }
 
-function LogoutButton({ onDark = false }: { onDark?: boolean }) {
+function LogoutButton() {
   const [pending, setPending] = useState(false)
 
   async function logout() {
@@ -225,7 +271,7 @@ function LogoutButton({ onDark = false }: { onDark?: boolean }) {
     <Button
       type="button"
       variant="secondary"
-      className={cn("w-full", onDark && "border-transparent bg-cream text-olive hover:bg-cream/90")}
+      className="w-full"
       loading={pending}
       onClick={logout}
     >
