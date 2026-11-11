@@ -1,6 +1,6 @@
 import "server-only"
 
-import { createHash, randomInt } from "node:crypto"
+import { createHash, randomInt, randomUUID } from "node:crypto"
 import { Timestamp, type Firestore, type Query } from "firebase-admin/firestore"
 
 import type { StaffSession } from "@/lib/auth/roles"
@@ -11,7 +11,7 @@ import { admitStored, limitsStored, quotaReason, readDayOverride } from "@/lib/r
 import { ReservationError } from "@/lib/reservations/errors"
 import type { PublicReservationInput } from "@/lib/reservations/public-request"
 import { claimPublicReference } from "@/lib/reservations/reference"
-import { todayIsoInSantiago } from "@/lib/reservations/schedule"
+import { isPastDate, todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { canTransition, nextStatus, type StaffAction } from "@/lib/reservations/transitions"
 import type { ReservationStatus, ReservationZone } from "@/lib/reservations/types"
 import { createTrackingSecret, hashTrackingSecret, trackingExpiresOn, wrapTrackingSecret } from "@/lib/reservations/tracking"
@@ -27,6 +27,7 @@ import { reservationWritesEnabled } from "@/lib/reservations/writes"
 import { assertStaff } from "@/server/auth/authorization"
 import { getDb } from "@/server/firebase/firestore"
 import { readTrackingState, recoverTrackingToken } from "@/server/reservations/tracking"
+import { publishReservationNotice } from "@/server/reservations/notifications"
 
 const pageSize = 20
 const rateLimitPerHour = 8
@@ -275,6 +276,19 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
     return { duplicate: false, data, trackingToken: freshToken }
   })
 
+  if (!outcome.duplicate) {
+    await publishReservationNotice({
+      action: "received",
+      id: input.idempotencyKey,
+      referenceCode: text(outcome.data.referenceCode),
+      date: input.date,
+      time: input.preferredTime,
+      zone: input.preferredZone,
+      partySize: input.partySize,
+      revision: 1,
+    }).catch(() => undefined)
+  }
+
   return { duplicate: outcome.duplicate, receipt: receiptOf(outcome.data), trackingToken: outcome.trackingToken }
 }
 
@@ -375,6 +389,9 @@ async function getReservationForStaff(session: StaffSession | null, id: string):
     proposedTime: typeof data.proposedTime === "string" ? data.proposedTime : null,
     proposedZone: asZone(data.proposedZone),
     updatedAt: iso(data.updatedAt),
+    tableLabel: typeof data.tableLabel === "string" && data.tableLabel ? data.tableLabel : null,
+    internalNotes: typeof data.internalNotes === "string" ? data.internalNotes : "",
+    exceptionReason: typeof data.exception === "object" && data.exception && "reason" in data.exception && typeof data.exception.reason === "string" ? data.exception.reason : null,
     events,
     tracking: await readTrackingState(db, data),
   }
@@ -388,6 +405,9 @@ type TransitionInput = {
   proposedDate?: string
   proposedTime?: string
   proposedZone?: ReservationZone
+  tableLabel?: string
+  internalNotes?: string
+  exceptionConfirmed?: boolean
 }
 
 async function transitionReservation(session: StaffSession | null, input: TransitionInput, now = new Date()) {
@@ -401,7 +421,7 @@ async function transitionReservation(session: StaffSession | null, input: Transi
   const settingsRef = db.collection(collections.restaurantSettings).doc(settingsDocId)
   const stamp = Timestamp.fromDate(now)
 
-  await db.runTransaction(async (tx) => {
+  const notice = await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref)
     if (!snap.exists) throw new ReservationError(404, "missing", "No encontramos esa solicitud.")
     const data = snap.data() ?? {}
@@ -413,19 +433,32 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       throw new ReservationError(409, "invalid_transition", "Esa solicitud ya no admite ese cambio.")
     }
 
-    const to = nextStatus[input.action]
+    const keepsStatus = input.action === "note" || input.action === "assign"
+    const to = keepsStatus ? status : nextStatus[input.action]
     const patch: ReservationData = {
       status: to,
       updatedAt: stamp,
       revision: input.revision + 1,
       lastModifiedBy: actor.uid,
     }
+    const label = (input.tableLabel ?? "").trim().slice(0, 40)
 
-    if (input.action === "propose") {
+    if (input.action === "note") {
+      const notes = (input.internalNotes ?? "").trim()
+      if (notes.length > 280) throw new ReservationError(422, "invalid", "La nota es demasiado larga.")
+      patch.internalNotes = notes
+    }
+
+    if (input.action === "assign") {
+      patch.tableLabel = label || null
+    }
+
+    if (input.action === "propose" || input.action === "reschedule") {
       const zone = input.proposedZone
       if (!input.proposedDate || !input.proposedTime || !zone) {
         throw new ReservationError(422, "invalid", "Indica la fecha, la hora y la zona propuestas.")
       }
+      if (!(input.action === "reschedule" && input.exceptionConfirmed === true)) {
       const errors = validateTime(
         {
           date: input.proposedDate,
@@ -441,6 +474,7 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       if (Object.keys(errors).length > 0) {
         throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Ese horario no está disponible.")
       }
+      }
       patch.proposedDate = input.proposedDate
       patch.proposedTime = input.proposedTime
       patch.proposedZone = zone
@@ -453,13 +487,18 @@ async function transitionReservation(session: StaffSession | null, input: Transi
     }
 
     const releases = input.action === "cancel" || input.action === "complete"
-    const confirms = input.action === "confirm"
+    const confirms = input.action === "confirm" || input.action === "reschedule"
     const oldDate = typeof data.holdDate === "string" ? data.holdDate : ""
     const oldZone = asZone(data.holdZone)
     let targetDate = text(data.date)
     let targetTime = text(data.preferredTime)
     let targetZone = asZone(data.preferredZone)
-    if (confirms && status === "reschedule_requested" && data.proposedDate && data.proposedTime && asZone(data.proposedZone)) {
+    if (input.action === "reschedule") {
+      targetDate = input.proposedDate ?? ""
+      targetTime = input.proposedTime ?? ""
+      targetZone = input.proposedZone ?? null
+    }
+    if (input.action === "confirm" && status === "reschedule_requested" && data.proposedDate && data.proposedTime && asZone(data.proposedZone)) {
       targetDate = text(data.proposedDate)
       targetTime = text(data.proposedTime)
       targetZone = asZone(data.proposedZone)
@@ -480,6 +519,7 @@ async function transitionReservation(session: StaffSession | null, input: Transi
     const trackingId = typeof data.trackingId === "string" ? data.trackingId : ""
     const accessRef = trackingId ? db.collection(collections.reservationAccess).doc(trackingId) : null
     const accessSnap = accessRef ? await tx.get(accessRef) : null
+    const assignSnap = input.action === "assign" && oldRef ? await tx.get(oldRef) : null
 
     if (confirms && (!targetZone || !newRef)) {
       throw new ReservationError(409, "capacity_unconfigured", capacityMessage("unconfigured"))
@@ -490,18 +530,21 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       const bookings = { ...bookingsOf(newSnap?.data()) }
       if (oldRef && newRef && oldRef.path === newRef.path) delete bookings[input.id]
       const [hours, minutes] = targetTime.split(":").map(Number)
-      const plan = planAssignment({
+      const startMin = hours * 60 + minutes
+      let plan = planAssignment({
         config,
         bookings,
         zone: targetZone,
         partySize: Number(data.partySize),
-        startMin: hours * 60 + minutes,
+        startMin,
       })
-      if (!plan.ok) throw new ReservationError(409, `capacity_${plan.reason}`, capacityMessage(plan.reason))
-      const startMin = hours * 60 + minutes
       const day = readDayOverride(daySnap?.exists ? daySnap.data() : null, targetDate)
       if (daySnap?.exists && !day) {
-        throw new ReservationError(409, "capacity_unconfigured", "La excepción de ese día no se pudo leer. La solicitud sigue pendiente.")
+        throw new ReservationError(409, "capacity_day", "La excepción de ese día no se pudo leer. La solicitud sigue pendiente.")
+      }
+      const tablesInZone = config?.tables.filter((table) => table.zone === targetZone) ?? []
+      if (!plan.ok && plan.reason === "zone" && config && tablesInZone.length === 0) {
+        plan = { ok: true, tableIds: [], endMin: startMin + config.serviceMinutes, slots: 1 }
       }
       const limits = limitsStored(settingsSnap?.data(), day)
       const counted = [
@@ -511,7 +554,40 @@ async function transitionReservation(session: StaffSession | null, input: Transi
           .map((entry) => entry[1]),
       ]
       const quota = quotaReason(counted, startMin, limits.daily, limits.slot)
-      if (quota) throw new ReservationError(409, `capacity_${quota}`, capacityMessage(quota))
+      const problems: string[] = []
+      if (!plan.ok) problems.push(plan.reason)
+      if (quota) problems.push(quota)
+      const labelKey = label.toLocaleLowerCase("es-CL")
+      const clashes =
+        labelKey.length > 0 &&
+        [...Object.entries(bookings), ...Object.entries(bookingsOf(otherSnap?.data()))].some(([id, booking]) => {
+          if (id === input.id || !booking.tableLabel) return false
+          if (booking.tableLabel.toLocaleLowerCase("es-CL") !== labelKey) return false
+          const end = plan.ok ? plan.endMin : startMin + (config?.serviceMinutes ?? 90)
+          return booking.startMin < end && startMin < booking.endMin
+        })
+      if (clashes) problems.push("table")
+      if (problems.length > 0 && !(input.exceptionConfirmed === true && reason.length >= 8)) {
+        const reasonCode = problems[0] ?? "unconfigured"
+        const message =
+          reasonCode === "table"
+            ? "Esa mesa ya está usada en un horario que se cruza."
+            : capacityMessage(reasonCode)
+        throw new ReservationError(409, `capacity_${reasonCode}`, message)
+      }
+      const assignment = plan.ok
+        ? { tableIds: plan.tableIds, endMin: plan.endMin, slots: plan.slots ?? Math.max(1, plan.tableIds.length) }
+        : { tableIds: [] as string[], endMin: startMin + (config?.serviceMinutes ?? 90), slots: 1 }
+      if (problems.length > 0) {
+        patch.exception = { by: actor.uid, at: stamp, reason, kinds: problems }
+        tx.set(db.collection(collections.auditLogs).doc(), {
+          actorUid: actor.uid,
+          action: "reservation.exception",
+          targetPath: `reservations/${input.id}`,
+          summary: `Autorizó una excepción (${problems.join(", ")}): ${reason}`.slice(0, 280),
+          at: now.toISOString(),
+        })
+      }
       const nextBookings = { ...bookingsOf(newSnap?.data()) }
       if (oldRef && newRef && oldRef.path !== newRef.path) {
         const previous = { ...bookingsOf(oldSnap?.data()) }
@@ -519,14 +595,16 @@ async function transitionReservation(session: StaffSession | null, input: Transi
         tx.set(oldRef, { bookings: previous }, { merge: true })
       }
       nextBookings[input.id] = {
-        tableIds: plan.tableIds,
-        slots: plan.slots ?? Math.max(1, plan.tableIds.length),
-        startMin: hours * 60 + minutes,
-        endMin: plan.endMin,
+        tableIds: assignment.tableIds,
+        slots: assignment.slots,
+        startMin,
+        endMin: assignment.endMin,
         zone: targetZone,
+        ...(label ? { tableLabel: label } : {}),
       }
       tx.set(newRef, { bookings: nextBookings }, { merge: true })
-      patch.assignedTableIds = plan.tableIds
+      patch.assignedTableIds = assignment.tableIds
+      patch.tableLabel = label || (typeof data.tableLabel === "string" ? data.tableLabel : null)
       patch.holdDate = targetDate
       patch.holdZone = targetZone
       patch.confirmedBy = actor.uid
@@ -549,6 +627,39 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       tx.update(accessRef, { expiresOn: trackingExpiresOn(targetDate) })
     }
 
+    if (input.action === "assign" && oldRef && assignSnap) {
+      const bookings = { ...bookingsOf(assignSnap.data()) }
+      const current = bookings[input.id]
+      if (current) {
+        const labelKey = label.toLocaleLowerCase("es-CL")
+        const clashes =
+          labelKey.length > 0 &&
+          Object.entries(bookings).some(([id, booking]) => {
+            if (id === input.id || !booking.tableLabel) return false
+            if (booking.tableLabel.toLocaleLowerCase("es-CL") !== labelKey) return false
+            return booking.startMin < current.endMin && current.startMin < booking.endMin
+          })
+        if (clashes && !(input.exceptionConfirmed === true && reason.length >= 8)) {
+          throw new ReservationError(409, "capacity_table", "Esa mesa ya está usada en un horario que se cruza.")
+        }
+        if (clashes) {
+          patch.exception = { by: actor.uid, at: stamp, reason, kinds: ["table"] }
+          tx.set(db.collection(collections.auditLogs).doc(), {
+            actorUid: actor.uid,
+            action: "reservation.exception",
+            targetPath: `reservations/${input.id}`,
+            summary: `Autorizó una excepción (table): ${reason}`.slice(0, 280),
+            at: now.toISOString(),
+          })
+        }
+        const next = { ...current }
+        if (label) next.tableLabel = label
+        else delete next.tableLabel
+        bookings[input.id] = next
+        tx.set(oldRef, { bookings }, { merge: true })
+      }
+    }
+
     tx.update(ref, patch)
     tx.set(ref.collection("events").doc(), {
       action: input.action,
@@ -558,15 +669,170 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       at: stamp,
       reason: reason || null,
     })
+    return {
+      action: input.action,
+      id: input.id,
+      referenceCode: text(data.referenceCode),
+      date: text(patch.date ?? data.date),
+      time: text(patch.preferredTime ?? data.preferredTime),
+      zone: asZone(patch.preferredZone ?? data.preferredZone) ?? "salon",
+      partySize: Number(data.partySize) || 0,
+      revision: input.revision + 1,
+    }
   })
+
+  await publishReservationNotice(notice).catch(() => undefined)
+}
+
+type StaffReservationInput = {
+  date: string
+  preferredTime: string
+  partySize: number
+  preferredZone: ReservationZone
+  customerName: string
+  customerPhone: string
+  notes?: string
+  tableLabel?: string
+  confirm?: boolean
+  exceptionConfirmed?: boolean
+  exceptionReason?: string
+}
+
+async function createStaffReservation(session: StaffSession | null, input: StaffReservationInput, now = new Date()) {
+  assertWritable()
+  const actor = assertStaff(session, ["superadmin", "admin"])
+  const phone = normalizeChileMobile(input.customerPhone)
+  const name = input.customerName.trim()
+  if (!phone) throw new ReservationError(422, "invalid", "Ingresa un celular chileno, por ejemplo +56 9 2887 3619.")
+  if (name.length < 2 || name.length > 80) throw new ReservationError(422, "invalid", "Escribe el nombre del cliente.")
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date) || isPastDate(input.date, now)) {
+    throw new ReservationError(422, "invalid", "Elige una fecha de hoy en adelante.")
+  }
+  if (!/^\d{2}:\d{2}$/.test(input.preferredTime)) throw new ReservationError(422, "invalid", "Elige una hora.")
+  if (!Number.isInteger(input.partySize) || input.partySize < 1 || input.partySize > 40) {
+    throw new ReservationError(422, "invalid", "Indica entre 1 y 40 personas.")
+  }
+  if (input.preferredZone !== "salon" && input.preferredZone !== "terrace") {
+    throw new ReservationError(422, "invalid", "Elige salón o terraza.")
+  }
+  const notes = (input.notes ?? "").trim()
+  if (notes.length > 280) throw new ReservationError(422, "invalid", "La nota es demasiado larga.")
+  const exceptionReason = (input.exceptionReason ?? "").trim()
+  if (!input.exceptionConfirmed) {
+    const errors = validateTime(
+      {
+        date: input.date,
+        partySize: input.partySize,
+        zone: input.preferredZone,
+        preferredTime: input.preferredTime,
+        customerName: name,
+        customerPhone: phone,
+        notes,
+      },
+      now,
+    )
+    if (Object.keys(errors).length > 0) {
+      throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Esa reserva no entra en el horario público.")
+    }
+  } else if (exceptionReason.length < 8) {
+    throw new ReservationError(422, "invalid", "Anota por qué esta reserva sale de las reglas.")
+  }
+
+  const id = randomUUID()
+  const db = getDb()
+  const stamp = Timestamp.fromDate(now)
+  const taken = new Set<string>()
+  let referenceCode: string | null = null
+  for (let attempt = 0; attempt < 8 && !referenceCode; attempt += 1) {
+    const candidate = claimPublicReference(taken, () => randomInt(0, 10000), 1)
+    if (!candidate) break
+    const existing = await db.collection(collections.reservations).where("referenceCode", "==", candidate).limit(1).get()
+    if (existing.empty) referenceCode = candidate
+    else taken.add(candidate)
+  }
+  if (!referenceCode) throw new ReservationError(503, "reference", "No pudimos asignar una referencia. Inténtalo otra vez.")
+
+  const ref = db.collection(collections.reservations).doc(id)
+  await ref.set({
+    referenceCode,
+    status: "pending",
+    date: input.date,
+    preferredTime: input.preferredTime,
+    partySize: input.partySize,
+    preferredZone: input.preferredZone,
+    customerName: name,
+    customerNameKey: name.toLocaleLowerCase("es-CL"),
+    customerPhone: phone,
+    notes,
+    internalNotes: "",
+    tableLabel: null,
+    createdAt: stamp,
+    updatedAt: stamp,
+    revision: 1,
+    createdSource: "staff",
+    assignedTableIds: [],
+    holdDate: null,
+    holdZone: null,
+    confirmedBy: null,
+    lastModifiedBy: actor.uid,
+    proposedDate: null,
+    proposedTime: null,
+    proposedZone: null,
+    rejectionReason: null,
+    confirmedAt: null,
+    cancelledAt: null,
+    trackingId: "",
+  })
+  await ref.collection("events").add({
+    action: "received",
+    fromStatus: null,
+    toStatus: "pending",
+    actorUid: actor.uid,
+    at: stamp,
+    reason: "Registro del personal",
+  })
+  await publishReservationNotice({
+    action: "received",
+    id,
+    referenceCode,
+    date: input.date,
+    time: input.preferredTime,
+    zone: input.preferredZone,
+    partySize: input.partySize,
+    revision: 1,
+  }).catch(() => undefined)
+
+  if (input.confirm) {
+    try {
+      await transitionReservation(
+        session,
+        {
+          id,
+          action: "confirm",
+          revision: 1,
+          reason: exceptionReason,
+          exceptionConfirmed: input.exceptionConfirmed === true,
+          tableLabel: input.tableLabel,
+        },
+        now,
+      )
+    } catch (error) {
+      await ref.delete().catch(() => undefined)
+      throw error
+    }
+  } else if (input.tableLabel?.trim()) {
+    await transitionReservation(session, { id, action: "assign", revision: 1, tableLabel: input.tableLabel }, now)
+  }
+  return getReservationForStaff(session, id)
 }
 
 export {
   createPublicReservation,
+  createStaffReservation,
   getReservationForStaff,
   listReservationsForStaff,
   rateLimitPerHour,
   reservationSummary,
   transitionReservation,
 }
-export type { ListQuery, TransitionInput }
+export type { ListQuery, StaffReservationInput, TransitionInput }

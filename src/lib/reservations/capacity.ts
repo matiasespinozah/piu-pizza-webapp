@@ -26,6 +26,8 @@ type HoldBooking = {
   startMin: number
   endMin: number
   zone: ReservationZone
+  /** Identificador que escribió el personal. No es una mesa inventada. */
+  tableLabel?: string
 }
 
 type CapacityProblem = "unconfigured" | "insufficient" | "blocked" | "unreservable" | "overlap" | "zone" | "manual"

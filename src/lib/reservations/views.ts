@@ -29,11 +29,14 @@ type ReservationTrackingState =
 type ReservationDetail = ReservationListItem & {
   customerPhone: string
   notes: string
-  assignedTableIds: string[]
+    assignedTableIds: string[]
   proposedDate: string | null
   proposedTime: string | null
   proposedZone: ReservationZone | null
   updatedAt: string
+  tableLabel: string | null
+  internalNotes: string
+  exceptionReason: string | null
   events: ReservationEvent[]
   tracking: ReservationTrackingState
 }

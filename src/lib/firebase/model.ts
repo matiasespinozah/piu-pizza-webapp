@@ -21,6 +21,7 @@ const collections = {
   reservationDays: "reservationDays",
   invitations: "invitations",
   invitationRate: "invitationRate",
+  staffNotifications: "staffNotifications",
 } as const
 
 const settingsDocId = "operations"
