@@ -37,6 +37,12 @@ export async function POST(request: Request) {
     await createStaffSession(parsed.data.idToken)
     return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } })
   } catch (error) {
+    if (error instanceof StaffAccessError && error.code === "pending") {
+      return NextResponse.json(
+        { ok: false, pending: true, emailVerified: error.emailVerified === true },
+        { status: 403, headers: { "Cache-Control": "no-store" } }
+      )
+    }
     return denied(error instanceof StaffAccessError ? 403 : 401)
   }
 }

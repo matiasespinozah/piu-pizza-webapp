@@ -11,6 +11,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Un `superadmin` aprueba o rechaza cuentas pendientes en `/admin/personal`, asigna `admin` o `superadmin`, cambia el rol, suspende, reactiva o revoca el acceso. El servidor actualiza el claim y revoca la sesión anterior. No se puede quitar al último propietario, y un `admin` no puede hacerlo.
+- Un `superadmin` puede crear, copiar y revocar invitaciones de personal en `/admin/personal`. El enlace es de un solo uso, vence a las 48 horas y el secreto solo se guarda como hash. `/admin/unirse` crea la cuenta sin rol y queda pendiente de aprobación. El ingreso, con la contraseña correcta, dice que sigue pendiente y no abre el panel.
 - `/admin/mesas` permite a `admin` y `superadmin` crear y editar mesas, pausar la recepción, cerrar o completar un día, y guardar horario, duración, topes y avisos. La duración inicial es 90 minutos. Un `superadmin` puede habilitar la confirmación cuando no falten datos; eso no enciende la recepción pública. No se crean las mesas que la distribución informada no detalla.
 - Una pausa, un día cerrado o un día completo rechaza solicitudes nuevas en el servidor. Al confirmar se respetan el tope diario, el tope por horario y las mesas, sin cancelar reservas ya confirmadas.
 - El inicio del panel cuenta los productos de Firestore cuando el acceso a datos está encendido. Las cifras de reservas siguen en «Recepción desactivada» mientras `PIU_RESERVATIONS_WRITES` no esté en `on`.
@@ -24,6 +26,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En el panel, «Mi cuenta» abre un sheet corto en el celular y un menú junto al avatar en el escritorio: iniciales, nombre si existe, correo, rol, cierre de sesión y el sitio. El pie público suma «Acceso empleados», que lleva al ingreso. Quien ya tiene sesión entra al panel; una cuenta sin rol sigue sin acceso.
 - Desde 1024 px el panel usa sidebar verde con Disponibilidad, fondo crema y composición de escritorio: métricas en fila, reservas en dos columnas, cupos en tabla, mesas en tres tarjetas, carta en tabla y configuración en dos columnas. El celular y la tablet siguen con la barra inferior.
 - En el celular, Reservas, Disponibilidad, Mesas, Carta y Configuración usan las mismas tarjetas crema del inicio. El detalle de una reserva ocupa la pantalla. La disponibilidad lista cupos web libres por franja. Mesas muestra recepción, día completo y cupos. La carta cabe sin scroll horizontal. Configuración abre una sección a la vez y, al guardar, envía el resto tal como está.
 - La referencia visible de una solicitud pasa a `PIU-` y cuatro números, por ejemplo `PIU-2021`. Si ese número ya existe, se elige otro. El enlace privado de seguimiento no cambia y la referencia corta no abre `/reservas/estado`.
@@ -70,6 +73,9 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Seguridad
 
+- Cada pedido del panel vuelve a leer la cuenta en Authentication. Una cookie del mismo segundo no conserva un rol ya reducido, ni el acceso de una cuenta suspendida o revocada. Aprobar exige correo verificado y, si el rol es propietario, confirmación. Una ficha pendiente con un claim distinto se puede aprobar o rechazar sin duplicar el permiso. El último propietario no se puede quedar sin acceso, y el que todavía no tiene ficha `staff` sigue entrando.
+- Una invitación no cambia la contraseña de un correo que ya existe. Esa persona entra con su clave actual y el servidor vincula la ficha solo si el token corresponde a ese correo.
+- `invitations` e `invitationRate` quedan negadas al navegador, igual que `staff`. Crear la cuenta no escribe el claim `role`. Aprobar a alguien sigue siendo un paso aparte.
 - La importación del catálogo no corre si el proyecto es `piu-pizza-cl`. Las fotos de producto las escribe el servidor; Storage solo deja leerlas.
 - El enlace de seguimiento no se guarda en claro. Firestore tiene el hash y un cifrado para reponerlo solo si se reintenta la misma solicitud. Un secreto malo, vencido o revocado responde igual. La página no se indexa y la respuesta no se cachea.
 - El tope de solicitudes usa la dirección que agrega la plataforma al final de `X-Forwarded-For`. La primera la puede escribir el visitante.

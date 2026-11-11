@@ -31,6 +31,7 @@ test("el sitio público no importa Firebase ni el servidor", () => {
     const source = text(file)
     const path = rel(file)
     const loginForm = path.endsWith("src/components/features/admin/login-form.tsx")
+    const joinForm = path.endsWith("src/components/features/admin/staff/join-form.tsx")
     const adminPage = path.includes("src/app/admin/")
     const reservationApi = path.includes("src/app/api/reservations/") || path.includes("src/app/api/admin/reservations/")
     const catalogServer =
@@ -38,9 +39,10 @@ test("el sitio público no importa Firebase ni el servidor", () => {
       path.endsWith("src/app/carta/page.tsx") ||
       path.includes("src/app/api/admin/catalog/") ||
       path.includes("src/app/api/admin/tables/")
+    const staffApi = path.includes("src/app/api/admin/staff/") || path.includes("src/app/api/admin/join/")
     if (/from ["']firebase-admin/.test(source)) offenders.push(path)
-    if (/from ["'](firebase(?:\/[^"']*)?|@\/lib\/firebase)/.test(source) && !loginForm) offenders.push(path)
-    if (/from ["']@\/server\//.test(source) && !adminPage && !reservationApi && !catalogServer) offenders.push(path)
+    if (/from ["'](firebase(?:\/[^"']*)?|@\/lib\/firebase)/.test(source) && !loginForm && !joinForm) offenders.push(path)
+    if (/from ["']@\/server\//.test(source) && !adminPage && !reservationApi && !catalogServer && !staffApi) offenders.push(path)
   }
   assert.deepEqual(offenders, [])
 })

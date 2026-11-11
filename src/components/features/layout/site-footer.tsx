@@ -96,10 +96,16 @@ function SiteFooter() {
       </Container>
 
       <div className="border-t border-[color-mix(in_srgb,var(--brand-cream),transparent_82%)]">
-        <Container className="py-6 pe-16 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pe-20">
+        <Container className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-6 pe-16 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pe-20">
           <p className="text-sm leading-5 text-cream/70">
             © <CopyrightYear /> PIÙ Pizza & Dolce. Todos los derechos reservados.
           </p>
+          <Link
+            href="/admin/login"
+            className="inline-flex min-h-11 items-center text-sm text-cream/60 underline-offset-4 outline-none hover:text-cream hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
+          >
+            Acceso empleados
+          </Link>
         </Container>
       </div>
     </footer>

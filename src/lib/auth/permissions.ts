@@ -19,7 +19,7 @@ const adminNav = [
   { href: "/admin/mesas", section: "mesas", label: "Mesas", ready: true },
   { href: "/admin/carta", section: "carta", label: "Carta", ready: true },
   { href: "/admin/configuracion", section: "configuracion", label: "Configuración", ready: true },
-  { href: "/admin/personal", section: "personal", label: "Personal", ready: false },
+  { href: "/admin/personal", section: "personal", label: "Personal", ready: true },
 ] as const
 
 function canViewSection(role: StaffRole, section: AdminSection) {
