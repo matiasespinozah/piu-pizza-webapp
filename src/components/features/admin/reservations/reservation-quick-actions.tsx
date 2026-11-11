@@ -42,9 +42,10 @@ function ReservationQuickActions({
         headers: { "content-type": "application/json", [adminRequestHeader]: adminRequestValue },
         body: JSON.stringify({ action, revision, reason: "" }),
       })
-      const body = (await response.json().catch(() => null)) as { message?: string } | null
+      const body = (await response.json().catch(() => null)) as { message?: string; code?: string } | null
       if (!response.ok) {
-        setMessage(body?.message || "No se pudo guardar el cambio.")
+        const hint = body?.code?.startsWith("capacity_") ? " Abre la reserva para autorizarla con un motivo." : ""
+        setMessage(`${body?.message || "No se pudo guardar el cambio."}${hint}`)
         setArmed(null)
         return
       }

@@ -80,6 +80,9 @@ function ReservationScreensPreview() {
           proposedTime: null,
           proposedZone: null,
           updatedAt: "2026-11-08T21:10:00.000Z",
+          tableLabel: null,
+          internalNotes: "",
+          exceptionReason: null,
           events: [{ action: "received", fromStatus: null, toStatus: "pending", actorUid: null, at: "2026-11-08T21:10:00.000Z", reason: null }],
           tracking: { state: "active", expiresOn: "2026-11-14" },
         }}

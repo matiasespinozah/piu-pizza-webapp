@@ -16,7 +16,7 @@ Si la persona presiona dos veces, se guarda una sola vez. Si se perdió la respu
 | Estado | Qué pasó |
 |---|---|
 | Pendiente | Llegó la solicitud. No hay mesa apartada. |
-| Confirmada | Alguien del equipo la aprobó y el sistema pudo asignar una mesa. |
+| Confirmada | Alguien del equipo la aprobó. La mesa física es opcional; el cupo queda en el sector. |
 | Cambio propuesto | El equipo ofreció otra fecha u hora. La mesa anterior, si ya estaba confirmada, sigue ocupada hasta resolverlo. |
 | Rechazada | No se aceptó. No vuelve a confirmarse. |
 | Cancelada | Se anuló. Si tenía mesa, esa mesa queda libre. |
@@ -39,7 +39,9 @@ El enlace deja de servir dos días después de la visita. Eso no borra la solici
 
 Abre la solicitud en `/admin/reservas` y pulsa Confirmar. El sistema vuelve a pedir confirmación.
 
-Al confirmar, el sistema aparta un cupo del salón o de la terraza durante la duración guardada (al inicio, 90 minutos). No elige una mesa física. Si en ese horario ya están ocupados todos los cupos de reservas web, la solicitud sigue pendiente. Un grupo de más de 4 personas también sigue pendiente: es el tamaño de la mesa más grande que se detalló, y no confirmamos algo que no sabemos si cabe. El equipo lo asigna a mano.
+Al confirmar, el sistema aparta un cupo del salón o de la terraza durante la duración guardada (al inicio, 90 minutos). No elige una mesa física: si ese sector no tiene mesas individuales, la reserva igual puede confirmarse y queda anotada en el sector, sin inventar un identificador. Si el horario ya está lleno, el grupo no cabe, la mesa escrita choca con otra o faltan los cupos, la confirmación normal sigue pendiente y muestra el motivo. El personal autenticado puede autorizar esa excepción con un motivo de al menos 8 caracteres. Queda en la reserva y en la auditoría quién, cuándo y por qué, sin cambiar los cupos ni las mesas configuradas. El formulario público no puede saltarse las reglas.
+
+Los avisos de «reserva próxima» (30 minutos) y «sigue pendiente» (20 minutos) los escribe un barrido del servidor, no el navegador. Cloud Scheduler llama `POST /api/admin/reservations/sweep` cada 10 minutos, con `Authorization: Bearer` y el secreto `PIU_NOTICES_CRON_SECRET` (Secret Manager, no va en el código). El trabajo entra en los 3 trabajos gratis de Cloud Scheduler; cada llamada es un arranque de la app ya desplegada (`minInstances: 0`) y lee como máximo 60 reservas. El mismo aviso no se duplica. Al abrir el panel, la campana igual consulta cada 25 segundos y, si el trabajo no alcanzó a correr, completa el barrido.
 
 En el emulador de pruebas sí hay mesas marcadas como ensayo. Esas mesas no sirven para el local.
 
@@ -69,7 +71,7 @@ Guardar no enciende la página pública. Una pausa o un día completo rechaza so
 
 ## Si el grupo no cabe en una mesa conocida
 
-No se inventan puestos. La solicitud queda pendiente y no se marca confirmada. Rechazar, proponer y cancelar sí se pueden usar cuando la recepción de datos está encendida.
+No se inventan puestos. La confirmación normal la deja pendiente. El personal puede autorizarla como excepción, con motivo, sin cambiar los cupos. Rechazar, proponer y cancelar siguen disponibles cuando la recepción de datos está encendida.
 
 ## Probar con emuladores
 

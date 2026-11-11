@@ -398,6 +398,17 @@ test("el seguimiento no se enciende con las escrituras y el secreto no sale de c
   }
 })
 
+test("el barrido de avisos solo acepta el secreto completo", async () => {
+  const { authorizeNoticeCron } = await import("@/lib/reservations/notice-cron")
+  const secret = "cron-secreto-de-prueba"
+  assert.equal(authorizeNoticeCron(`Bearer ${secret}`, secret), true)
+  assert.equal(authorizeNoticeCron(`Bearer ${secret}x`, secret), false)
+  assert.equal(authorizeNoticeCron("Bearer corto", secret), false)
+  assert.equal(authorizeNoticeCron(null, secret), false)
+  assert.equal(authorizeNoticeCron(`Bearer ${secret}`, ""), false)
+  assert.equal(authorizeNoticeCron(`Bearer ${secret}`, "corto"), false)
+})
+
 test("guardar una sección no trae de vuelta el resto desde una copia vieja", () => {
   const stored = defaultOperationRules()
   stored.week = { ...stored.week, mon: { ...stored.week.mon, opensAt: "12:00" } }

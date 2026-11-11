@@ -14,6 +14,7 @@ import { adminNav, canViewSection, type AdminSection } from "@/lib/auth/permissi
 import type { StaffRole } from "@/lib/auth/roles"
 import { adminRequestHeader, adminRequestValue } from "@/lib/auth/session-policy"
 import { cn } from "cn"
+import { NotificationBell } from "@/components/features/admin/reservations/notification-bell"
 
 import "./admin-shell.css"
 
@@ -58,9 +59,13 @@ function AdminFrame({ email, displayName, role, roleLabel, children }: AdminFram
             <p className="min-w-0 flex-1 truncate font-heading text-lg leading-none font-extrabold tracking-tight">
               PIÙ <span className="font-semibold text-cream/80">Admin</span>
             </p>
+            <NotificationBell />
             <AccountSheet who={who} email={email} roleLabel={roleLabel} />
           </header>
-          <main className="admin-sheet min-w-0 rounded-t-[1.75rem] px-3.5 pt-4 pb-28 lg:rounded-none lg:px-8 lg:py-8 lg:pb-10">{children}</main>
+          <div className="sticky top-0 z-30 hidden items-center justify-end gap-3 px-8 py-3 lg:flex">
+            <NotificationBell tone="olive" />
+          </div>
+          <main className="admin-sheet min-w-0 rounded-t-[1.75rem] px-3.5 pt-4 pb-28 lg:rounded-none lg:px-8 lg:py-8 lg:pb-10 lg:pt-0">{children}</main>
           <BottomNav items={barItems} pathname={pathname} />
         </div>
       </div>

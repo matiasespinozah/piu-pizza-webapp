@@ -20,6 +20,9 @@ const actionLabel: Record<string, string> = {
   cancel: "Canceló",
   arrive: "Marcó llegada",
   complete: "Finalizó",
+  reschedule: "Reagendó",
+  note: "Anotó",
+  assign: "Asignó mesa",
   tracking_issued: "Generó un enlace",
   tracking_revoked: "Revocó el enlace",
 }
@@ -75,7 +78,8 @@ function ReservationDetailPanel({ detail, backHref, className }: { detail: Reser
         )}
       </DetailSection>
 
-      <DetailSection icon={Table2} title="Mesa asignada">
+      <DetailSection icon={Table2} title="Mesa">
+        {detail.tableLabel ? <p className="font-heading text-lg font-bold text-olive">{detail.tableLabel}</p> : null}
         {detail.assignedTableIds.length > 0 ? (
           <ul className="flex flex-wrap gap-2">
             {detail.assignedTableIds.map((id) => (
@@ -84,13 +88,21 @@ function ReservationDetailPanel({ detail, backHref, className }: { detail: Reser
               </li>
             ))}
           </ul>
+        ) : null}
+        {!detail.tableLabel && detail.assignedTableIds.length === 0 ? <p className="text-sm text-olive-muted">Sin mesa. Se puede confirmar igual.</p> : null}
+        {detail.exceptionReason ? <p className="text-sm text-terracotta">Excepción: {detail.exceptionReason}</p> : null}
+      </DetailSection>
+
+      <DetailSection icon={MessageSquareText} title="Nota interna">
+        {detail.internalNotes ? (
+          <p className="rounded-xl bg-cream px-3 py-2.5 text-sm whitespace-pre-line text-olive-strong">{detail.internalNotes}</p>
         ) : (
-          <p className="text-sm text-olive-muted">Todavía no hay mesa.</p>
+          <p className="text-sm text-olive-muted">Todavía no hay una nota del equipo.</p>
         )}
       </DetailSection>
 
       <DetailSection icon={Zap} title="Acciones">
-        <ReservationActions reservation={detail} />
+        <ReservationActions key={detail.revision} reservation={detail} />
       </DetailSection>
 
       <ReservationTrackingPanel reservation={detail} />
