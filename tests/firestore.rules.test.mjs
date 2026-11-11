@@ -36,6 +36,7 @@ beforeEach(async () => {
     await setDoc(doc(db, "invitationRate/hour"), { count: 1 })
     await setDoc(doc(db, "restaurantSettings/operations"), { timeZone: "America/Santiago" })
     await setDoc(doc(db, "auditLogs/log"), { summary: "ensayo" })
+    await setDoc(doc(db, "staffNotifications/one"), { title: "Nueva reserva" })
   })
 })
 
@@ -66,6 +67,8 @@ test("nadie lee personal, mesas, ajustes ni auditoría", async () => {
   await assertFails(getDoc(doc(admin, "tables/mesa")))
   await assertFails(getDoc(doc(superadmin, "restaurantSettings/operations")))
   await assertFails(getDoc(doc(guest, "auditLogs/log")))
+  await assertFails(getDoc(doc(admin, "staffNotifications/one")))
+  await assertFails(setDoc(doc(superadmin, "staffNotifications/one"), { title: "Nueva reserva" }))
 })
 
 test("la carta visible se puede leer, con límite", async () => {

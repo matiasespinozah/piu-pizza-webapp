@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { AlertCircle, CalendarCheck, CalendarRange, Clock, Inbox, Search } from "lucide-react"
 
+import { ManualReservationForm } from "@/components/features/admin/reservations/manual-reservation-form"
 import { ReservationListCard, SummaryTile } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
 import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
@@ -62,11 +63,14 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
           <Heading as="h1" size="h3">
             Reservas
           </Heading>
-          <p className="text-sm text-olive-muted">Confirmar reserva una mesa. Pendiente todavía no.</p>
+          <p className="text-sm text-olive-muted">Confirma, reagenda o anota una mesa. Los cupos avisan, no te frenan.</p>
         </div>
-        <Link href="/admin/reservas/disponibilidad" className="inline-flex h-11 shrink-0 items-center text-sm font-semibold text-terracotta lg:hidden">
-          Cupos
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/admin/reservas/disponibilidad" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta lg:hidden">
+            Cupos
+          </Link>
+          {result.ready ? <ManualReservationForm /> : null}
+        </div>
       </header>
 
       {!result.ready ? (

@@ -78,6 +78,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /staffNotifications/{noticeId} {
+      allow read, write: if false;
+    }
+
     match /reservationDays/{dayId} {
       allow read, write: if false;
     }

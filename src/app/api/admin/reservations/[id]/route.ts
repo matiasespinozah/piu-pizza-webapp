@@ -19,6 +19,9 @@ const transitionBody = z
     proposedDate: z.string().optional(),
     proposedTime: z.string().optional(),
     proposedZone: z.enum(["salon", "terrace"]).optional(),
+    tableLabel: z.string().max(40).optional(),
+    internalNotes: z.string().max(280).optional(),
+    exceptionConfirmed: z.boolean().optional(),
   })
   .strict()
 
@@ -99,6 +102,9 @@ export async function PATCH(request: Request, context: RouteContext) {
         proposedDate: "proposedDate" in data ? data.proposedDate : undefined,
         proposedTime: "proposedTime" in data ? data.proposedTime : undefined,
         proposedZone: "proposedZone" in data ? data.proposedZone : undefined,
+        tableLabel: "tableLabel" in data ? data.tableLabel : undefined,
+        internalNotes: "internalNotes" in data ? data.internalNotes : undefined,
+        exceptionConfirmed: "exceptionConfirmed" in data ? data.exceptionConfirmed : undefined,
       })
     }
     const reservation = await getReservationForStaff(gate.session, id)

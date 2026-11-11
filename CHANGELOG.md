@@ -11,6 +11,16 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- En `/admin/reservas`, `admin` y `superadmin` pueden crear una reserva recibida en el local o por teléfono, reagendar, anotar una mesa opcional y guardar una nota interna. Si el grupo o el horario superan los cupos, el panel avisa y permite continuar solo con una excepción explícita. Queda registrado quién la autorizó, cuándo y por qué, sin cambiar la configuración del local ni las reglas del formulario público.
+- El panel muestra una campana con avisos persistidos: solicitud nueva, reserva próxima, pendiente que sigue esperando, cambio de horario, cancelación y cambios de otro integrante. Se actualizan solos, se pueden marcar como leídos y abren la reserva. El sonido es opcional. Esas lecturas usan el servidor y Firestore sigue cerrado al navegador.
+
+### Cambiado
+
+- Confirmar una reserva no exige una mesa física. Si el sector no tiene mesas individuales, queda registrada en ese sector. Un cupo, un horario o una mesa en conflicto avisan y solo siguen con una excepción y un motivo; eso queda en la auditoría, sin cambiar los cupos configurados.
+- Los avisos de reserva próxima y de solicitud pendiente los puede escribir `POST /api/admin/reservations/sweep`, pensado para Cloud Scheduler cada 10 minutos. Sin el secreto `PIU_NOTICES_CRON_SECRET` ese endpoint no responde. El panel sigue consultando cada 25 segundos.
+
+### Agregado
+
 - Un `superadmin` aprueba o rechaza cuentas pendientes en `/admin/personal`, asigna `admin` o `superadmin`, cambia el rol, suspende, reactiva o revoca el acceso. El servidor actualiza el claim y revoca la sesión anterior. No se puede quitar al último propietario, y un `admin` no puede hacerlo.
 - Un `superadmin` puede crear, copiar y revocar invitaciones de personal en `/admin/personal`. El enlace es de un solo uso, vence a las 48 horas y el secreto solo se guarda como hash. `/admin/unirse` crea la cuenta sin rol y queda pendiente de aprobación. El ingreso, con la contraseña correcta, dice que sigue pendiente y no abre el panel.
 - `/admin/mesas` permite a `admin` y `superadmin` crear y editar mesas, pausar la recepción, cerrar o completar un día, y guardar horario, duración, topes y avisos. La duración inicial es 90 minutos. Un `superadmin` puede habilitar la confirmación cuando no falten datos; eso no enciende la recepción pública. No se crean las mesas que la distribución informada no detalla.

@@ -14,6 +14,10 @@ runConfig:
 env:
   # Configuración web de Firebase. NO es secreta (la protegen las Security Rules y App Check).
   # Los secretos reales van con `secret:` (Secret Manager), nunca con prefijo NEXT_PUBLIC_.
+  # El barrido de avisos usa PIU_NOTICES_CRON_SECRET. Crearlo en Secret Manager antes de
+  # descomentar estas líneas; sin el secreto el endpoint responde 404.
+  # - variable: PIU_NOTICES_CRON_SECRET
+  #   secret: PIU_NOTICES_CRON_SECRET
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyAtlMZnZcLyvMwX7AtUaoEswEenkBJGAy4
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
