@@ -14,7 +14,7 @@ assert.equal(process.env.PIU_RESERVATION_STATUS, "on")
 assert.notEqual(process.env.GCLOUD_PROJECT, "piu-pizza-cl")
 
 const admin = { uid: "staff-admin", role: "admin", email: "ana@example.test", displayName: "Ana" }
-const now = new Date("2026-11-07T18:00:00Z")
+const now = new Date()
 let ipCount = 20
 
 function nextIp() {

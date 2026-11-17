@@ -48,9 +48,9 @@ export default async function DisponibilidadPage({
       <header className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <Heading as="h1" size="h3">
-            Disponibilidad
+            Disponibilidad de reservas
           </Heading>
-          <p className="text-sm text-olive-muted">Cupos web libres por horario. No son mesas físicas.</p>
+          <p className="text-sm text-olive-muted">Cupos web reales por horario. No es la ocupación de las mesas del local.</p>
         </div>
         <Link href="/admin/reservas" className="inline-flex h-11 shrink-0 items-center text-sm font-semibold text-terracotta">
           Reservas
@@ -86,12 +86,12 @@ export default async function DisponibilidadPage({
       ) : (
         <section className="admin-card min-w-0 p-3 sm:p-4">
           <div className="mb-3 grid grid-cols-2 gap-2">
-            <p className="rounded-2xl bg-[#f3f1e6] px-3 py-2">
+            <p className="rounded-2xl bg-cream px-3 py-2">
               <span className="block text-xs text-olive-muted">Salón</span>
               <span className="font-heading text-xl font-extrabold text-olive">{floor.rules.sectors.salon.web}</span>
               <span className="block text-xs text-olive-muted">cupos web</span>
             </p>
-            <p className="rounded-2xl bg-[#f3f1e6] px-3 py-2">
+            <p className="rounded-2xl bg-cream px-3 py-2">
               <span className="block text-xs text-olive-muted">Terraza</span>
               <span className="font-heading text-xl font-extrabold text-olive">{floor.rules.sectors.terrace.web}</span>
               <span className="block text-xs text-olive-muted">cupos web</span>

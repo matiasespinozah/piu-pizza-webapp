@@ -1,5 +1,5 @@
 import type { OperationRules, PublicNotice, ReservationCap } from "@/lib/reservations/operations"
-import { defaultNotices, defaultOperationRules, rawLimits, readOperationRules, receptionPausedOf } from "@/lib/reservations/operations"
+import { defaultNotices, defaultOperationRules, fullDayNotice, rawLimits, readOperationRules, receptionPausedOf } from "@/lib/reservations/operations"
 import { openingWindow, type OpeningWindow, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
 import type { HoldBooking } from "@/lib/reservations/capacity"
 
@@ -116,7 +116,7 @@ function admitRequest(
     return {
       ok: false,
       code: "full",
-      message: day.notice ?? noticeText(notices.full, "Las reservas de ese día están completas. Seguimos recibiendo clientes por orden de llegada."),
+      message: day.notice ?? fullDayNotice(isoDate),
     }
   }
   return { ok: true }

@@ -124,8 +124,8 @@ function RestaurantSettings({
           <SectorFields title="Terraza" value={draft.sectors.terrace} onChange={(terrace) => setDraft({ ...draft, sectors: { ...draft.sectors, terrace } })} />
         </div>
         {problem ? <FieldError>{problem}</FieldError> : null}
-        <Link href="/admin/mesas" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta">
-          Operación del día en Mesas
+        <Link href="/admin/reservas" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta">
+          Pausa y fechas completas en Reservas
         </Link>
       </ConfigCard>
 

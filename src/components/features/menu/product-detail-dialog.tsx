@@ -20,14 +20,21 @@ function ProductDetailDialog({ product, onClose }: ProductDetailDialogProps) {
       >
         {product ? (
           <>
-            <ProductImage
-              src={product.imageUrl}
-              name={product.name}
-              ratio="4/3"
-              sizes="(max-width: 640px) 100vw, 512px"
-              priority
-              className="w-full rounded-none rounded-t-2xl"
-            />
+            <div className="relative">
+              <ProductImage
+                src={product.imageUrl}
+                name={product.name}
+                ratio="4/3"
+                sizes="(max-width: 640px) 100vw, 512px"
+                priority
+                className={product.availability === "available" ? "w-full rounded-none rounded-t-2xl" : "w-full rounded-none rounded-t-2xl opacity-60"}
+              />
+              {product.availability !== "available" ? (
+                <span className="absolute top-4 left-4 rounded-full bg-olive px-3 py-1 font-label text-xs font-bold tracking-[0.16em] text-cream">
+                  AGOTADO
+                </span>
+              ) : null}
+            </div>
 
             <div className="px-5 pt-5 pb-6 sm:px-7 sm:pt-6 sm:pb-8">
               <DialogTitle className="text-[clamp(1.75rem,7vw,2.25rem)] leading-[1.05] font-extrabold tracking-[-0.02em] text-olive">
@@ -40,11 +47,6 @@ function ProductDetailDialog({ product, onClose }: ProductDetailDialogProps) {
               <DialogDescription className="text-base leading-[1.6] text-olive-strong">
                 {product.description || "Este producto no tiene descripción en la carta."}
               </DialogDescription>
-              {product.availability !== "available" ? (
-                <p className="mt-4 font-label text-[0.6875rem] font-semibold tracking-[0.16em] text-olive-muted uppercase">
-                  No disponible por ahora
-                </p>
-              ) : null}
             </div>
           </>
         ) : null}

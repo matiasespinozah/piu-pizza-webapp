@@ -251,6 +251,14 @@ test("pausar, cerrar un día y los topes no confirman de más", () => {
   const rules = defaultOperationRules()
   const monday = "2026-11-09"
   assert.equal(admitRequest({ ...rules, receptionPaused: true }, null, monday).code, "paused")
+  const fullDay = { date: monday, closed: false, full: true, hours: null, lastSeatingTime: null, daily: { mode: "inherit", max: null }, slot: { mode: "inherit", max: null }, notice: null, updatedBy: null, updatedAt: null }
+  const full = admitRequest(rules, fullDay, monday)
+  assert.equal(full.ok, false)
+  assert.equal(full.code, "full")
+  assert.match(full.message, /^Las reservas online para el .+ están completas/)
+  const today = todayIsoInSantiago()
+  const todayFull = admitRequest(rules, { ...fullDay, date: today }, today)
+  assert.equal(todayFull.message, "Las reservas online para hoy están completas. ¡Pero puedes visitarnos igualmente! Atendemos por orden de llegada, según disponibilidad de mesas.")
   assert.equal(admitRequest(rules, { ...rules, date: monday, closed: true, full: false, hours: null, lastSeatingTime: null, daily: { mode: "inherit", max: null }, slot: { mode: "inherit", max: null }, notice: null, updatedBy: null, updatedAt: null }, monday).ok, false)
   const bookings = [{ tableIds: ["a"], startMin: 17 * 60, endMin: 18 * 60 + 30, zone: "salon" }]
   assert.equal(quotaReason(bookings, 19 * 60, 1, null), "daily")
