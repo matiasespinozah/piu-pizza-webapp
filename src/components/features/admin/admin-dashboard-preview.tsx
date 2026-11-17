@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle, BookOpen, CalendarCheck, CalendarDays, Clock, Home, Settings, UserRound, Users, UtensilsCrossed } from "lucide-react"
+import { AlertCircle, BookOpen, CalendarCheck, CalendarDays, Clock, Home, Settings, UserRound, Users } from "lucide-react"
 
 import { AdminDashboard } from "@/components/features/admin/admin-dashboard"
 import { Logo } from "@/components/ui/logo"
@@ -52,10 +52,9 @@ function AdminDashboardPreview() {
           rows={rows}
           closed={false}
         />
-        <nav aria-hidden className="mt-3 grid grid-cols-5 border-t border-olive-line/70 pt-1 text-[0.625rem] font-semibold text-olive-muted">
+        <nav aria-hidden className="mt-3 grid grid-cols-4 border-t border-olive-line/70 pt-1 text-[0.625rem] font-semibold text-olive-muted">
           <PreviewTab icon={Home} label="Inicio" active />
           <PreviewTab icon={CalendarDays} label="Reservas" />
-          <PreviewTab icon={UtensilsCrossed} label="Mesas" />
           <PreviewTab icon={BookOpen} label="Carta" />
           <PreviewTab icon={Settings} label="Configuración" />
         </nav>

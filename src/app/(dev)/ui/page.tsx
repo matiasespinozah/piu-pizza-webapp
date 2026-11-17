@@ -9,7 +9,9 @@ import { CatalogEditor } from "@/components/features/admin/catalog/catalog-edito
 import { QuotaGrid, QuotaLegend } from "@/components/features/admin/quota-board"
 import { ReservationListCard } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
+import { ReservationReception } from "@/components/features/admin/reservations/reservation-reception"
 import { ProductImage } from "@/components/features/menu/product-image"
+import { ProductList } from "@/components/features/menu/product-list"
 import { FloorEditor } from "@/components/features/admin/tables/floor-editor"
 import { RestaurantSettings } from "@/components/features/admin/tables/restaurant-settings"
 import { ReservationScreensPreview } from "@/components/features/reservations/reservation-screens-preview"
@@ -127,8 +129,12 @@ export default function UiShowcasePage() {
     date: "2026-11-13",
     week: sampleRules.week,
     serviceMinutes: sampleRules.serviceMinutes,
-    web: { salon: sampleRules.sectors.salon.web, terrace: sampleRules.sectors.terrace.web },
-    bookings: [],
+    web: { salon: 5, terrace: 5 },
+    bookings: [
+      { id: "muestra-salon-pocos", tableIds: [], slots: 3, startMin: 19 * 60, endMin: 20 * 60 + 30, zone: "salon" },
+      { id: "muestra-salon-lleno", tableIds: [], slots: 5, startMin: 20 * 60, endMin: 21 * 60 + 30, zone: "salon" },
+      { id: "muestra-terraza-llena", tableIds: [], slots: 5, startMin: 19 * 60, endMin: 20 * 60 + 30, zone: "terrace" },
+    ],
   })
 
   return (
@@ -485,6 +491,41 @@ export default function UiShowcasePage() {
               selected={false}
               actions={<ReservationQuickActions id="muestra" status="pending" revision={1} detailHref="#reservas-muestra" />}
             />
+          </Block>
+
+          <Block title="Carta pública">
+            <Text className="mb-4">Un producto visible y agotado sigue en la categoría. El oculto no aparece.</Text>
+            <ProductList
+              products={[
+                {
+                  id: "carta-1",
+                  categoryId: "muestra",
+                  name: "Margherita",
+                  description: "Salsa de tomate, mozzarella y albahaca.",
+                  priceClp: 12900,
+                  imageUrl: null,
+                  availability: "available",
+                  isFeatured: false,
+                  sortOrder: 1,
+                },
+                {
+                  id: "carta-2",
+                  categoryId: "muestra",
+                  name: "Diavola",
+                  description: "Salame picante y aceite de oliva.",
+                  priceClp: 14900,
+                  imageUrl: null,
+                  availability: "unavailable",
+                  isFeatured: false,
+                  sortOrder: 2,
+                },
+              ]}
+            />
+          </Block>
+
+          <Block title="Control de reservas">
+            <Text className="mb-4">Ejemplo. Pausar o marcar la fecha aquí no escribe en Firestore.</Text>
+            <ReservationReception preview rules={sampleRules} date="2026-11-13" day={emptyDay("2026-11-13")} confirmedCount={0} />
           </Block>
 
           <Block title="Disponibilidad móvil">

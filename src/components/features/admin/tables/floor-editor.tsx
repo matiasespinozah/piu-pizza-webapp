@@ -88,7 +88,7 @@ function FloorEditor({
                 setDayDraft({ ...dayDraft, date: next, full: false })
                 return
               }
-              router.push(`/admin/mesas?date=${next}`)
+              router.push(`/admin/reservas?serviceDate=${next}`)
             }}
           />
         </Field>
