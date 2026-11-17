@@ -73,7 +73,7 @@ function ChefSuggestions({ suggestions }: { suggestions: readonly Product[] }) {
 
       <Container>
         <Reveal className="mt-10 lg:mt-12">
-          <Button asChild variant="accent" size="lg" className="w-full hover:shadow-lift sm:w-auto">
+          <Button asChild variant="primary" size="lg" className="w-full sm:w-auto">
             <Link href="/carta">
               Ver carta
               <ArrowRightIcon aria-hidden />
