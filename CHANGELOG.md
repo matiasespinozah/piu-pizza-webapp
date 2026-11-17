@@ -16,6 +16,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En el inicio, el botón «Ver carta» de Sugerencias del chef usa el verde oliva, igual que «Ver la carta» del hero.
 - Confirmar una reserva no exige una mesa física. Si el sector no tiene mesas individuales, queda registrada en ese sector. Un cupo, un horario o una mesa en conflicto avisan y solo siguen con una excepción y un motivo; eso queda en la auditoría, sin cambiar los cupos configurados.
 - Los avisos de reserva próxima y de solicitud pendiente los puede escribir `POST /api/admin/reservations/sweep`, pensado para Cloud Scheduler cada 10 minutos. Sin el secreto `PIU_NOTICES_CRON_SECRET` ese endpoint no responde. El panel sigue consultando cada 25 segundos.
 
