@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { AlertTriangle, ArrowRight, CalendarDays, LayoutGrid, ListChecks, UtensilsCrossed, Zap, type LucideIcon } from "lucide-react"
+import { AlertTriangle, ArrowRight, CalendarDays, LayoutGrid, ListChecks, Zap, type LucideIcon } from "lucide-react"
 import { cn } from "cn"
 
 import { zoneConfig } from "@/lib/reservations/configuration"
@@ -154,9 +154,9 @@ function AdminDashboard({
             <ListChecks aria-hidden className="size-4" />
             Ver reservas pendientes
           </Link>
-          <Link href="/admin/mesas" className="admin-action-secondary inline-flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-bold">
-            <UtensilsCrossed aria-hidden className="size-4" />
-            Gestionar mesas
+          <Link href="/admin/reservas" className="admin-action-secondary inline-flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-bold">
+            <CalendarDays aria-hidden className="size-4" />
+            Control de reservas
           </Link>
           <Link href="/admin/reservas/disponibilidad" className="admin-action-secondary inline-flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-bold">
             <CalendarDays aria-hidden className="size-4" />

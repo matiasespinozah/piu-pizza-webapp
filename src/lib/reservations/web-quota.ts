@@ -55,10 +55,9 @@ function webQuotaRows(input: {
 }
 
 function quotaTone(cell: QuotaCell): QuotaTone {
-  if (cell.web <= 0) return "none"
-  const ratio = cell.used / cell.web
-  if (ratio >= 0.8) return "high"
-  if (ratio >= 0.4) return "partial"
+  if (cell.web <= 0 || cell.used >= cell.web) return "none"
+  const free = cell.web - cell.used
+  if (free <= Math.max(1, Math.ceil(cell.web * 0.34))) return "partial"
   return "free"
 }
 
