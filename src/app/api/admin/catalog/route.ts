@@ -38,24 +38,24 @@ export async function POST(request: Request) {
   try {
     if (body?.action === "save-category") {
       const saved = await saveCategory(gate.session, body.category)
-      revalidateTag("catalog", "max")
+      revalidateTag("catalog", { expire: 0 })
       return NextResponse.json({ ok: true, ...saved }, { headers: noStore })
     }
     if (body?.action === "delete-category") {
       if (typeof body.id !== "string") return NextResponse.json({ ok: false, message: "Falta la categoría." }, { status: 400, headers: noStore })
       await deleteCategory(gate.session, body.id)
-      revalidateTag("catalog", "max")
+      revalidateTag("catalog", { expire: 0 })
       return NextResponse.json({ ok: true }, { headers: noStore })
     }
     if (body?.action === "save-product") {
       const saved = await saveProduct(gate.session, body.product)
-      revalidateTag("catalog", "max")
+      revalidateTag("catalog", { expire: 0 })
       return NextResponse.json({ ok: true, ...saved }, { headers: noStore })
     }
     if (body?.action === "delete-product") {
       if (typeof body.id !== "string") return NextResponse.json({ ok: false, message: "Falta el producto." }, { status: 400, headers: noStore })
       await deleteProduct(gate.session, body.id)
-      revalidateTag("catalog", "max")
+      revalidateTag("catalog", { expire: 0 })
       return NextResponse.json({ ok: true }, { headers: noStore })
     }
     return NextResponse.json({ ok: false, message: "Esa acción no es válida." }, { status: 400, headers: noStore })

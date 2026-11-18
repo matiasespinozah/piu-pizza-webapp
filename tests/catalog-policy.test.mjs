@@ -3,7 +3,15 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import { catalogImportAllowed, planCatalogImport } from "@/lib/catalog/import-plan"
-import { isCatalogPhotoUrl } from "@/lib/catalog/photos"
+import { catalogCacheLife } from "@/lib/catalog/public-cache"
+import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
+import {
+  assertPublicCatalogFits,
+  firestoreDocumentLimit,
+  projectPublicCatalog,
+  publicSuggestions,
+  PublicCatalogTooLargeError,
+} from "@/lib/catalog/public-snapshot"
 import { prepareProductImage } from "@/server/catalog/images"
 import sharp from "sharp"
 
@@ -64,6 +72,57 @@ test("la importación de producción exige una autorización aparte", () => {
     true
   )
   assert.doesNotMatch(readFileSync(new URL("../apphosting.yaml", import.meta.url), "utf8"), /PIU_FIREBASE_DATA/)
+})
+
+test("la carta publicada cabe en un documento y no muestra ocultos", () => {
+  const plan = planCatalogImport(catalog)
+  const photo = "https://firebasestorage.googleapis.com/v0/b/piu-pizza-cl.firebasestorage.app/o/products%2Fdemo%2Fa.webp?alt=media&token=11111111-1111-1111-1111-111111111111"
+  const withPhotos = plan.products.map((product) => ({ ...product, imageUrl: photo }))
+  const plain = withPhotos.find((product) => !product.isFeatured)
+  const chef = withPhotos.find((product) => product.isFeatured)
+  const hidden = { ...plain, isVisible: false }
+  const soldOut = { ...chef, availability: "unavailable", isVisible: true }
+  const published = projectPublicCatalog(
+    plan.categories,
+    withPhotos.map((product) => (product.id === hidden.id ? hidden : product.id === soldOut.id ? soldOut : product)),
+  )
+  assert.equal(published.products.some((product) => product.id === hidden.id), false)
+  assert.equal(published.products.find((product) => product.id === soldOut.id)?.availability, "unavailable")
+  assert.equal(published.products.find((product) => product.id === soldOut.id)?.imageUrl, photo)
+  assert.equal("isVisible" in published.products[0], false)
+  const bytes = assertPublicCatalogFits(published)
+  assert.ok(bytes < firestoreDocumentLimit)
+  assert.ok(bytes < 900_000)
+  const heavy = projectPublicCatalog(
+    plan.categories,
+    Array.from({ length: 2000 }, (_, index) => ({
+      ...withPhotos[0],
+      id: `producto-${index}`,
+      name: `Producto ${index}`,
+      description: "x".repeat(500),
+    })),
+  )
+  assert.throws(() => assertPublicCatalogFits(heavy), PublicCatalogTooLargeError)
+  const suggestions = publicSuggestions(published.products, "sugerencias-del-chef")
+  assert.equal(suggestions.length, 3)
+  assert.equal(suggestions.every((product) => product.categoryId === "sugerencias-del-chef" || product.isFeatured), true)
+})
+
+test("guardar la carta no depende de una sola instancia ni de una sola página", () => {
+  assert.equal(catalogCacheLife.stale, 300)
+  assert.equal(catalogCacheLife.revalidate, 300)
+  assert.equal(catalogCacheLife.expire, 301)
+  assert.ok(catalogCacheLife.expire >= 300)
+  assert.ok(catalogCacheLife.expire > catalogCacheLife.revalidate)
+  const names = [
+    "products/pizza/vigente.webp",
+    "products/pizza/vieja.webp",
+    "products/otra/vigente.webp",
+    "otras/pizza/vigente.webp",
+  ]
+  assert.deepEqual(photosToDelete(names, "pizza", "products/pizza/vigente.webp"), ["products/pizza/vieja.webp"])
+  assert.deepEqual(photosToDelete(names, "pizza", "products/otra/vigente.webp"), [])
+  assert.deepEqual(photosToDelete(names, "pizza"), ["products/pizza/vigente.webp", "products/pizza/vieja.webp"])
 })
 
 test("solo una foto de Storage reemplaza la ilustración", () => {

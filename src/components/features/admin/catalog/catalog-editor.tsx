@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation"
 import {
   ArrowLeftIcon,
   BanIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
   EllipsisIcon,
   EyeOffIcon,
   ImageOffIcon,
@@ -171,12 +173,16 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
     const index = orderedCategories.findIndex((item) => item.id === category.id)
     const neighbor = orderedCategories[index + direction]
     if (!neighbor) return
+    const same = category.sortOrder === neighbor.sortOrder
+    const categoryOrder = same ? (direction < 0 ? category.sortOrder : Math.min(999, category.sortOrder + 1)) : neighbor.sortOrder
+    const neighborOrder = same ? (direction < 0 ? Math.min(999, neighbor.sortOrder + 1) : neighbor.sortOrder) : category.sortOrder
+    if (categoryOrder === category.sortOrder && neighborOrder === neighbor.sortOrder) return
     void swapOrder(
       {
         id: category.id,
-        save: () => postCatalog({ action: "save-category", category: categoryInput(category, { sortOrder: neighbor.sortOrder }) }),
+        save: () => postCatalog({ action: "save-category", category: categoryInput(category, { sortOrder: categoryOrder }) }),
       },
-      () => postCatalog({ action: "save-category", category: categoryInput(neighbor, { sortOrder: category.sortOrder }) }),
+      () => postCatalog({ action: "save-category", category: categoryInput(neighbor, { sortOrder: neighborOrder }) }),
       "Orden de categorías guardado.",
     )
   }
@@ -218,7 +224,9 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
                 {view === "categories" ? "Categorías" : "Carta"}
               </Heading>
               <Text tone="muted">
-                {view === "categories" ? `${categories.length} categorías` : `${visibleProducts.length} de ${products.length}`}
+                {view === "categories"
+                  ? "Arriba sale primero en la carta. La primera visible es la que ve el cliente."
+                  : `${visibleProducts.length} de ${products.length}`}
               </Text>
             </div>
             {view === "categories" ? (
@@ -299,65 +307,68 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
       ) : null}
 
       {view === "categories" ? (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ol className="flex flex-col gap-2" aria-label="Orden de las categorías en la carta">
           {orderedCategories.map((category, index) => {
             const count = counts.byCategory.get(category.id) ?? 0
             const busy = busyId === category.id
+            const firstOnMenu = category.isVisible && orderedCategories.find((item) => item.isVisible)?.id === category.id
             return (
               <li
                 key={category.id}
                 aria-busy={busy}
-                className="flex flex-col overflow-hidden rounded-2xl border border-olive-line bg-surface-raised"
+                className="flex min-w-0 items-stretch gap-2 rounded-2xl border border-olive-line bg-surface-raised p-2"
               >
+                <span className="flex w-11 shrink-0 items-center justify-center rounded-xl bg-cream font-heading text-lg font-extrabold text-olive">
+                  {index + 1}
+                </span>
                 <button
                   type="button"
-                  className="flex min-h-28 flex-1 flex-col items-start gap-2 p-4 text-left outline-none hover:bg-olive-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                  className="flex min-h-11 min-w-0 flex-1 flex-col items-start justify-center gap-1 rounded-xl px-1 text-left outline-none hover:bg-olive-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                   onClick={() => openProducts({ categoryId: category.id })}
                 >
-                  <span className="flex w-full items-start justify-between gap-2">
-                    <span className="font-heading text-lg leading-tight font-bold">{category.name}</span>
-                    <ChevronRightIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-olive-muted" />
-                  </span>
+                  <span className="w-full truncate font-heading text-lg leading-tight font-bold">{category.name}</span>
                   <span className="font-label text-sm text-olive-muted">
                     {count} {count === 1 ? "producto" : "productos"}
+                    {firstOnMenu ? " · Primera en la carta" : ""}
                   </span>
                   <CategoryFlag isVisible={category.isVisible} />
                 </button>
-                <div className="flex items-center justify-between gap-2 border-t border-olive-line px-2 py-1">
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    disabled={busy || index === 0}
+                    aria-label={`Subir ${category.name}`}
+                    onClick={() => moveCategory(category, -1)}
+                  >
+                    <ChevronUpIcon aria-hidden />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    disabled={busy || index === orderedCategories.length - 1}
+                    aria-label={`Bajar ${category.name}`}
+                    onClick={() => moveCategory(category, 1)}
+                  >
+                    <ChevronDownIcon aria-hidden />
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     disabled={busy}
+                    aria-label={`Editar ${category.name}`}
                     onClick={() => setCategorySession({ key: category.id, category })}
                   >
                     <PencilIcon aria-hidden />
-                    Editar
                   </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="ghost" size="icon" disabled={busy} aria-label={`Más opciones de ${category.name}`}>
-                        <EllipsisIcon aria-hidden />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem className="min-h-11" disabled={index === 0} onSelect={() => moveCategory(category, -1)}>
-                        Mover antes
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="min-h-11"
-                        disabled={index === orderedCategories.length - 1}
-                        onSelect={() => moveCategory(category, 1)}
-                      >
-                        Mover después
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
               </li>
             )
           })}
-        </ul>
+        </ol>
       ) : null}
 
       {view === "products" ? (

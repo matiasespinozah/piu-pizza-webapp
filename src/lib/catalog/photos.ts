@@ -18,4 +18,12 @@ function isCatalogPhotoUrl(value: string) {
   return path.includes("/products/")
 }
 
-export { isCatalogPhotoUrl }
+/** Archivos de un producto que se pueden borrar. Si la foto a conservar no está en su carpeta, no se borra ninguna. */
+function photosToDelete(names: readonly string[], productId: string, keep?: string) {
+  if (!productId || productId.includes("/") || productId.includes("..")) return []
+  const prefix = `products/${productId}/`
+  if (keep && !keep.startsWith(prefix)) return []
+  return names.filter((name) => name.startsWith(prefix) && name !== keep)
+}
+
+export { isCatalogPhotoUrl, photosToDelete }
