@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 import { requestIsTrusted } from "@/lib/auth/session-policy"
 import { StaffAccessError } from "@/server/auth/authorization"
 import { readStaffGate } from "@/server/auth/session"
-import { CatalogError, deleteCategory, deleteProduct, saveCategory, saveProduct } from "@/server/catalog/service"
+import { CatalogError, deleteCategory, deleteProduct, reorderCategories, saveCategory, saveProduct } from "@/server/catalog/service"
 
 const noStore = { "Cache-Control": "private, no-store" }
 
@@ -33,13 +33,18 @@ export async function POST(request: Request) {
   const gate = await readStaffGate()
   if (gate.status !== 200) return NextResponse.json({ ok: false }, { status: gate.status, headers: noStore })
 
-  const body = (await request.json().catch(() => null)) as { action?: unknown; category?: unknown; product?: unknown; id?: unknown } | null
+  const body = (await request.json().catch(() => null)) as { action?: unknown; category?: unknown; product?: unknown; id?: unknown; moves?: unknown } | null
 
   try {
     if (body?.action === "save-category") {
       const saved = await saveCategory(gate.session, body.category)
       revalidateTag("catalog", { expire: 0 })
       return NextResponse.json({ ok: true, ...saved }, { headers: noStore })
+    }
+    if (body?.action === "reorder-categories") {
+      await reorderCategories(gate.session, { moves: body.moves })
+      revalidateTag("catalog", { expire: 0 })
+      return NextResponse.json({ ok: true }, { headers: noStore })
     }
     if (body?.action === "delete-category") {
       if (typeof body.id !== "string") return NextResponse.json({ ok: false, message: "Falta la categoría." }, { status: 400, headers: noStore })

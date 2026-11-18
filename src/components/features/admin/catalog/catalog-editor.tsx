@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   ArrowLeftIcon,
   BanIcon,
-  ChevronDownIcon,
   ChevronRightIcon,
-  ChevronUpIcon,
   EllipsisIcon,
   EyeOffIcon,
   ImageOffIcon,
@@ -15,6 +13,7 @@ import {
   PencilIcon,
   PizzaIcon,
   PlusIcon,
+  Trash2Icon,
   SearchIcon,
   type LucideIcon,
 } from "lucide-react"
@@ -45,11 +44,13 @@ import type { AdminCategory, AdminProduct } from "@/lib/catalog/types"
 
 import "../admin-shell.css"
 import { CategoryEditor } from "./category-editor"
-import { categoryInput, postCatalog, productInput } from "./catalog-requests"
+import { CategoryOrder } from "./category-order"
+import { postCatalog, productInput } from "./catalog-requests"
+import { ConfirmDeleteDialog } from "./catalog-confirm"
 import { CategoryFlag, ProductFlags } from "./catalog-status"
 import { ProductEditor } from "./product-editor"
 
-type View = "home" | "products" | "categories"
+type View = "home" | "products" | "categories" | "settings"
 type Shortcut = "none" | "soldOut" | "hidden" | "noPhoto"
 type ProductSession = { key: string; product: AdminProduct | null }
 type CategorySession = { key: string; category: AdminCategory | null }
@@ -64,6 +65,7 @@ const shortcutLabel: Record<Shortcut, string> = {
 function CatalogEditor({ categories, products }: { categories: AdminCategory[]; products: AdminProduct[] }) {
   const router = useRouter()
   const pendingScroll = useRef<number | null>(null)
+  const orderLock = useRef(false)
   const [view, setView] = useState<View>("products")
   const [query, setQuery] = useState("")
   const [categoryId, setCategoryId] = useState("all")
@@ -74,6 +76,9 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
   const [productSession, setProductSession] = useState<ProductSession | null>(null)
   const [categorySession, setCategorySession] = useState<CategorySession | null>(null)
   const [priceTarget, setPriceTarget] = useState<AdminProduct | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<AdminCategory | null>(null)
+  const [deleteError, setDeleteError] = useState("")
 
   useEffect(() => {
     if (pendingScroll.current == null) return
@@ -114,6 +119,8 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
 
   const canReorder = categoryId !== "all" && !query.trim() && shortcut === "none"
   const defaultCategoryId = categoryId !== "all" ? categoryId : (orderedCategories[0]?.id ?? "")
+  const visibleCategories = orderedCategories.filter((category) => category.isVisible)
+  const deleteCount = categoryToDelete ? (counts.byCategory.get(categoryToDelete.id) ?? 0) : 0
   function openProducts(next: { categoryId?: string; shortcut?: Shortcut } = {}) {
     setCategoryId(next.categoryId ?? "all")
     setShortcut(next.shortcut ?? "none")
@@ -169,22 +176,52 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
     refresh(message)
   }
 
-  function moveCategory(category: AdminCategory, direction: -1 | 1) {
-    const index = orderedCategories.findIndex((item) => item.id === category.id)
-    const neighbor = orderedCategories[index + direction]
+  function moveWithin(list: AdminCategory[], category: AdminCategory, direction: -1 | 1) {
+    const index = list.findIndex((item) => item.id === category.id)
+    const neighbor = list[index + direction]
     if (!neighbor) return
     const same = category.sortOrder === neighbor.sortOrder
     const categoryOrder = same ? (direction < 0 ? category.sortOrder : Math.min(999, category.sortOrder + 1)) : neighbor.sortOrder
     const neighborOrder = same ? (direction < 0 ? Math.min(999, neighbor.sortOrder + 1) : neighbor.sortOrder) : category.sortOrder
     if (categoryOrder === category.sortOrder && neighborOrder === neighbor.sortOrder) return
-    void swapOrder(
-      {
-        id: category.id,
-        save: () => postCatalog({ action: "save-category", category: categoryInput(category, { sortOrder: categoryOrder }) }),
-      },
-      () => postCatalog({ action: "save-category", category: categoryInput(neighbor, { sortOrder: neighborOrder }) }),
-      "Orden de categorías guardado.",
-    )
+    if (orderLock.current) return
+    orderLock.current = true
+    void (async () => {
+      setBusyId(category.id)
+      setError("")
+      try {
+        const result = await postCatalog({
+          action: "reorder-categories",
+          moves: [
+            { id: category.id, sortOrder: categoryOrder },
+            { id: neighbor.id, sortOrder: neighborOrder },
+          ],
+        })
+        if (!result.ok) {
+          setError(result.message)
+          return
+        }
+        refresh("Orden de categorías guardado.")
+      } finally {
+        setBusyId(null)
+        orderLock.current = false
+      }
+    })()
+  }
+
+  async function removeCategory() {
+    if (!categoryToDelete) return
+    setBusyId(categoryToDelete.id)
+    setDeleteError("")
+    const result = await postCatalog({ action: "delete-category", id: categoryToDelete.id })
+    setBusyId(null)
+    if (!result.ok) {
+      setDeleteError(result.message)
+      return
+    }
+    const name = categoryToDelete.name
+    setCategoryToDelete(null)
+    refresh(`${name} eliminada.`)
   }
 
   function moveProduct(product: AdminProduct, direction: -1 | 1) {
@@ -212,7 +249,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
         </header>
       ) : (
         <header className="flex min-w-0 flex-col gap-3">
-          {view === "categories" ? (
+          {view === "categories" || view === "settings" ? (
             <Button type="button" variant="ghost" size="sm" className="-ml-3 self-start" onClick={() => openView("products")}>
               <ArrowLeftIcon aria-hidden />
               Carta
@@ -221,31 +258,22 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
           <div className="flex min-w-0 items-end justify-between gap-3">
             <div className="min-w-0">
               <Heading as="h1" size="h3">
-                {view === "categories" ? "Categorías" : "Carta"}
+                {view === "categories" ? "Categorías" : view === "settings" ? "Configuración" : "Carta"}
               </Heading>
               <Text tone="muted">
                 {view === "categories"
-                  ? "Arriba sale primero en la carta. La primera visible es la que ve el cliente."
-                  : `${visibleProducts.length} de ${products.length}`}
+                  ? "Nombre y visibilidad. El orden de la carta se cambia en Configuración."
+                  : view === "settings"
+                    ? "El orden que ve el cliente en la carta."
+                    : `${visibleProducts.length} de ${products.length}`}
               </Text>
             </div>
-            {view === "categories" ? (
-              <Button type="button" className="h-11 shrink-0" onClick={() => setCategorySession({ key: `new-${Date.now()}`, category: null })}>
-                <PlusIcon aria-hidden />
-                Nueva
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="accent"
-                className="h-11 shrink-0"
-                disabled={!defaultCategoryId}
-                onClick={() => setProductSession({ key: `new-${Date.now()}`, product: null })}
-              >
+            {view === "products" ? (
+              <Button type="button" variant="accent" className="h-11 shrink-0" onClick={() => setAddOpen(true)}>
                 <PlusIcon aria-hidden />
                 Agregar
               </Button>
-            )}
+            ) : null}
           </div>
         </header>
       )}
@@ -273,7 +301,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
               icon={LayoutGridIcon}
               title="Categorías"
               value={categories.length}
-              detail="Nombre, orden y visibilidad en la carta"
+              detail="Nombre y visibilidad en la carta"
               onClick={() => openView("categories")}
             />
           </div>
@@ -300,75 +328,79 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
               onClick={() => setCategorySession({ key: `new-${Date.now()}`, category: null })}
             >
               <PlusIcon aria-hidden />
-              Nueva categoría
+              Añadir nueva categoría
             </Button>
           </div>
         </div>
       ) : null}
 
       {view === "categories" ? (
-        <ol className="flex flex-col gap-2" aria-label="Orden de las categorías en la carta">
-          {orderedCategories.map((category, index) => {
-            const count = counts.byCategory.get(category.id) ?? 0
-            const busy = busyId === category.id
-            const firstOnMenu = category.isVisible && orderedCategories.find((item) => item.isVisible)?.id === category.id
-            return (
-              <li
-                key={category.id}
-                aria-busy={busy}
-                className="flex min-w-0 items-stretch gap-2 rounded-2xl border border-olive-line bg-surface-raised p-2"
-              >
-                <span className="flex w-11 shrink-0 items-center justify-center rounded-xl bg-cream font-heading text-lg font-extrabold text-olive">
-                  {index + 1}
-                </span>
-                <button
-                  type="button"
-                  className="flex min-h-11 min-w-0 flex-1 flex-col items-start justify-center gap-1 rounded-xl px-1 text-left outline-none hover:bg-olive-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
-                  onClick={() => openProducts({ categoryId: category.id })}
+        <div className="flex flex-col gap-3">
+          <Button type="button" className="h-11 self-stretch sm:self-start" onClick={() => setCategorySession({ key: `new-${Date.now()}`, category: null })}>
+            <PlusIcon aria-hidden />
+            Añadir nueva categoría
+          </Button>
+          <ol className="flex flex-col gap-2" aria-label="Categorías de la carta">
+            {orderedCategories.map((category) => {
+              const count = counts.byCategory.get(category.id) ?? 0
+              const busy = busyId === category.id
+              return (
+                <li
+                  key={category.id}
+                  aria-busy={busy}
+                  className="flex min-w-0 items-stretch gap-2 rounded-2xl border border-olive-line bg-surface-raised p-2"
                 >
-                  <span className="w-full truncate font-heading text-lg leading-tight font-bold">{category.name}</span>
-                  <span className="font-label text-sm text-olive-muted">
-                    {count} {count === 1 ? "producto" : "productos"}
-                    {firstOnMenu ? " · Primera en la carta" : ""}
-                  </span>
-                  <CategoryFlag isVisible={category.isVisible} />
-                </button>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
+                  <button
                     type="button"
-                    variant="secondary"
-                    size="icon"
-                    disabled={busy || index === 0}
-                    aria-label={`Subir ${category.name}`}
-                    onClick={() => moveCategory(category, -1)}
+                    className="flex min-h-11 min-w-0 flex-1 flex-col items-start justify-center gap-1 rounded-xl px-2 text-left outline-none hover:bg-olive-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                    onClick={() => openProducts({ categoryId: category.id })}
                   >
-                    <ChevronUpIcon aria-hidden />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    disabled={busy || index === orderedCategories.length - 1}
-                    aria-label={`Bajar ${category.name}`}
-                    onClick={() => moveCategory(category, 1)}
-                  >
-                    <ChevronDownIcon aria-hidden />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={busy}
-                    aria-label={`Editar ${category.name}`}
-                    onClick={() => setCategorySession({ key: category.id, category })}
-                  >
-                    <PencilIcon aria-hidden />
-                  </Button>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
+                    <span className="w-full truncate font-heading text-lg leading-tight font-bold">{category.name}</span>
+                    <span className="font-label text-sm text-olive-muted">
+                      {count} {count === 1 ? "producto" : "productos"}
+                    </span>
+                    <CategoryFlag isVisible={category.isVisible} />
+                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={busy}
+                      aria-label={`Editar ${category.name}`}
+                      onClick={() => setCategorySession({ key: category.id, category })}
+                    >
+                      <PencilIcon aria-hidden />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={busy}
+                      aria-label={`Eliminar ${category.name}`}
+                      onClick={() => {
+                        setDeleteError("")
+                        setCategoryToDelete(category)
+                      }}
+                    >
+                      <Trash2Icon aria-hidden />
+                    </Button>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      ) : null}
+
+      {view === "settings" ? (
+        <CategoryOrder
+          categories={orderedCategories}
+          counts={counts.byCategory}
+          busyId={busyId}
+          locked={busyId !== null}
+          onMove={(category, direction) => moveWithin(visibleCategories, category, direction)}
+        />
       ) : null}
 
       {view === "products" ? (
@@ -409,6 +441,9 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
             ))}
             <Chip pressed={false} onClick={() => openView("categories")}>
               Categorías
+            </Chip>
+            <Chip pressed={false} onClick={() => openView("settings")}>
+              Configuración
             </Chip>
           </div>
 
@@ -506,6 +541,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
           key={categorySession.key}
           open
           category={categorySession.category}
+          existingIds={orderedCategories.map((item) => item.id)}
           nextOrder={orderedCategories.length + 1}
           onOpenChange={(open) => {
             if (!open) setCategorySession(null)
@@ -516,6 +552,61 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
           }}
         />
       ) : null}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar</DialogTitle>
+            <DialogDescription className="text-base text-foreground">
+              Un producto entra en una categoría que ya existe.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <Button
+              type="button"
+              disabled={!defaultCategoryId}
+              onClick={() => {
+                setAddOpen(false)
+                setProductSession({ key: `new-${Date.now()}`, product: null })
+              }}
+            >
+              <PlusIcon aria-hidden />
+              Agregar producto
+            </Button>
+            <div className="flex flex-col gap-2 rounded-2xl border border-olive-line bg-surface-raised p-3">
+              <Text tone="muted">Categorías</Text>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setAddOpen(false)
+                  setCategorySession({ key: `new-${Date.now()}`, category: null })
+                }}
+              >
+                <PlusIcon aria-hidden />
+                Añadir nueva categoría
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <ConfirmDeleteDialog
+        open={categoryToDelete !== null}
+        title={categoryToDelete ? `Eliminar ${categoryToDelete.name}` : "Eliminar categoría"}
+        description={
+          deleteCount > 0
+            ? `«${categoryToDelete?.name ?? ""}» tiene ${deleteCount === 1 ? "1 producto" : `${deleteCount} productos`}. Muévelos o elimínalos antes. Si confirmas ahora, la categoría no se borra.`
+            : `«${categoryToDelete?.name ?? ""}» deja de existir en la carta. No se puede deshacer.`
+        }
+        pending={categoryToDelete ? busyId === categoryToDelete.id : false}
+        error={deleteError}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCategoryToDelete(null)
+            setDeleteError("")
+          }
+        }}
+        onConfirm={() => void removeCategory()}
+      />
       <PriceDialog
         product={priceTarget}
         busy={priceTarget ? busyId === priceTarget.id : false}
