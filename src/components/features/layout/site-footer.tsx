@@ -3,6 +3,7 @@ import Link from "next/link"
 import { cn } from "cn"
 
 import { CopyrightYear } from "@/components/features/layout/copyright-year"
+import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/logo"
 import { Container } from "@/components/ui/layout"
 import { textLinkVariants } from "@/components/ui/text-link"
@@ -100,12 +101,9 @@ function SiteFooter() {
           <p className="text-sm leading-5 text-cream/70">
             © <CopyrightYear /> PIÙ Pizza & Dolce. Todos los derechos reservados.
           </p>
-          <Link
-            href="/admin/login"
-            className="inline-flex min-h-11 items-center text-sm text-cream/60 underline-offset-4 outline-none hover:text-cream hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
-          >
-            Acceso empleados
-          </Link>
+          <Button asChild variant="onPhoto" size="sm">
+            <Link href="/admin/login">Acceso empleados</Link>
+          </Button>
         </Container>
       </div>
     </footer>

@@ -20,7 +20,7 @@ export default async function AdminHomePage() {
   const today = todayIsoInSantiago()
   const [reservations, upcoming, floor] = await Promise.all([
     reservationSummary(session),
-    listReservationsForStaff(session, { view: "upcoming" }),
+    listReservationsForStaff(session, { view: "upcoming" }, { summary: false }),
     readFloor(session, today).catch(() => null),
   ])
   const summary = reservations.summary

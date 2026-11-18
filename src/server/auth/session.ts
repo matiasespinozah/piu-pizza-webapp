@@ -2,6 +2,7 @@ import "server-only"
 
 import { getAuth } from "firebase-admin/auth"
 import { cookies } from "next/headers"
+import { cache } from "react"
 
 import { decideStaffSession } from "@/lib/auth/staff-session"
 import { liveStaffSession } from "@/server/auth/live-session"
@@ -56,7 +57,11 @@ async function createStaffSession(idToken: string): Promise<StaffSession> {
   return live
 }
 
-async function readStaffSession(): Promise<StaffSession | null> {
+/**
+ * Una vez por request. El layout y `requireSection` comparten esta lectura.
+ * El pedido siguiente vuelve a comprobar la revocación.
+ */
+const readStaffSession = cache(async (): Promise<StaffSession | null> => {
   const jar = await cookies()
   const value = jar.get(sessionCookieName)?.value
   if (!value) return null
@@ -68,7 +73,7 @@ async function readStaffSession(): Promise<StaffSession | null> {
   } catch {
     return null
   }
-}
+})
 
 async function readStaffGate(): Promise<
   { status: 401 } | { status: 403 } | { status: 200; session: StaffSession }
