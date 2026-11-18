@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 
 import { catalogImportAllowed, planCatalogImport } from "@/lib/catalog/import-plan"
 import { catalogCacheLife } from "@/lib/catalog/public-cache"
+import { dropIndex, moveCategoryId, movesForCategoryOrder } from "@/lib/catalog/category-order"
 import { newCategoryId } from "@/lib/catalog/slug"
 import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
 import {
@@ -157,4 +158,39 @@ test("una categoría nueva no pisa el identificador de una que ya existe", () =>
   assert.equal(created.ok, true)
   if (created.ok) assert.equal(created.id, "jugos-naturales")
   assert.equal(newCategoryId("...", existing).ok, false)
+})
+
+test("arrastrar una categoría reubica el orden sin repetir números", () => {
+  const rows = [
+    { id: "chef", top: 0, height: 50 },
+    { id: "palitos", top: 58, height: 50 },
+    { id: "bebidas", top: 116, height: 50 },
+  ]
+  const ids = ["chef", "palitos", "bebidas"]
+  const belowPalitos = dropIndex(90, rows, "chef")
+  assert.deepEqual(moveCategoryId(ids, "chef", belowPalitos), ["palitos", "chef", "bebidas"])
+  const aboveChef = dropIndex(10, rows, "bebidas")
+  assert.deepEqual(moveCategoryId(ids, "bebidas", aboveChef), ["bebidas", "chef", "palitos"])
+  const current = [
+    { id: "chef", sortOrder: 1 },
+    { id: "palitos", sortOrder: 7 },
+    { id: "bebidas", sortOrder: 11 },
+  ]
+  assert.deepEqual(movesForCategoryOrder(current, ["bebidas", "chef", "palitos"]), [
+    { id: "bebidas", sortOrder: 1 },
+    { id: "chef", sortOrder: 7 },
+    { id: "palitos", sortOrder: 11 },
+  ])
+  assert.deepEqual(
+    movesForCategoryOrder(
+      [
+        { id: "chef", sortOrder: 1 },
+        { id: "palitos", sortOrder: 1 },
+      ],
+      ["palitos", "chef"],
+    ),
+    [{ id: "chef", sortOrder: 2 }],
+  )
+  assert.equal(movesForCategoryOrder(current, ["chef", "palitos", "bebidas"])?.length, 0)
+  assert.equal(movesForCategoryOrder(current, ["chef", "otra"]), null)
 })
