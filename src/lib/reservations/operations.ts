@@ -68,6 +68,8 @@ type PublicNotices = {
   venueClosed: PublicNotice
 }
 
+type ReceptionNoticeKey = keyof PublicNotices
+
 type OperationRules = {
   clock: ReservationClock
   serviceMinutes: number | null
@@ -88,6 +90,8 @@ type OperationRules = {
   /** Horario de los siete días. Vive en Firestore hasta que el equipo lo cambie. */
   week: WeekSchedule
   receptionPaused: boolean
+  /** Mensaje de Configuración que ve el cliente mientras la recepción está en pausa. */
+  receptionNotice: ReceptionNoticeKey
   productionReady: boolean
   /** Huella de la última configuración que un superadmin validó. */
   validatedFingerprint: string | null
@@ -134,6 +138,7 @@ function defaultOperationRules(): OperationRules {
     },
     week: defaultWeek(),
     receptionPaused: false,
+    receptionNotice: "paused",
     productionReady: false,
     validatedFingerprint: null,
     notices: defaultNotices(),
@@ -332,6 +337,7 @@ function readOperationRules(value: unknown): OperationRules | null {
     sectors,
     week,
     receptionPaused: record.receptionPaused === true,
+    receptionNotice: readReceptionNotice(record.receptionNotice),
     productionReady: false,
     validatedFingerprint,
     notices,
@@ -401,6 +407,7 @@ function operationsDocument(rules: OperationRules) {
     sectors: rules.sectors,
     week: rules.week,
     receptionPaused: rules.receptionPaused,
+    receptionNotice: rules.receptionNotice,
     validatedFingerprint: rules.validatedFingerprint,
     notices: rules.notices,
     tables: rules.tables,
@@ -443,7 +450,12 @@ function applyFloorSection(stored: OperationRules, incoming: OperationRules, sec
   if (section === "rules") return { ...stored, serviceMinutes: incoming.serviceMinutes }
   if (section === "zones") return { ...stored, sectors: incoming.sectors }
   if (section === "messages") return { ...stored, notices: incoming.notices }
-  return { ...stored, receptionPaused: incoming.receptionPaused }
+  return { ...stored, receptionPaused: incoming.receptionPaused, receptionNotice: incoming.receptionNotice }
+}
+
+function readReceptionNotice(value: unknown): ReceptionNoticeKey {
+  if (value === "full" || value === "paused" || value === "closedDay" || value === "venueClosed") return value
+  return "paused"
 }
 
 function receptionPausedOf(value: unknown) {
@@ -457,6 +469,7 @@ function publicRules(rules: OperationRules) {
     anticipation: rules.anticipation,
     maxParty: rules.maxParty,
     receptionPaused: rules.receptionPaused,
+    receptionNotice: rules.receptionNotice,
     notices: rules.notices,
     week: rules.week,
   }
@@ -481,4 +494,4 @@ export {
   receptionPausedOf,
   tableUse,
 }
-export type { CapMode, DiningTable, FloorSection, OperationRules, PublicNotice, PublicNotices, ReservationCap, SectorLayout, SectorTables }
+export type { CapMode, DiningTable, FloorSection, OperationRules, PublicNotice, PublicNotices, ReceptionNoticeKey, ReservationCap, SectorLayout, SectorTables }

@@ -32,17 +32,43 @@ function relativeTime(iso: string, now = Date.now()) {
   return new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }).format(then)
 }
 
+const bannerMs = 120_000
+
+let sharedAudio: AudioContext | null = null
+
+function audioContext() {
+  sharedAudio ??= new AudioContext()
+  return sharedAudio
+}
+
+function unlockAudio() {
+  const context = audioContext()
+  if (context.state === "suspended") void context.resume()
+}
+
 function chime() {
-  const context = new AudioContext()
-  const tone = context.createOscillator()
-  const gain = context.createGain()
-  tone.frequency.value = 740
-  gain.gain.value = 0.04
-  tone.connect(gain)
-  gain.connect(context.destination)
-  tone.start()
-  tone.stop(context.currentTime + 0.12)
-  window.setTimeout(() => void context.close(), 300)
+  let context: AudioContext
+  try {
+    context = audioContext()
+  } catch {
+    return
+  }
+  if (context.state === "suspended") return
+  const now = context.currentTime
+  for (const [index, frequency] of [784, 988, 784].entries()) {
+    const tone = context.createOscillator()
+    const gain = context.createGain()
+    const start = now + index * 0.16
+    tone.type = "sine"
+    tone.frequency.value = frequency
+    gain.gain.setValueAtTime(0.0001, start)
+    gain.gain.exponentialRampToValueAtTime(0.07, start + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.28)
+    tone.connect(gain)
+    gain.connect(context.destination)
+    tone.start(start)
+    tone.stop(start + 0.3)
+  }
 }
 
 function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
@@ -50,9 +76,10 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
   const [open, setOpen] = useState(false)
   const [notices, setNotices] = useState<Notice[]>([])
   const [unread, setUnread] = useState(0)
-  const [toast, setToast] = useState("")
-  const [sound, setSound] = useState(false)
+  const [banner, setBanner] = useState<Notice | null>(null)
+  const [sound, setSound] = useState(() => window.localStorage.getItem(soundKey) !== "0")
   const primed = useRef(false)
+  const hideBanner = useRef<number | null>(null)
 
   const load = useCallback(async () => {
     const response = await fetch("/api/admin/reservations/notifications", { cache: "no-store" })
@@ -61,7 +88,7 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
     const next = body.notices ?? []
     setNotices(next)
     setUnread(body.unread ?? 0)
-    const fresh = next.find((item) => item.unread && (item.type === "created" || item.type === "upcoming"))
+    const fresh = next.find((item) => item.unread)
     if (!primed.current) {
       primed.current = true
       if (fresh) window.sessionStorage.setItem(seenKey, fresh.id)
@@ -70,18 +97,22 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
     const seen = window.sessionStorage.getItem(seenKey)
     if (fresh && fresh.id !== seen) {
       window.sessionStorage.setItem(seenKey, fresh.id)
-      setToast(`${fresh.title}. ${fresh.body}`)
-      if (window.localStorage.getItem(soundKey) === "1") chime()
-      window.setTimeout(() => setToast(""), 5000)
+      setBanner(fresh)
+      if (hideBanner.current) window.clearTimeout(hideBanner.current)
+      hideBanner.current = window.setTimeout(() => setBanner(null), bannerMs)
+      if (window.localStorage.getItem(soundKey) !== "0") chime()
     }
   }, [])
 
   useEffect(() => {
     const started = window.setTimeout(() => void load(), 0)
     const timer = window.setInterval(() => void load(), 25000)
+    window.addEventListener("pointerdown", unlockAudio)
     return () => {
       window.clearTimeout(started)
       window.clearInterval(timer)
+      if (hideBanner.current) window.clearTimeout(hideBanner.current)
+      window.removeEventListener("pointerdown", unlockAudio)
     }
   }, [load])
 
@@ -102,11 +133,12 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
         className={cn(
           "relative inline-flex size-11 items-center justify-center rounded-full",
           tone === "cream" ? "text-cream" : "bg-olive text-cream",
+          unread > 0 && "admin-bell-pulse",
         )}
         aria-expanded={open}
         aria-label={unread > 0 ? `Notificaciones, ${unread} sin leer` : "Notificaciones"}
         onClick={() => {
-          setSound(window.localStorage.getItem(soundKey) === "1")
+          setSound(window.localStorage.getItem(soundKey) !== "0")
           setOpen((current) => !current)
         }}
       >
@@ -160,10 +192,21 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
           ) : null}
         </div>
       ) : null}
-      {toast ? (
-        <p className="fixed right-3 bottom-24 z-50 max-w-xs rounded-2xl bg-olive px-4 py-3 text-sm text-cream shadow-lift lg:bottom-6" role="status">
-          {toast}
-        </p>
+      {banner && !open ? (
+        <button
+          type="button"
+          className="absolute top-full right-0 z-50 mt-2 flex w-[min(20rem,calc(100vw-2rem))] min-h-11 origin-top flex-col items-start gap-0.5 rounded-2xl border border-olive-line bg-popover px-4 py-3 text-left text-olive shadow-lift motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-300"
+          role="status"
+          onClick={() => {
+            setBanner(null)
+            void mark([banner.id])
+            setOpen(false)
+            if (banner.reservationId) router.push(`/admin/reservas?id=${banner.reservationId}`)
+          }}
+        >
+          <span className="font-heading text-sm font-bold">{banner.title}</span>
+          <span className="text-sm text-olive-strong">{banner.body}</span>
+        </button>
       ) : null}
     </div>
   )

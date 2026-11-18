@@ -93,13 +93,14 @@ function noticeText(notice: PublicNotice, fallback: string) {
 }
 
 function admitRequest(
-  rules: Pick<OperationRules, "clock" | "receptionPaused" | "notices"> & { week?: WeekSchedule },
+  rules: Pick<OperationRules, "clock" | "receptionPaused" | "notices"> & { receptionNotice?: OperationRules["receptionNotice"]; week?: WeekSchedule },
   day: DayOverride | null,
   isoDate: string,
 ): Admission {
   const notices = rules.notices ?? defaultNotices()
   if (rules.receptionPaused) {
-    return { ok: false, code: "paused", message: noticeText(notices.paused, "Por ahora no estamos tomando reservas en línea.") }
+    const chosen = notices[rules.receptionNotice ?? "paused"]
+    return { ok: false, code: "paused", message: noticeText(chosen, "Por ahora no estamos tomando reservas en línea.") }
   }
   if (day?.closed) {
     return {
