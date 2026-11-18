@@ -10,6 +10,7 @@ type VisitRules = {
   anticipation?: OperationRules["anticipation"]
   maxParty?: OperationRules["maxParty"]
   receptionPaused?: boolean
+  receptionNotice?: OperationRules["receptionNotice"]
   notices?: OperationRules["notices"]
   day?: DayOverride | null
 }
@@ -30,6 +31,7 @@ function validateVisit(draft: ReservationDraft, now = new Date(), rules?: VisitR
       {
         clock: rules.clock,
         receptionPaused: rules.receptionPaused === true,
+        receptionNotice: rules.receptionNotice,
         notices: rules.notices ?? { full: { enabled: false, text: "" }, paused: { enabled: false, text: "" }, closedDay: { enabled: false, text: "" }, venueClosed: { enabled: false, text: "" } },
         week: rules.week,
       },

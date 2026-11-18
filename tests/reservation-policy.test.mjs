@@ -251,6 +251,7 @@ test("pausar, cerrar un día y los topes no confirman de más", () => {
   const rules = defaultOperationRules()
   const monday = "2026-11-09"
   assert.equal(admitRequest({ ...rules, receptionPaused: true }, null, monday).code, "paused")
+  assert.equal(admitRequest({ ...rules, receptionPaused: true, receptionNotice: "venueClosed" }, null, monday).message, rules.notices.venueClosed.text)
   const fullDay = { date: monday, closed: false, full: true, hours: null, lastSeatingTime: null, daily: { mode: "inherit", max: null }, slot: { mode: "inherit", max: null }, notice: null, updatedBy: null, updatedAt: null }
   const full = admitRequest(rules, fullDay, monday)
   assert.equal(full.ok, false)

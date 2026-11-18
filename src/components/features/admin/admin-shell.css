@@ -21,6 +21,26 @@
   color: #9c422f;
 }
 
+@keyframes admin-bell-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.admin-bell-pulse {
+  animation: admin-bell-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-bell-pulse {
+    animation: none;
+  }
+}
+
 .admin-control {
   box-sizing: border-box;
   height: 2.75rem;
