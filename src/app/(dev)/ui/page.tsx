@@ -14,6 +14,7 @@ import { ProductImage } from "@/components/features/menu/product-image"
 import { ProductList } from "@/components/features/menu/product-list"
 import { FloorEditor } from "@/components/features/admin/tables/floor-editor"
 import { RestaurantSettings } from "@/components/features/admin/tables/restaurant-settings"
+import { ReservationCodeForm } from "@/components/features/reservations/reservation-code-form"
 import { ReservationScreensPreview } from "@/components/features/reservations/reservation-screens-preview"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
@@ -489,7 +490,22 @@ export default function UiShowcasePage() {
               }}
               href="#reservas-muestra"
               selected={false}
-              actions={<ReservationQuickActions id="muestra" status="pending" revision={1} detailHref="#reservas-muestra" />}
+              actions={
+                <ReservationQuickActions
+                  item={{
+                    id: "muestra",
+                    referenceCode: "PIU-2021",
+                    status: "pending",
+                    date: "2026-11-13",
+                    preferredTime: "20:30",
+                    partySize: 4,
+                    preferredZone: "salon",
+                    customerName: "María Torres",
+                    createdAt: "2026-11-10T12:00:00.000Z",
+                    revision: 1,
+                  }}
+                />
+              }
             />
           </Block>
 
@@ -557,6 +573,9 @@ export default function UiShowcasePage() {
           <Block title="Reserva recibida y seguimiento">
             <Text className="mb-4">Ejemplo con datos ficticios. No consulta el servidor.</Text>
             <ReservationScreensPreview />
+            <div className="mt-6 max-w-sm">
+              <ReservationCodeForm onCode={() => undefined} />
+            </div>
           </Block>
 
           <Block title="Configuración del panel">

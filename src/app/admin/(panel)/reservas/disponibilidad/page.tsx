@@ -45,14 +45,14 @@ export default async function DisponibilidadPage({
 
   return (
     <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-4">
-      <header className="flex items-end justify-between gap-3">
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <Heading as="h1" size="h3">
             Disponibilidad de reservas
           </Heading>
           <p className="text-sm text-olive-muted">Cupos web reales por horario. No es la ocupación de las mesas del local.</p>
         </div>
-        <Link href="/admin/reservas" className="inline-flex h-11 shrink-0 items-center text-sm font-semibold text-terracotta">
+        <Link href="/admin/reservas" className="inline-flex h-11 items-center self-start text-sm font-semibold text-terracotta sm:shrink-0">
           Reservas
         </Link>
       </header>

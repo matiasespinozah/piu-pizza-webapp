@@ -1,4 +1,4 @@
-/** Referencia visible, por ejemplo PIU-2021. No abre el seguimiento. */
+/** Referencia visible, por ejemplo PIU-2021. Abre la consulta pública del estado. */
 const publicReferencePattern = /^PIU-\d{4}$/
 
 function formatPublicReference(value: number) {

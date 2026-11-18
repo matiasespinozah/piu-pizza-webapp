@@ -481,13 +481,16 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       if (reason) patch.rejectionReason = reason
     }
 
+    if (input.action === "confirm" && status === "rejected") patch.rejectionReason = null
+
     if (input.action === "reject" || input.action === "cancel") {
       patch.rejectionReason = reason || null
       if (input.action === "cancel") patch.cancelledAt = stamp
     }
 
     const releases = input.action === "cancel" || input.action === "complete"
-    const confirms = input.action === "confirm" || input.action === "reschedule"
+    const confirms = input.action === "confirm"
+    const movesVisit = input.action === "reschedule"
     const oldDate = typeof data.holdDate === "string" ? data.holdDate : ""
     const oldZone = asZone(data.holdZone)
     let targetDate = text(data.date)
@@ -512,13 +515,13 @@ async function transitionReservation(session: StaffSession | null, input: Transi
         : null
     const dayRef = confirms ? db.collection(collections.reservationDays).doc(targetDate) : null
     const settingsSnap = confirms ? await tx.get(settingsRef) : null
-    const oldSnap = oldRef && (releases || confirms) ? await tx.get(oldRef) : null
+    const oldSnap = oldRef && (releases || confirms || movesVisit) ? await tx.get(oldRef) : null
     const newSnap = newRef && (!oldRef || newRef.path !== oldRef.path) ? await tx.get(newRef) : oldSnap
     const otherSnap = otherRef ? await tx.get(otherRef) : null
     const daySnap = dayRef ? await tx.get(dayRef) : null
     const trackingId = typeof data.trackingId === "string" ? data.trackingId : ""
     const accessRef = trackingId ? db.collection(collections.reservationAccess).doc(trackingId) : null
-    const accessSnap = accessRef ? await tx.get(accessRef) : null
+    const accessSnap = accessRef && (confirms || movesVisit) ? await tx.get(accessRef) : null
     const assignSnap = input.action === "assign" && oldRef ? await tx.get(oldRef) : null
 
     if (confirms && (!targetZone || !newRef)) {
@@ -623,7 +626,23 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       patch.holdZone = null
     }
 
-    if (confirms && accessRef && accessSnap?.exists) {
+    if (movesVisit && targetZone) {
+      if (oldRef) {
+        const previous = { ...bookingsOf(oldSnap?.data()) }
+        delete previous[input.id]
+        tx.set(oldRef, { bookings: previous }, { merge: true })
+      }
+      patch.assignedTableIds = []
+      patch.holdDate = null
+      patch.holdZone = null
+      patch.confirmedBy = null
+      patch.confirmedAt = null
+      patch.date = targetDate
+      patch.preferredTime = targetTime
+      patch.preferredZone = targetZone
+    }
+
+    if ((confirms || movesVisit) && accessRef && accessSnap?.exists) {
       tx.update(accessRef, { expiresOn: trackingExpiresOn(targetDate) })
     }
 

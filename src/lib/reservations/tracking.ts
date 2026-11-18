@@ -5,7 +5,7 @@ import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { trackingTokenLength } from "@/lib/reservations/tracking-link"
 
 const trackingLimits = {
-  checksPerTokenPerHour: 30,
+  checksPerTokenPerHour: 150,
   failuresPerAddressPerHour: 40,
   maxCredentialLength: 500,
   maxBodyLength: 2000,

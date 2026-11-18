@@ -41,6 +41,12 @@
   }
 }
 
+.admin-sheet input[type="date"],
+.admin-card input[type="date"] {
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
 .admin-control {
   box-sizing: border-box;
   height: 2.75rem;

@@ -71,7 +71,7 @@ function chime() {
   }
 }
 
-function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
+function NotificationBell() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notices, setNotices] = useState<Notice[]>([])
@@ -131,8 +131,7 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
       <button
         type="button"
         className={cn(
-          "relative inline-flex size-11 items-center justify-center rounded-full",
-          tone === "cream" ? "text-cream" : "bg-olive text-cream",
+          "relative inline-flex size-11 items-center justify-center rounded-full bg-status-good-solid text-cream",
           unread > 0 && "admin-bell-pulse",
         )}
         aria-expanded={open}
@@ -150,9 +149,9 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
         ) : null}
       </button>
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 flex max-h-[70svh] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-olive-line bg-[#f3f1e6] text-olive shadow-lift">
+        <div className="fixed inset-x-3 top-[4.75rem] z-50 flex max-h-[70svh] min-w-0 flex-col overflow-hidden rounded-2xl border border-olive-line bg-[#f3f1e6] text-olive shadow-lift lg:absolute lg:inset-x-auto lg:top-full lg:right-0 lg:mt-2 lg:w-[22rem]">
           <div className="flex items-center justify-between gap-2 px-3 py-3">
-            <p className="font-heading text-base font-bold">Avisos</p>
+            <p className="min-w-0 font-heading text-base font-bold">Avisos</p>
             <button
               type="button"
               className="min-h-11 text-xs font-semibold text-olive-muted"
@@ -178,8 +177,8 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
                     if (notice.reservationId) router.push(`/admin/reservas?id=${notice.reservationId}`)
                   }}
                 >
-                  <span className="font-heading text-sm font-bold">{notice.title}</span>
-                  <span className="text-sm text-olive-strong">{notice.body}</span>
+                  <span className="font-heading text-sm font-bold break-words">{notice.title}</span>
+                  <span className="text-sm text-olive-strong break-words">{notice.body}</span>
                   <span className="text-xs text-olive-muted">{relativeTime(notice.at)}</span>
                 </button>
               </li>
@@ -195,7 +194,7 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
       {banner && !open ? (
         <button
           type="button"
-          className="absolute top-full right-0 z-50 mt-2 flex w-[min(20rem,calc(100vw-2rem))] min-h-11 origin-top flex-col items-start gap-0.5 rounded-2xl border border-olive-line bg-popover px-4 py-3 text-left text-olive shadow-lift motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-300"
+          className="fixed inset-x-3 top-[4.75rem] z-50 flex min-h-11 min-w-0 origin-top flex-col items-start gap-0.5 rounded-2xl border border-olive-line bg-popover px-4 py-3 text-left text-olive shadow-lift motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-3 motion-safe:duration-300 lg:absolute lg:inset-x-auto lg:top-full lg:right-0 lg:mt-2 lg:w-[20rem]"
           role="status"
           onClick={() => {
             setBanner(null)
@@ -204,8 +203,8 @@ function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
             if (banner.reservationId) router.push(`/admin/reservas?id=${banner.reservationId}`)
           }}
         >
-          <span className="font-heading text-sm font-bold">{banner.title}</span>
-          <span className="text-sm text-olive-strong">{banner.body}</span>
+          <span className="font-heading text-sm font-bold break-words">{banner.title}</span>
+          <span className="text-sm text-olive-strong break-words">{banner.body}</span>
         </button>
       ) : null}
     </div>
