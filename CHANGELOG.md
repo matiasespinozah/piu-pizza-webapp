@@ -16,6 +16,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- Next.js y `eslint-config-next` pasan de 16.4.4 a 16.4.6, dentro de la misma línea, para corregir los avisos de seguridad de noviembre de 2026. App Hosting, Auth, reservas, catálogo y las APIs siguen con la misma configuración.
 - La pestaña del navegador usa el logo PIÙ en vez del ícono de Next.
 - Guardar un producto ya no reescribe su foto. La carta pública y las sugerencias del inicio leen el documento `catalog/public`, escrito en la misma operación. Si esa publicación falla, el panel no muestra el cambio como guardado. Cada instancia y el CDN pueden seguir con la página anterior hasta 5 minutos. El sitio publicado es https://piupizzas.cl.
 - En `/admin/carta`, las categorías se crean desde «Nueva categoría» y se reordenan con subir y bajar. La primera visible es la que abre la carta pública.
