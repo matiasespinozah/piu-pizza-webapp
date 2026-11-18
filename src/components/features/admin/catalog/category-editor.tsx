@@ -23,25 +23,29 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import { newCategoryId } from "@/lib/catalog/slug"
 import type { AdminCategory } from "@/lib/catalog/types"
 
+import { ConfirmDeleteDialog } from "./catalog-confirm"
 import { postCatalog, type CategoryInput } from "./catalog-requests"
 
 type CategoryEditorProps = {
   open: boolean
   category: AdminCategory | null
+  existingIds: readonly string[]
   nextOrder: number
   onOpenChange: (open: boolean) => void
   onSaved: (message: string) => void
 }
 
-function CategoryEditor({ open, category, nextOrder, onOpenChange, onSaved }: CategoryEditorProps) {
+function CategoryEditor({ open, category, existingIds, nextOrder, onOpenChange, onSaved }: CategoryEditorProps) {
   const baseline = useState(() => draftFrom(category, nextOrder))[0]
   const [draft, setDraft] = useState(baseline)
   const [fieldError, setFieldError] = useState("")
   const [formError, setFormError] = useState("")
   const [pending, setPending] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
   const [discardOpen, setDiscardOpen] = useState(false)
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline)
 
@@ -69,6 +73,13 @@ function CategoryEditor({ open, category, nextOrder, onOpenChange, onSaved }: Ca
       setFieldError(parsed.message)
       return
     }
+    if (!category) {
+      const created = newCategoryId(parsed.value.name, existingIds)
+      if (!created.ok) {
+        setFieldError(created.message)
+        return
+      }
+    }
     setPending(true)
     setFormError("")
     const saved = await postCatalog({
@@ -87,10 +98,11 @@ function CategoryEditor({ open, category, nextOrder, onOpenChange, onSaved }: Ca
   async function remove() {
     if (!category) return
     setPending(true)
+    setDeleteError("")
     const result = await postCatalog({ action: "delete-category", id: category.id })
     setPending(false)
     if (!result.ok) {
-      setFormError(result.message)
+      setDeleteError(result.message)
       return
     }
     onSaved("Categoría eliminada.")
@@ -163,20 +175,35 @@ function CategoryEditor({ open, category, nextOrder, onOpenChange, onSaved }: Ca
                 {category ? "Guardar categoría" : "Crear categoría"}
               </Button>
               {category ? (
-                confirmDelete ? (
-                  <Button type="button" variant="secondary" disabled={pending} onClick={() => void remove()}>
-                    Confirmar eliminación
-                  </Button>
-                ) : (
-                  <Button type="button" variant="secondary" disabled={pending} onClick={() => setConfirmDelete(true)}>
-                    Eliminar categoría
-                  </Button>
-                )
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={pending}
+                  onClick={() => {
+                    setDeleteError("")
+                    setDeleteOpen(true)
+                  }}
+                >
+                  Eliminar categoría
+                </Button>
               ) : null}
             </SheetFooter>
           </form>
         </SheetContent>
       </Sheet>
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        title={category ? `Eliminar ${category.name}` : "Eliminar categoría"}
+        description={
+          category
+            ? `«${category.name}» deja de existir en la carta. Si todavía tiene productos, no se borra.`
+            : ""
+        }
+        pending={pending}
+        error={deleteError}
+        onOpenChange={setDeleteOpen}
+        onConfirm={() => void remove()}
+      />
       <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
         <DialogContent>
           <DialogHeader>

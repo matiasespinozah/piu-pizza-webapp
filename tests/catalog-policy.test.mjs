@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 
 import { catalogImportAllowed, planCatalogImport } from "@/lib/catalog/import-plan"
 import { catalogCacheLife } from "@/lib/catalog/public-cache"
+import { newCategoryId } from "@/lib/catalog/slug"
 import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
 import {
   assertPublicCatalogFits,
@@ -145,4 +146,15 @@ test("una foto grande queda en WebP de hasta 150 KB", async () => {
   assert.equal(meta.format, "webp")
   assert.ok((meta.width ?? 0) <= 1200)
   assert.ok((meta.height ?? 0) <= 1200)
+})
+
+test("una categoría nueva no pisa el identificador de una que ya existe", () => {
+  const existing = ["bebidas", "pizzas-clasicas"]
+  assert.equal(newCategoryId("Bebidas", existing).ok, false)
+  assert.equal(newCategoryId("Pizzas clasicas", existing).ok, false)
+  assert.equal(newCategoryId("Pizzas clásicas", existing).ok, false)
+  const created = newCategoryId("Jugos naturales", existing)
+  assert.equal(created.ok, true)
+  if (created.ok) assert.equal(created.id, "jugos-naturales")
+  assert.equal(newCategoryId("...", existing).ok, false)
 })

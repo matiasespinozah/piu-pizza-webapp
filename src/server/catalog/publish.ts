@@ -90,13 +90,18 @@ async function republishPublicCatalog() {
  * Lee el menú, aplica el cambio y publica la carta en la misma transacción.
  * Si algo falla, Firestore no deja el producto nuevo y la carta vieja.
  */
-async function commitCatalogMutation(mutate: (state: CatalogState) => { state: CatalogState; apply: (tx: Transaction) => void }) {
+async function commitCatalogMutation<T = undefined>(
+  mutate: (state: CatalogState) => { state: CatalogState; apply: (tx: Transaction) => void; result?: T },
+): Promise<T> {
+  let result: T | undefined
   await getDb().runTransaction(async (tx) => {
     const current = await readCatalogState(tx)
     const next = mutate(current)
     next.apply(tx)
     writePublicCatalog(tx, next.state)
+    result = next.result
   })
+  return result as T
 }
 
 export { commitCatalogMutation, ensurePublicCatalog, republishPublicCatalog }
