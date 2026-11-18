@@ -151,10 +151,12 @@ async function countOf(query: Query): Promise<number | null> {
 async function loadSummary(db: Firestore): Promise<ReservationSummary> {
   const today = todayIsoInSantiago()
   const base = db.collection(collections.reservations)
-  const pending = await countOf(base.where("status", "==", "pending"))
-  const changes = await countOf(base.where("status", "==", "reschedule_requested"))
-  const confirmedToday = await countOf(base.where("status", "==", "confirmed").where("date", "==", today))
-  const upcoming = await countOf(base.where("status", "==", "confirmed").where("date", ">=", today))
+  const [pending, changes, confirmedToday, upcoming] = await Promise.all([
+    countOf(base.where("status", "==", "pending")),
+    countOf(base.where("status", "==", "reschedule_requested")),
+    countOf(base.where("status", "==", "confirmed").where("date", "==", today)),
+    countOf(base.where("status", "==", "confirmed").where("date", ">=", today)),
+  ])
   return {
     pending,
     confirmedToday,
@@ -320,17 +322,24 @@ function listQuery(db: Firestore, query: ListQuery) {
   return ref.orderBy("createdAt", "desc")
 }
 
-async function listReservationsForStaff(session: StaffSession | null, query: ListQuery) {
+async function listReservationsForStaff(
+  session: StaffSession | null,
+  query: ListQuery,
+  options: { summary?: boolean } = {},
+) {
   assertStaff(session, ["superadmin", "admin"])
   if (!firebaseDataAccessEnabled()) {
     return { ready: false as const, items: [] as ReservationListItem[], nextCursor: null, summary: null }
   }
 
   const db = getDb()
-  const summary = await loadSummary(db)
+  const summaryPromise = options.summary === false ? Promise.resolve(null) : loadSummary(db)
   if (query.view === "attention") {
-    const pending = await db.collection(collections.reservations).where("status", "==", "pending").orderBy("createdAt", "desc").limit(pageSize).get()
-    const changes = await db.collection(collections.reservations).where("status", "==", "reschedule_requested").orderBy("createdAt", "desc").limit(pageSize).get()
+    const [summary, pending, changes] = await Promise.all([
+      summaryPromise,
+      db.collection(collections.reservations).where("status", "==", "pending").orderBy("createdAt", "desc").limit(pageSize).get(),
+      db.collection(collections.reservations).where("status", "==", "reschedule_requested").orderBy("createdAt", "desc").limit(pageSize).get(),
+    ])
     const items = [...pending.docs, ...changes.docs]
       .map((item) => listItem(item.id, item.data()))
       .filter((item): item is ReservationListItem => item != null)
@@ -345,7 +354,7 @@ async function listReservationsForStaff(session: StaffSession | null, query: Lis
     const cursor = await db.collection(collections.reservations).doc(query.cursor).get()
     if (cursor.exists) built = built.startAfter(cursor)
   }
-  const snap = await built.limit(pageSize + 1).get()
+  const [summary, snap] = await Promise.all([summaryPromise, built.limit(pageSize + 1).get()])
   const docs = snap.docs.slice(0, pageSize)
   const items = docs.map((item) => listItem(item.id, item.data())).filter((item): item is ReservationListItem => item != null)
   const nextCursor = snap.docs.length > pageSize ? docs.at(-1)?.id ?? null : null

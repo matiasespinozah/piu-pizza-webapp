@@ -50,12 +50,14 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
     q: one(params.q),
     cursor: one(params.cursor),
   }
-  const result = await listReservationsForStaff(session, query)
   const serviceRequested = one(params.serviceDate)
   const serviceDate = serviceRequested && /^\d{4}-\d{2}-\d{2}$/.test(serviceRequested) ? serviceRequested : todayIsoInSantiago()
-  const floor = await readFloor(session, serviceDate).catch(() => null)
   const selectedId = one(params.id)
-  const detail = result.ready && selectedId ? await getReservationForStaff(session, selectedId).catch(() => null) : null
+  const [result, floor, detail] = await Promise.all([
+    listReservationsForStaff(session, query),
+    readFloor(session, serviceDate).catch(() => null),
+    selectedId ? getReservationForStaff(session, selectedId).catch(() => null) : Promise.resolve(null),
+  ])
   const filters = { date: query.date, status: query.status, zone: query.zone, view: query.view, q: query.q }
   const anyFilter = Boolean(query.date || query.status || query.zone || query.q || query.view)
 

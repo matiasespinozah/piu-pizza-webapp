@@ -111,9 +111,9 @@ test("la carta publicada cabe en un documento y no muestra ocultos", () => {
 test("guardar la carta no depende de una sola instancia ni de una sola página", () => {
   assert.equal(catalogCacheLife.stale, 300)
   assert.equal(catalogCacheLife.revalidate, 300)
-  assert.equal(catalogCacheLife.expire, 301)
+  assert.equal(catalogCacheLife.expire, 86_400)
   assert.ok(catalogCacheLife.expire >= 300)
-  assert.ok(catalogCacheLife.expire > catalogCacheLife.revalidate)
+  assert.ok(catalogCacheLife.expire - catalogCacheLife.revalidate >= 86_000)
   const names = [
     "products/pizza/vigente.webp",
     "products/pizza/vieja.webp",
