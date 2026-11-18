@@ -20,11 +20,13 @@ const collections = {
   reservationStatusRate: "reservationStatusRate",
   reservationDays: "reservationDays",
   invitations: "invitations",
+  catalog: "catalog",
   invitationRate: "invitationRate",
   staffNotifications: "staffNotifications",
 } as const
 
 const settingsDocId = "operations"
+const publicCatalogDocId = "public"
 
 const reservationZoneSchema = z.enum(["salon", "terrace"])
 
@@ -138,6 +140,7 @@ export {
   reservationStatusSchema,
   restaurantSettingsSchema,
   invitationSchema,
+  publicCatalogDocId,
   settingsDocId,
   staffDirectorySchema,
   statusMatches,

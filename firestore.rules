@@ -85,5 +85,10 @@ service cloud.firestore {
     match /reservationDays/{dayId} {
       allow read, write: if false;
     }
+
+    // Proyección de la carta. La escribe solo el servidor. El navegador no la lee ni la publica.
+    match /catalog/{docId} {
+      allow read, write: if false;
+    }
   }
 }

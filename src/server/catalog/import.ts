@@ -5,6 +5,7 @@ import { resolve } from "node:path"
 
 import { catalogImportAllowed, planCatalogImport } from "@/lib/catalog/import-plan"
 import { collections } from "@/lib/firebase/model"
+import { republishPublicCatalog } from "@/server/catalog/publish"
 import { getDb } from "@/server/firebase/firestore"
 
 const catalogFile = resolve(process.cwd(), "data/catalog/piu-catalogo-fudo.json")
@@ -67,6 +68,7 @@ async function importFudoCatalog(env: Record<string, string | undefined> = proce
     })
   }
   await batch.commit()
+  await republishPublicCatalog()
 
   return { categories: plan.categories.length, products: plan.products.length }
 }

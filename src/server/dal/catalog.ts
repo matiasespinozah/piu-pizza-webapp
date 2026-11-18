@@ -1,101 +1,76 @@
 import "server-only"
 
+import { FieldPath } from "firebase-admin/firestore"
 import { cacheLife, cacheTag } from "next/cache"
 
 import { CHEF_CATEGORY_ID, localCategories, localProducts } from "@/lib/catalog/data"
+import { catalogCacheLife } from "@/lib/catalog/public-cache"
+import {
+  parseSourceCategory,
+  parseSourceProduct,
+  projectPublicCatalog,
+  publicCatalogSchema,
+  publicSuggestions,
+  type PublicCatalog,
+} from "@/lib/catalog/public-snapshot"
 import type { Category, Product } from "@/lib/catalog/types"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
-import { categorySchema, collections, productSchema } from "@/lib/firebase/model"
+import { collections, publicCatalogDocId } from "@/lib/firebase/model"
+import { readEvery } from "@/server/catalog/pages"
 import { getDb } from "@/server/firebase/firestore"
 
-const pageSize = 200
-
-function uniqueByName(products: Product[]) {
-  const seen = new Set<string>()
-  const unique: Product[] = []
-  for (const product of products.toSorted((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "es"))) {
-    const name = product.name.trim().toLocaleLowerCase("es-CL")
-    if (seen.has(product.id) || seen.has(name)) continue
-    seen.add(product.id)
-    seen.add(name)
-    unique.push(product)
-  }
-  return unique
-}
-
-function toCategory(id: string, data: unknown): Category | null {
-  const parsed = categorySchema.safeParse(data)
-  if (!parsed.success) return null
+function toMenu(catalog: PublicCatalog): { categories: Category[]; products: Product[] } {
   return {
-    id,
-    slug: parsed.data.slug,
-    name: parsed.data.name,
-    description: parsed.data.description ?? undefined,
-    sortOrder: parsed.data.sortOrder,
-    isVisible: parsed.data.isVisible,
+    categories: catalog.categories.map((category) => ({
+      id: category.id,
+      slug: category.slug,
+      name: category.name,
+      description: category.description ?? undefined,
+      sortOrder: category.sortOrder,
+      isVisible: true,
+    })),
+    products: catalog.products.map((product) => ({
+      id: product.id,
+      categoryId: product.categoryId,
+      name: product.name,
+      description: product.description,
+      priceClp: product.priceClp,
+      imageUrl: product.imageUrl,
+      availability: product.availability,
+      isFeatured: product.isFeatured,
+      sortOrder: product.sortOrder,
+    })),
   }
 }
 
-function toProduct(id: string, data: unknown): Product | null {
-  const parsed = productSchema.safeParse(data)
-  if (!parsed.success) return null
-  return {
-    id,
-    categoryId: parsed.data.categoryId,
-    name: parsed.data.name,
-    description: parsed.data.description,
-    priceClp: parsed.data.priceClp,
-    imageUrl: parsed.data.imageUrl,
-    availability: parsed.data.availability,
-    isFeatured: parsed.data.isFeatured,
-    sortOrder: parsed.data.sortOrder,
-  }
-}
-
-async function readPublicCatalog(): Promise<{ categories: Category[]; products: Product[] }> {
-  "use cache"
-  cacheLife("hours")
-  cacheTag("catalog")
-
+async function readSourceProjection(): Promise<PublicCatalog> {
   const db = getDb()
   const [categories, products] = await Promise.all([
-    db.collection(collections.categories).where("isVisible", "==", true).limit(pageSize).get(),
-    db.collection(collections.products).where("isVisible", "==", true).limit(pageSize).get(),
+    readEvery(db.collection(collections.categories).orderBy(FieldPath.documentId())),
+    readEvery(db.collection(collections.products).orderBy(FieldPath.documentId())),
   ])
-
-  return {
-    categories: categories.docs
-      .flatMap((item) => {
-        const category = toCategory(item.id, item.data())
-        return category ? [category] : []
-      })
-      .toSorted((a, b) => a.sortOrder - b.sortOrder),
-    products: products.docs
-      .flatMap((item) => {
-        const product = toProduct(item.id, item.data())
-        return product ? [product] : []
-      })
-      .toSorted((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "es")),
-  }
+  return projectPublicCatalog(
+    categories.flatMap((item) => {
+      const category = parseSourceCategory(item.id, item.data())
+      return category ? [category] : []
+    }),
+    products.flatMap((item) => {
+      const product = parseSourceProduct(item.id, item.data())
+      return product ? [product] : []
+    }),
+  )
 }
 
-async function readChefSuggestions(): Promise<Product[]> {
+/** Una sola lectura: el documento publicado. Si todavía no existe, arma la carta sin escribir. */
+async function readPublishedCatalog(): Promise<PublicCatalog> {
   "use cache"
-  cacheLife("hours")
+  cacheLife(catalogCacheLife)
   cacheTag("catalog")
 
-  const db = getDb()
-  const [chef, featured] = await Promise.all([
-    db.collection(collections.products).where("categoryId", "==", CHEF_CATEGORY_ID).where("isVisible", "==", true).limit(10).get(),
-    db.collection(collections.products).where("isFeatured", "==", true).where("isVisible", "==", true).limit(10).get(),
-  ])
-  const docs = [...chef.docs, ...featured.docs]
-  return uniqueByName(
-    docs.flatMap((item) => {
-      const product = toProduct(item.id, item.data())
-      return product ? [product] : []
-    })
-  ).slice(0, 3)
+  const snap = await getDb().collection(collections.catalog).doc(publicCatalogDocId).get()
+  const parsed = publicCatalogSchema.safeParse(snap.data())
+  if (snap.exists && parsed.success) return parsed.data
+  return readSourceProjection()
 }
 
 /** Con Firestore apagado, Home y /carta siguen con el catálogo local. */
@@ -106,14 +81,20 @@ async function getPublicCatalog() {
       products: [...localProducts].toSorted((a, b) => a.sortOrder - b.sortOrder),
     }
   }
-  return readPublicCatalog()
+  return toMenu(await readPublishedCatalog())
 }
 
 async function getChefSuggestions() {
   if (!firebaseDataAccessEnabled()) {
-    return uniqueByName(localProducts.filter((product) => product.categoryId === CHEF_CATEGORY_ID)).slice(0, 3)
+    return publicSuggestions(
+      localProducts
+        .filter((product) => product.categoryId === CHEF_CATEGORY_ID)
+        .map((product) => ({ ...product, imageUrl: product.imageUrl ?? null })),
+      CHEF_CATEGORY_ID,
+    )
   }
-  return readChefSuggestions()
+  const published = await readPublishedCatalog()
+  return publicSuggestions(published.products, CHEF_CATEGORY_ID)
 }
 
 export { getChefSuggestions, getPublicCatalog }

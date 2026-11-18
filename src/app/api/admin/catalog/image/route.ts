@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   try {
     const saved = await replaceProductPhoto(gate.session, id, Buffer.from(await file.arrayBuffer()))
-    revalidateTag("catalog", "max")
+    revalidateTag("catalog", { expire: 0 })
     return NextResponse.json({ ok: true, ...saved }, { headers: noStore })
   } catch (error) {
     if (error instanceof CatalogError) {
