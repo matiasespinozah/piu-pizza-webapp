@@ -17,6 +17,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En el pie, «Acceso empleados» queda con marco crema para distinguirlo del texto legal.
+- Al cambiar de sección en el panel, la pantalla avisa que está cargando. La sesión se comprueba una vez por visita y los conteos de reservas se leen juntos. La revocación sigue vigente en la visita siguiente.
 - En la ficha de una reserva, la mesa y la nota interna se editan tocando su casilla. Las acciones quedan en confirmar y reagendar. El seguimiento copia el enlace del cliente. Una reserva rechazada se puede confirmar o reagendar de nuevo.
 - En `/admin/reservas`, Filtrar queda como un botón a la izquierda. Al pulsarlo, los campos entran deslizándose desde la derecha; en el celular quedan uno bajo otro.
 - En `/admin/reservas`, Reagendar abre la reserva para elegir día, hora y zona. Al guardar queda pendiente de confirmación, sin confirmar la mesa, y se puede copiar o enviar al cliente el enlace de estado.
@@ -38,6 +40,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- Una recarga forzada de `/carta` ya no depende de que el servidor esté despierto. El CDN puede entregar la página anterior mientras revalida, hasta un día. La copia fresca sigue durando 5 minutos.
 - La consulta por código navega dentro del sitio. Al abrir reagendar, el formulario vuelve a tomar el día, la hora y la zona de esa reserva.
 
 ### Agregado

@@ -72,7 +72,7 @@ Cuando el script de propietario o `assignStaffRole` cambia un claim, conserva la
 
 `/admin/login` no está dentro del layout que exige sesión. Si ya hay sesión válida, esa página manda a `/admin`.
 
-El layout de `src/app/admin/(panel)/` no entrega el panel si `readStaffSession()` no devuelve un rol. Cada página vuelve a llamar `requireSection` con su sección.
+El layout de `src/app/admin/(panel)/` no entrega el panel si `readStaffSession()` no devuelve un rol. Cada página vuelve a llamar `requireSection` con su sección. En el mismo request las dos llamadas comparten una sola verificación. El request siguiente vuelve a comprobar la revocación.
 
 No hay proxy ni middleware. La barrera es el servidor, antes del HTML. El layout y el ingreso declaran `instant = false`: Next no arma un shell estático de esas pantallas, porque la cookie solo existe en cada request.
 

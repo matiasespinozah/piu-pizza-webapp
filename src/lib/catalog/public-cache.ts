@@ -6,7 +6,7 @@
  *   lo resolvería por su cuenta.
  * - Con `expire` de al menos 300 s y `stale` de al menos 300 s, el dato puede
  *   entrar en la página estática. El CDN recibe `s-maxage` = `revalidate` y
- *   `stale-while-revalidate` = `expire - revalidate` (1 s con estos números).
+ *   `stale-while-revalidate` = `expire - revalidate`.
  * - El handler en memoria, en producción, descarta la entrada al cumplir
  *   `revalidate`. La siguiente visita a esa instancia vuelve a leer Firestore.
  * - `revalidateTag` no purga Cloud CDN ni las otras instancias.
@@ -16,14 +16,16 @@
  * - El navegador puede reutilizar una navegación interna durante `stale`
  *   (mínimo 30 s). Recargar pide de nuevo.
  *
- * Efecto para quien visita: hasta 5 minutos en otra instancia o en el CDN,
- * más 1 segundo de stale-while-revalidate. No es un plazo de 60 segundos.
+ * Efecto para quien visita: la copia fresca dura 5 minutos. Después el CDN
+ * puede seguir entregando la página anterior mientras el origen despierta o
+ * revalida, hasta un día. Si el origen responde, la siguiente visita ya ve
+ * el documento nuevo. No se encienden instancias de más.
  * Cada regeneración lee un documento, no los 131 productos.
  */
 const catalogCacheLife = {
   stale: 300,
   revalidate: 300,
-  expire: 301,
+  expire: 86_400,
 } as const
 
 export { catalogCacheLife }
