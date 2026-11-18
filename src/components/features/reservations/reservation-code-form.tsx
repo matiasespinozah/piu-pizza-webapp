@@ -1,6 +1,7 @@
 "use client"
 
 import { useId, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Ticket } from "lucide-react"
 import { cn } from "cn"
 
@@ -83,8 +84,10 @@ function ReservationCodeForm({
 }
 
 function ReservationLookupButton({ className }: { className?: string }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           type="button"
@@ -108,7 +111,8 @@ function ReservationLookupButton({ className }: { className?: string }) {
           <ReservationCodeForm
             submitLabel="Ver estado"
             onCode={(code) => {
-              window.location.assign(`/reservas/estado#${code}`)
+              setOpen(false)
+              router.push(`/reservas/estado#${code}`)
             }}
           />
         </div>

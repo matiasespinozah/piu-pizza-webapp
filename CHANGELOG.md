@@ -36,6 +36,10 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 - Confirmar una reserva no exige una mesa física. Si el sector no tiene mesas individuales, queda registrada en ese sector. Un cupo, un horario o una mesa en conflicto avisan y solo siguen con una excepción y un motivo; eso queda en la auditoría, sin cambiar los cupos configurados.
 - Los avisos de reserva próxima y de solicitud pendiente los puede escribir `POST /api/admin/reservations/sweep`, pensado para Cloud Scheduler cada 10 minutos. Sin el secreto `PIU_NOTICES_CRON_SECRET` ese endpoint no responde. El panel sigue consultando cada 25 segundos.
 
+### Corregido
+
+- La consulta por código navega dentro del sitio. Al abrir reagendar, el formulario vuelve a tomar el día, la hora y la zona de esa reserva.
+
 ### Agregado
 
 - Un `superadmin` aprueba o rechaza cuentas pendientes en `/admin/personal`, asigna `admin` o `superadmin`, cambia el rol, suspende, reactiva o revoca el acceso. El servidor actualiza el claim y revoca la sesión anterior. No se puede quitar al último propietario, y un `admin` no puede hacerlo.

@@ -71,7 +71,7 @@ function chime() {
   }
 }
 
-function NotificationBell({ tone = "cream" }: { tone?: "cream" | "olive" }) {
+function NotificationBell() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notices, setNotices] = useState<Notice[]>([])

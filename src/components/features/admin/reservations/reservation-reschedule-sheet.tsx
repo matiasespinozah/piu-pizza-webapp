@@ -63,17 +63,25 @@ function ReservationRescheduleSheet({
   const [saved, setSaved] = useState(false)
   const [link, setLink] = useState("")
   const [copied, setCopied] = useState(false)
+  const resetKey = open ? `${id}|${revision}|${date}|${time}|${zone}` : ""
+  const [appliedKey, setAppliedKey] = useState(resetKey)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
+    if (resetKey) {
+      setVisitDate(date)
+      setVisitTime(time)
+      setVisitZone(zone)
+      setCurrentRevision(revision)
+      setPhone("")
+      setSaved(false)
+      setLink("")
+      setError("")
+      setCopied(false)
+    }
+  }
 
   useEffect(() => {
     if (!open) return
-    setVisitDate(date)
-    setVisitTime(time)
-    setVisitZone(zone)
-    setCurrentRevision(revision)
-    setSaved(false)
-    setLink("")
-    setError("")
-    setCopied(false)
     let active = true
     void fetch(`/api/admin/reservations/${id}`, { cache: "no-store" })
       .then(async (response) => {

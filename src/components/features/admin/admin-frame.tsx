@@ -63,7 +63,7 @@ function AdminFrame({ email, displayName, role, roleLabel, children }: AdminFram
             <AccountSheet who={who} email={email} roleLabel={roleLabel} />
           </header>
           <div className="sticky top-0 z-30 hidden items-center justify-end gap-3 px-8 py-3 lg:flex">
-            <NotificationBell tone="olive" />
+            <NotificationBell />
           </div>
           <main className="admin-sheet min-w-0 rounded-t-[1.75rem] px-3.5 pt-4 pb-28 lg:rounded-none lg:px-8 lg:py-8 lg:pb-10 lg:pt-0">{children}</main>
           <BottomNav items={barItems} pathname={pathname} />

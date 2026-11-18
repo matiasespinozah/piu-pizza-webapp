@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { ReservationStatusCard } from "@/components/features/reservations/reservation-status-card"
 import { ReservationStatusLookup } from "@/components/features/reservations/reservation-status-lookup"
@@ -75,7 +75,7 @@ function ReservationStatus() {
   const [unavailable, setUnavailable] = useState(false)
   const consultRef = useRef<(credential: string, refreshing: boolean) => Promise<void>>(async () => undefined)
 
-  async function consult(credential: string, refreshing: boolean) {
+  const consult = useCallback(async (credential: string, refreshing: boolean) => {
     const value = credential.trim()
     if (!value) {
       setError("Escribe los cuatro números de tu código.")
@@ -130,7 +130,7 @@ function ReservationStatus() {
       setPending(false)
       setChecking(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     const initial = credentialFromLocation()
@@ -150,9 +150,12 @@ function ReservationStatus() {
     queueMicrotask(() => {
       void consult(initial.credential, false)
     })
-  }, [])
+  }, [consult])
 
-  consultRef.current = consult
+  useEffect(() => {
+    consultRef.current = consult
+  }, [consult])
+
   const watching = status !== null
 
   useEffect(() => {
