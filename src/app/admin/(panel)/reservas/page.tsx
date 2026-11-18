@@ -6,10 +6,13 @@ import { ManualReservationForm } from "@/components/features/admin/reservations/
 import { ReservationListCard, SummaryTile } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
 import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
+import { ReservationReception } from "@/components/features/admin/reservations/reservation-reception"
 import { Button } from "@/components/ui/button"
 import { Heading } from "@/components/ui/typography"
 import { cn } from "cn"
+import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { requireSection } from "@/server/auth/access"
+import { readFloor } from "@/server/operations/service"
 import { getReservationForStaff, listReservationsForStaff } from "@/server/reservations/service"
 
 export const instant = false
@@ -51,6 +54,9 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
     cursor: one(params.cursor),
   }
   const result = await listReservationsForStaff(session, query)
+  const serviceRequested = one(params.serviceDate)
+  const serviceDate = serviceRequested && /^\d{4}-\d{2}-\d{2}$/.test(serviceRequested) ? serviceRequested : todayIsoInSantiago()
+  const floor = await readFloor(session, serviceDate).catch(() => null)
   const selectedId = one(params.id)
   const detail = result.ready && selectedId ? await getReservationForStaff(session, selectedId).catch(() => null) : null
   const filters = { date: query.date, status: query.status, zone: query.zone, view: query.view, q: query.q }
@@ -72,6 +78,16 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
           {result.ready ? <ManualReservationForm /> : null}
         </div>
       </header>
+
+      {floor ? (
+        <ReservationReception
+          key={serviceDate}
+          rules={floor.rules}
+          date={serviceDate}
+          day={floor.day}
+          confirmedCount={floor.confirmedCount}
+        />
+      ) : null}
 
       {!result.ready ? (
         <p className="admin-card flex items-start gap-3 p-4 text-sm text-olive-strong">

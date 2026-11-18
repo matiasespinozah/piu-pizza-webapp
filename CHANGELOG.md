@@ -17,6 +17,11 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Cambiado
 
 - Next.js y `eslint-config-next` pasan de 16.4.4 a 16.4.6, dentro de la misma línea, para corregir los avisos de seguridad de noviembre de 2026. App Hosting, Auth, reservas, catálogo y las APIs siguen con la misma configuración.
+- La pestaña del navegador usa el logo PIÙ en vez del ícono de Next.
+- En `/carta`, un producto visible y agotado sigue en su categoría con la cinta «AGOTADO» y la foto atenuada. El nombre, la descripción y el precio se leen igual. Al marcarlo disponible vuelve a la presentación normal. Los ocultos siguen fuera de la carta.
+- En `/admin/reservas` se pausan o reanudan las reservas online, con el mensaje de pausa, y se marca o se vuelve a abrir una fecha. Un día completo muestra en `/reservas` el aviso de reservas completas, adaptado a la fecha. Las reservas ya hechas no se cancelan.
+- `/admin/reservas/disponibilidad` muestra la fecha, el resumen de cupos web y los horarios de salón y terraza con verde, amarillo o rojo según los cupos reales.
+- Mesas sale del menú del panel. Pausar y completar una fecha queda en Reservas, consultar cupos en Disponibilidad y las reglas permanentes en Configuración. `/admin/mesas` redirige a Reservas.
 - En el inicio, el botón «Ver carta» de Sugerencias del chef usa el verde oliva, igual que «Ver la carta» del hero.
 - Confirmar una reserva no exige una mesa física. Si el sector no tiene mesas individuales, queda registrada en ese sector. Un cupo, un horario o una mesa en conflicto avisan y solo siguen con una excepción y un motivo; eso queda en la auditoría, sin cambiar los cupos configurados.
 - Los avisos de reserva próxima y de solicitud pendiente los puede escribir `POST /api/admin/reservations/sweep`, pensado para Cloud Scheduler cada 10 minutos. Sin el secreto `PIU_NOTICES_CRON_SECRET` ese endpoint no responde. El panel sigue consultando cada 25 segundos.

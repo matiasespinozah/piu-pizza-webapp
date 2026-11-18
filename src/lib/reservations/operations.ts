@@ -1,4 +1,4 @@
-import { confirmedClock, defaultWeek, weekFromClock, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, formatVisitDate, todayIsoInSantiago, weekFromClock, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
 
 const declaredTables = { salon: 19, terrace: 15 } as const
 
@@ -26,7 +26,14 @@ type SectorLayout = {
 }
 
 const fullDayMessage =
-  "¡Nuestras reservas para hoy están completas! 🍕 Pero puedes visitarnos igualmente: seguimos recibiendo clientes por orden de llegada, según disponibilidad de mesas."
+  "Las reservas online para hoy están completas. ¡Pero puedes visitarnos igualmente! Atendemos por orden de llegada, según disponibilidad de mesas."
+
+function fullDayNotice(isoDate: string, today = todayIsoInSantiago()) {
+  if (isoDate === today) return fullDayMessage
+  const when = formatVisitDate(isoDate)
+  const phrase = when.charAt(0).toLocaleLowerCase("es-CL") + when.slice(1)
+  return `Las reservas online para el ${phrase} están completas. ¡Pero puedes visitarnos igualmente! Atendemos por orden de llegada, según disponibilidad de mesas.`
+}
 
 type DiningTable = {
   id: string
@@ -463,6 +470,7 @@ export {
   defaultNotices,
   defaultOperationRules,
   fullDayMessage,
+  fullDayNotice,
   informedGroups,
   knownSingleTableSeats,
   operationsDocument,

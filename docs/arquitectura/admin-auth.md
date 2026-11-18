@@ -61,8 +61,8 @@ El claim vigente en Authentication es la autoridad del rol. No se acepta el rol 
 
 | Rol | Para quién | En este hito |
 |---|---|---|
-| `superadmin` | Propietario | Ve Inicio, Reservas, Mesas, Carta, Configuración y Personal. Esas secciones, salvo Inicio, dicen que están en desarrollo. |
-| `admin` | Trabajador autorizado | Ve Inicio, Reservas, Mesas y Carta. No ve Configuración ni Personal. Si abre esas URL, el servidor lo devuelve a `/admin` sin pintar la pantalla. |
+| `superadmin` | Propietario | Ve Inicio, Reservas, Carta, Configuración y Personal. |
+| `admin` | Trabajador autorizado | Ve Inicio, Reservas y Carta. No ve Configuración ni Personal. Si abre esas URL, el servidor lo devuelve a `/admin` sin pintar la pantalla. |
 
 Los permisos están en `src/lib/auth/permissions.ts`. Las operaciones de reservas, mesas, carta y personal todavía no existen.
 
