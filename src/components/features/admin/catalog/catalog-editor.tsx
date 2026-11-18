@@ -40,6 +40,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { formatCLP } from "@/components/ui/price"
 import { Heading, Text } from "@/components/ui/typography"
+import { movesForCategoryOrder } from "@/lib/catalog/category-order"
 import type { AdminCategory, AdminProduct } from "@/lib/catalog/types"
 
 import "../admin-shell.css"
@@ -207,6 +208,28 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
         orderLock.current = false
       }
     })()
+  }
+
+  async function reorderVisible(next: AdminCategory[]) {
+    const moves = movesForCategoryOrder(visibleCategories, next.map((category) => category.id))
+    if (!moves) return false
+    if (moves.length === 0) return true
+    if (orderLock.current) return false
+    orderLock.current = true
+    setBusyId(next[0]?.id ?? "order")
+    setError("")
+    try {
+      const result = await postCatalog({ action: "reorder-categories", moves })
+      if (!result.ok) {
+        setError(result.message)
+        return false
+      }
+      refresh("Orden de categorías guardado.")
+      return true
+    } finally {
+      setBusyId(null)
+      orderLock.current = false
+    }
   }
 
   async function removeCategory() {
@@ -400,6 +423,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
           busyId={busyId}
           locked={busyId !== null}
           onMove={(category, direction) => moveWithin(visibleCategories, category, direction)}
+          onReorder={reorderVisible}
         />
       ) : null}
 

@@ -17,7 +17,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
-- En `/admin/carta`, Agregar deja crear un producto o «Añadir nueva categoría». Borrar un producto o una categoría abre una ventana de confirmación. El orden de las categorías que ve el cliente se cambia en Configuración.
+- En `/admin/carta`, Agregar deja crear un producto o «Añadir nueva categoría». Borrar un producto o una categoría abre una ventana de confirmación. En Configuración, las categorías de la carta se reubican arrastrando el punto o con subir y bajar.
 - En el pie, «Acceso empleados» queda con marco crema para distinguirlo del texto legal.
 - Al cambiar de sección en el panel, la pantalla avisa que está cargando. La sesión se comprueba una vez por visita y los conteos de reservas se leen juntos. La revocación sigue vigente en la visita siguiente.
 - En la ficha de una reserva, la mesa y la nota interna se editan tocando su casilla. Las acciones quedan en confirmar y reagendar. El seguimiento copia el enlace del cliente. Una reserva rechazada se puede confirmar o reagendar de nuevo.
