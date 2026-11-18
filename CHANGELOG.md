@@ -16,6 +16,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- Next.js y `eslint-config-next` pasan de 16.4.4 a 16.4.6, dentro de la misma línea, para corregir los avisos de seguridad de noviembre de 2026. App Hosting, Auth, reservas, catálogo y las APIs siguen con la misma configuración.
 - En el inicio, el botón «Ver carta» de Sugerencias del chef usa el verde oliva, igual que «Ver la carta» del hero.
 - Confirmar una reserva no exige una mesa física. Si el sector no tiene mesas individuales, queda registrada en ese sector. Un cupo, un horario o una mesa en conflicto avisan y solo siguen con una excepción y un motivo; eso queda en la auditoría, sin cambiar los cupos configurados.
 - Los avisos de reserva próxima y de solicitud pendiente los puede escribir `POST /api/admin/reservations/sweep`, pensado para Cloud Scheduler cada 10 minutos. Sin el secreto `PIU_NOTICES_CRON_SECRET` ese endpoint no responde. El panel sigue consultando cada 25 segundos.
