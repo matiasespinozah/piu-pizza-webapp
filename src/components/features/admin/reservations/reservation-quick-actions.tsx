@@ -1,31 +1,24 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { CalendarClock, Check, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { ReservationRescheduleSheet } from "@/components/features/admin/reservations/reservation-reschedule-sheet"
 import { adminRequestHeader, adminRequestValue } from "@/lib/auth/session-policy"
 import type { StaffAction } from "@/lib/reservations/transitions"
-import type { ReservationStatus } from "@/lib/reservations/types"
+import type { ReservationListItem } from "@/lib/reservations/views"
 
-function ReservationQuickActions({
-  id,
-  status,
-  revision,
-  detailHref,
-}: {
-  id: string
-  status: ReservationStatus
-  revision: number
-  detailHref: string
-}) {
+function ReservationQuickActions({ item }: { item: ReservationListItem }) {
   const router = useRouter()
   const [armed, setArmed] = useState<StaffAction | null>(null)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState("")
+  const [rescheduleOpen, setRescheduleOpen] = useState(false)
+  const { id, status, revision } = item
   const deciding = status === "pending" || status === "reschedule_requested"
+  const reopening = status === "rejected"
   const canArrive = status === "confirmed"
 
   async function run(action: StaffAction) {
@@ -58,12 +51,12 @@ function ReservationQuickActions({
     }
   }
 
-  if (!deciding && !canArrive) return null
+  if (!deciding && !canArrive && !reopening) return null
 
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-2">
-        {deciding ? (
+        {deciding || reopening ? (
           <Button type="button" size="sm" className="h-11 min-w-0" disabled={pending} onClick={() => void run("confirm")}>
             <Check aria-hidden />
             {armed === "confirm" ? "Sí, confirmar" : "Confirmar"}
@@ -81,13 +74,23 @@ function ReservationQuickActions({
             {armed === "reject" ? "Sí, rechazar" : "Rechazar"}
           </Button>
         ) : null}
-        <Button asChild variant="secondary" size="sm" className="admin-action-secondary h-11 min-w-0">
-          <Link href={detailHref}>
-            <CalendarClock aria-hidden />
-            Reagendar
-          </Link>
+        <Button type="button" variant="secondary" size="sm" className="admin-action-secondary h-11 min-w-0" disabled={pending} onClick={() => setRescheduleOpen(true)}>
+          <CalendarClock aria-hidden />
+          Reagendar
         </Button>
       </div>
+      <ReservationRescheduleSheet
+        open={rescheduleOpen}
+        onOpenChange={setRescheduleOpen}
+        id={item.id}
+        revision={item.revision}
+        referenceCode={item.referenceCode}
+        customerName={item.customerName}
+        partySize={item.partySize}
+        date={item.date}
+        time={item.preferredTime}
+        zone={item.preferredZone}
+      />
       {message ? (
         <p className="text-xs font-semibold text-status-closed" role="alert">
           {message}

@@ -5,9 +5,9 @@ import { AlertCircle, CalendarCheck, CalendarRange, Clock, Inbox, Search } from 
 import { ManualReservationForm } from "@/components/features/admin/reservations/manual-reservation-form"
 import { ReservationListCard, SummaryTile } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
+import { ReservationFilters } from "@/components/features/admin/reservations/reservation-filters"
 import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
 import { ReservationReception } from "@/components/features/admin/reservations/reservation-reception"
-import { Button } from "@/components/ui/button"
 import { Heading } from "@/components/ui/typography"
 import { cn } from "cn"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
@@ -29,9 +29,6 @@ type PageProps = {
 function one(value: string | string[] | undefined) {
   return typeof value === "string" ? value : undefined
 }
-
-const fieldClass =
-  "admin-control outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
 
 function hrefOf(params: Record<string, string | undefined>) {
   const search = new URLSearchParams()
@@ -64,14 +61,14 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-4">
-      <header className="flex items-end justify-between gap-3">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <Heading as="h1" size="h3">
             Reservas
           </Heading>
           <p className="text-sm text-olive-muted">Confirma, reagenda o anota una mesa. Los cupos avisan, no te frenan.</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           <Link href="/admin/reservas/disponibilidad" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta lg:hidden">
             Cupos
           </Link>
@@ -131,51 +128,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
         </ul>
       )}
 
-      <form method="get" action="/admin/reservas" className="admin-card flex min-w-0 flex-col gap-2 p-2.5 sm:p-3 lg:flex-row lg:flex-wrap lg:items-end">
-        <div className="flex gap-2 lg:contents">
-          <label className="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
-            <span className="sr-only">Nombre o referencia</span>
-            <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-olive-muted" />
-            <input name="q" defaultValue={query.q} placeholder="Nombre o referencia" className={`${fieldClass} pl-9`} />
-          </label>
-          <Button type="submit" className="h-11 shrink-0 rounded-xl lg:order-last">
-            Filtrar
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:contents">
-            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted lg:w-40">
-              Fecha
-              <input name="date" type="date" defaultValue={query.date} className={`${fieldClass} [min-inline-size:0]`} />
-            </label>
-            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted lg:w-44">
-              Estado
-              <select name="status" defaultValue={query.status ?? ""} className={fieldClass}>
-                <option value="">Todos</option>
-                <option value="pending">Pendiente</option>
-                <option value="confirmed">Confirmada</option>
-                <option value="reschedule_requested">Cambio propuesto</option>
-                <option value="rejected">Rechazada</option>
-                <option value="cancelled">Cancelada</option>
-                <option value="arrived">Llegó</option>
-                <option value="completed">Finalizada</option>
-              </select>
-            </label>
-            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-olive-muted lg:w-36">
-              Zona
-              <select name="zone" defaultValue={query.zone ?? ""} className={fieldClass}>
-                <option value="">Todas</option>
-                <option value="salon">Salón</option>
-                <option value="terrace">Terraza</option>
-              </select>
-            </label>
-        </div>
-        {query.view ? <input type="hidden" name="view" value={query.view} /> : null}
-        {anyFilter ? (
-          <Link href="/admin/reservas" className="inline-flex h-9 items-center self-start px-2 text-sm font-semibold text-olive underline underline-offset-4">
-            Limpiar filtros
-          </Link>
-        ) : null}
-      </form>
+      <ReservationFilters q={query.q} date={query.date} status={query.status} zone={query.zone} view={query.view} active={anyFilter} />
 
       {result.ready ? (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_26rem]">
@@ -211,7 +164,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
                       item={item}
                       href={href}
                       selected={item.id === selectedId}
-                      actions={<ReservationQuickActions id={item.id} status={item.status} revision={item.revision} detailHref={href} />}
+                      actions={<ReservationQuickActions item={item} />}
                     />
                   </li>
                 )

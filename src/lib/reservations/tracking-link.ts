@@ -16,7 +16,7 @@ const statuses = new Set<ReservationStatus>([
 
 type TrackingCredential =
   | { kind: "token"; token: string }
-  | { kind: "reference" }
+  | { kind: "reference"; code: string }
   | { kind: "malformed" }
 
 type PublicProposal = {
@@ -44,14 +44,21 @@ function asText(value: unknown) {
   return typeof value === "string" && value.trim() ? value : null
 }
 
+function referenceCredential(value: string): TrackingCredential | null {
+  const code = value.trim().toUpperCase()
+  if (!referencePattern.test(code)) return null
+  return { kind: "reference", code }
+}
+
 /**
- * Acepta el secreto o un enlace con el secreto en el fragmento.
- * Una referencia PIU-… no es credencial. Un secreto en la query tampoco.
+ * Acepta el código PIU-…, el secreto, o un enlace con cualquiera de los dos en el fragmento.
+ * Un secreto en la query no sirve.
  */
 function parseTrackingCredential(raw: string): TrackingCredential {
   const value = raw.trim()
   if (!value || value.length > 500) return { kind: "malformed" }
-  if (referencePattern.test(value)) return { kind: "reference" }
+  const direct = referenceCredential(value)
+  if (direct) return direct
 
   let candidate = value
   if (value.includes("://") || value.startsWith("/")) {
@@ -62,7 +69,8 @@ function parseTrackingCredential(raw: string): TrackingCredential {
     candidate = value.slice(value.indexOf("#") + 1)
   }
   candidate = candidate.trim()
-  if (referencePattern.test(candidate)) return { kind: "reference" }
+  const fromLink = referenceCredential(candidate)
+  if (fromLink) return fromLink
   try {
     candidate = decodeURIComponent(candidate)
   } catch {

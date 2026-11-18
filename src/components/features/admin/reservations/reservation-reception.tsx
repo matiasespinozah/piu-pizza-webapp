@@ -74,7 +74,7 @@ function ReservationReception({ rules, date, day, confirmedCount, preview = fals
       </div>
 
       <Sheet open={picking} onOpenChange={setPicking}>
-        <SheetContent side="bottom" className="max-h-[85dvh] rounded-t-2xl pb-safe">
+        <SheetContent side="bottom" className="w-full max-w-full min-w-0 overflow-x-hidden max-h-[85dvh] rounded-t-2xl pb-safe">
           <SheetHeader>
             <SheetTitle>Mensaje al pausar</SheetTitle>
             <SheetDescription>Elige uno de los mensajes de Configuración. Quien intente reservar verá ese texto.</SheetDescription>
@@ -85,7 +85,7 @@ function ReservationReception({ rules, date, day, confirmedCount, preview = fals
                 <RadioGroupItem value={notice.id} className="mt-0.5" />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-olive">{notice.label}</span>
-                  <span className="mt-1 block text-sm text-olive-strong">{form.draft.notices[notice.id].text}</span>
+                  <span className="mt-1 block text-sm break-words text-olive-strong">{form.draft.notices[notice.id].text}</span>
                 </span>
               </label>
             ))}
@@ -166,7 +166,7 @@ function ReceptionSwitch({
       onClick={() => onCheckedChange(!checked)}
       className={cn(
         "relative h-11 w-[4.75rem] shrink-0 rounded-full p-1 shadow-tactile transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60",
-        checked ? "bg-olive" : "bg-olive-soft",
+        checked ? "bg-status-good-solid" : "bg-olive-soft",
       )}
     >
       <span

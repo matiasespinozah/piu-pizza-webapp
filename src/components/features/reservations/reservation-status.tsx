@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { ReservationStatusCard } from "@/components/features/reservations/reservation-status-card"
 import { ReservationStatusLookup } from "@/components/features/reservations/reservation-status-lookup"
@@ -68,17 +68,17 @@ function ReservationStatus() {
   const shown = useRef<PublicReservationStatus | null>(null)
   const [status, setStatus] = useState<PublicReservationStatus | null>(null)
   const [checkedAt, setCheckedAt] = useState("")
-  const [paste, setPaste] = useState("")
   const [error, setError] = useState("")
   const [refreshError, setRefreshError] = useState("")
   const [pending, setPending] = useState(false)
   const [checking, setChecking] = useState(true)
   const [unavailable, setUnavailable] = useState(false)
+  const consultRef = useRef<(credential: string, refreshing: boolean) => Promise<void>>(async () => undefined)
 
-  async function consult(credential: string, refreshing: boolean) {
+  const consult = useCallback(async (credential: string, refreshing: boolean) => {
     const value = credential.trim()
     if (!value) {
-      setError("Pega el enlace completo de seguimiento.")
+      setError("Escribe los cuatro números de tu código.")
       return
     }
     setPending(true)
@@ -98,7 +98,6 @@ function ReservationStatus() {
         shown.current = body.status
         setStatus(body.status)
         setCheckedAt(checkedLabel(new Date()))
-        setPaste("")
         setError("")
         setRefreshError("")
         return
@@ -131,7 +130,7 @@ function ReservationStatus() {
       setPending(false)
       setChecking(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     const initial = credentialFromLocation()
@@ -151,7 +150,27 @@ function ReservationStatus() {
     queueMicrotask(() => {
       void consult(initial.credential, false)
     })
-  }, [])
+  }, [consult])
+
+  useEffect(() => {
+    consultRef.current = consult
+  }, [consult])
+
+  const watching = status !== null
+
+  useEffect(() => {
+    if (!watching) return
+    const refresh = () => {
+      if (document.visibilityState === "hidden" || !secret.current) return
+      void consultRef.current(secret.current, true)
+    }
+    const timer = window.setInterval(refresh, 30000)
+    document.addEventListener("visibilitychange", refresh)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener("visibilitychange", refresh)
+    }
+  }, [watching])
 
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-lg flex-col gap-5">
@@ -203,13 +222,7 @@ function ReservationStatus() {
           onRefresh={() => void consult(secret.current, true)}
         />
       ) : (
-        <ReservationStatusLookup
-          value={paste}
-          error={error}
-          pending={pending}
-          onChange={setPaste}
-          onSubmit={() => void consult(paste, false)}
-        />
+        <ReservationStatusLookup error={error} pending={pending} onCode={(code) => void consult(code, false)} />
       )}
     </div>
   )
