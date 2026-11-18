@@ -20,7 +20,7 @@ pnpm dev        # http://localhost:3000
 ## Despliegue
 
 - **Producción:** Firebase App Hosting, proyecto `piu-pizza-cl`, backend `piu-pizza-webapp`, región `us-central1`. Cada push a `main` despliega automáticamente.
-- **URL:** https://piu-pizza-webapp--piu-pizza-cl.us-central1.hosted.app
+- **URL:** https://piupizzas.cl
 - **Estado del backend:** `firebase apphosting:backends:list`
 - **Reglas de Firestore y Storage:** `firebase deploy --only firestore,storage` (no se despliegan con el push).
 - Configuración del backend: `apphosting.yaml`.

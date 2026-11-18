@@ -1,21 +1,26 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { collections } from "@/lib/firebase/model"
+import { FieldPath } from "firebase-admin/firestore"
+
+import { collections, publicCatalogDocId } from "@/lib/firebase/model"
 import { importFudoCatalog } from "@/server/catalog/import"
-import { deleteProduct, saveProduct } from "@/server/catalog/service"
+import { readEvery } from "@/server/catalog/pages"
+import { ensurePublicCatalog } from "@/server/catalog/publish"
+import { deleteProduct, publishProductImage, saveCategory, saveProduct } from "@/server/catalog/service"
 import { getDb } from "@/server/firebase/firestore"
 
 const admin = { uid: "catalog-admin", role: "admin", email: "carta@example.com", displayName: "Carta" }
 
 async function wipe() {
   const db = getDb()
-  const [products, categories] = await Promise.all([
+  const [products, categories, published] = await Promise.all([
     db.collection(collections.products).get(),
     db.collection(collections.categories).get(),
+    db.collection(collections.catalog).get(),
   ])
   const batch = db.batch()
-  for (const doc of [...products.docs, ...categories.docs]) batch.delete(doc.ref)
+  for (const doc of [...products.docs, ...categories.docs, ...published.docs]) batch.delete(doc.ref)
   await batch.commit()
 }
 
@@ -76,10 +81,211 @@ test("el personal edita el precio y un visitante no", async () => {
     isFeatured: false,
     sortOrder: 99,
   })
+  const photo = "https://firebasestorage.googleapis.com/v0/b/demo/o/products%2Fdemo%2Fa.webp?alt=media&token=1"
+  await getDb().collection(collections.products).doc(saved.id).set({ imageUrl: photo }, { merge: true })
+  await saveProduct(admin, {
+    id: saved.id,
+    categoryId: "extras",
+    name: "Producto de prueba",
+    description: "",
+    priceClp: 1800,
+    availability: "unavailable",
+    isVisible: false,
+    isFeatured: false,
+    sortOrder: 99,
+  })
   const stored = await getDb().collection(collections.products).doc(saved.id).get()
-  assert.equal(stored.data()?.priceClp, 1500)
+  assert.equal(stored.data()?.priceClp, 1800)
   assert.equal(stored.data()?.isVisible, false)
+  assert.equal(stored.data()?.imageUrl, photo)
+  const published = await getDb().collection(collections.catalog).doc(publicCatalogDocId).get()
+  assert.equal(published.data()?.products?.some((product) => product.id === saved.id), false)
   await deleteProduct(admin, saved.id)
   assert.equal((await getDb().collection(collections.products).doc(saved.id).get()).exists, false)
   assert.equal((await getDb().collection(collections.products).get()).size, 131)
+  const afterDelete = await getDb().collection(collections.catalog).doc(publicCatalogDocId).get()
+  assert.equal(afterDelete.data()?.products?.some((product) => product.id === saved.id), false)
+})
+
+test("la carta pública sigue al producto y no publica un guardado a medias", async () => {
+  const db = getDb()
+  const photo = "https://firebasestorage.googleapis.com/v0/b/demo/o/products%2Fdemo%2Fa.webp?alt=media&token=1"
+  const saved = await saveProduct(admin, {
+    categoryId: "extras",
+    name: "Producto sincronizado",
+    description: "Texto",
+    priceClp: 2500,
+    availability: "available",
+    isVisible: true,
+    isFeatured: false,
+    sortOrder: 40,
+  })
+  await publishProductImage(admin, saved.id, photo)
+  await saveProduct(admin, {
+    id: saved.id,
+    categoryId: "bebidas",
+    name: "Producto sincronizado",
+    description: "Texto",
+    priceClp: 2600,
+    availability: "unavailable",
+    isVisible: true,
+    isFeatured: false,
+    sortOrder: 40,
+  })
+  const visible = (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data()
+  const listed = visible.products.find((product) => product.id === saved.id)
+  assert.equal(listed.priceClp, 2600)
+  assert.equal(listed.availability, "unavailable")
+  assert.equal(listed.categoryId, "bebidas")
+  assert.equal(listed.imageUrl, photo)
+  assert.equal(listed.isVisible, undefined)
+
+  await saveProduct(admin, {
+    id: saved.id,
+    categoryId: "bebidas",
+    name: "Producto sincronizado",
+    description: "Texto",
+    priceClp: 2600,
+    availability: "unavailable",
+    isVisible: false,
+    isFeatured: false,
+    sortOrder: 40,
+  })
+  const hidden = (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data()
+  assert.equal(hidden.products.some((product) => product.id === saved.id), false)
+  assert.equal((await db.collection(collections.products).doc(saved.id).get()).data()?.imageUrl, photo)
+
+  const before = (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data()
+  await assert.rejects(
+    () =>
+      saveProduct(admin, {
+        categoryId: "no-existe",
+        name: "No debe quedar",
+        description: "",
+        priceClp: 1,
+        availability: "available",
+        isVisible: true,
+        isFeatured: false,
+        sortOrder: 1,
+      }),
+    (error) => error.name === "CatalogError",
+  )
+  const after = (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data()
+  assert.deepEqual(after, before)
+  assert.equal((await db.collection(collections.products).where("name", "==", "No debe quedar").get()).size, 0)
+
+  await db.collection(collections.catalog).doc(publicCatalogDocId).set({ categories: [], products: [], note: "no tocar" })
+  await ensurePublicCatalog()
+  assert.equal((await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data()?.note, "no tocar")
+  assert.equal((await db.collection(collections.products).doc(saved.id).get()).data()?.name, "Producto sincronizado")
+
+  await Promise.all([
+    saveProduct(admin, {
+      id: saved.id,
+      categoryId: "bebidas",
+      name: "Desde el primero",
+      description: "Texto",
+      priceClp: 3100,
+      availability: "available",
+      isVisible: true,
+      isFeatured: false,
+      sortOrder: 40,
+    }),
+    saveProduct(admin, {
+      categoryId: "extras",
+      name: "Desde el segundo",
+      description: "",
+      priceClp: 3200,
+      availability: "available",
+      isVisible: true,
+      isFeatured: false,
+      sortOrder: 41,
+    }),
+  ])
+  const raced = (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data()
+  const first = raced.products.find((product) => product.id === saved.id)
+  const second = raced.products.find((product) => product.name === "Desde el segundo")
+  const stored = (await db.collection(collections.products).doc(saved.id).get()).data()
+  assert.equal(first.priceClp, stored.priceClp)
+  assert.equal(first.name, stored.name)
+  assert.equal(first.imageUrl, photo)
+  assert.ok(second)
+  assert.equal(second.priceClp, 3200)
+
+  await Promise.all([
+    saveProduct(admin, {
+      id: saved.id,
+      categoryId: "bebidas",
+      name: "Precio A",
+      description: "Texto",
+      priceClp: 4100,
+      availability: "available",
+      isVisible: true,
+      isFeatured: false,
+      sortOrder: 40,
+    }),
+    saveProduct(admin, {
+      id: saved.id,
+      categoryId: "bebidas",
+      name: "Precio B",
+      description: "Texto",
+      priceClp: 4200,
+      availability: "available",
+      isVisible: true,
+      isFeatured: false,
+      sortOrder: 40,
+    }),
+  ])
+  const agreed = (await db.collection(collections.products).doc(saved.id).get()).data()
+  const agreedPublic = (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data().products.find((product) => product.id === saved.id)
+  assert.equal(agreedPublic.priceClp, agreed.priceClp)
+  assert.equal(agreedPublic.name, agreed.name)
+  assert.equal(agreedPublic.imageUrl, photo)
+  assert.ok(agreed.priceClp === 4100 || agreed.priceClp === 4200)
+
+  await deleteProduct(admin, saved.id)
+  await deleteProduct(admin, second.id)
+
+  const extras = (await db.collection(collections.categories).doc("extras").get()).data()
+  await saveCategory(admin, {
+    id: "extras",
+    name: extras.name,
+    description: extras.description ?? null,
+    sortOrder: extras.sortOrder,
+    isVisible: false,
+  })
+  const categories = (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data().categories
+  assert.equal(categories.some((category) => category.id === "extras"), false)
+  await saveCategory(admin, {
+    id: "extras",
+    name: extras.name,
+    description: extras.description ?? null,
+    sortOrder: extras.sortOrder,
+    isVisible: true,
+  })
+})
+
+test("la carta lee más de una página de productos", async () => {
+  const db = getDb()
+  const batch = db.batch()
+  const ids = Array.from({ length: 80 }, (_, index) => `pagina-extra-${index}`)
+  for (const id of ids) {
+    batch.set(db.collection(collections.products).doc(id), {
+      categoryId: "extras",
+      name: `Extra ${id}`,
+      description: "",
+      priceClp: 1000,
+      imageUrl: null,
+      availability: "available",
+      isFeatured: false,
+      isVisible: true,
+      sortOrder: 500,
+    })
+  }
+  await batch.commit()
+  const visible = await readEvery(db.collection(collections.products).where("isVisible", "==", true).orderBy(FieldPath.documentId()))
+  assert.ok(visible.length > 200)
+  const cleanup = db.batch()
+  for (const id of ids) cleanup.delete(db.collection(collections.products).doc(id))
+  await cleanup.commit()
 })

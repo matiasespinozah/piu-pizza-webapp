@@ -2,32 +2,25 @@ import "server-only"
 
 import { randomUUID } from "node:crypto"
 
+import { FieldPath } from "firebase-admin/firestore"
 import { getStorage } from "firebase-admin/storage"
 import { z } from "zod"
 
 import type { StaffSession } from "@/lib/auth/roles"
 import { catalogSlug } from "@/lib/catalog/slug"
-import { isCatalogPhotoUrl } from "@/lib/catalog/photos"
+import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
 import { categorySchema, collections, productSchema } from "@/lib/firebase/model"
 import { assertStaff } from "@/server/auth/authorization"
 import { CatalogImageError, prepareProductImage } from "@/server/catalog/images"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
 import { assertFirebaseDataEnabled } from "@/server/firebase/guard"
 import { getAdminApp } from "@/server/firebase/admin"
+import { CatalogError } from "@/server/catalog/errors"
+import { readEvery } from "@/server/catalog/pages"
+import { commitCatalogMutation, ensurePublicCatalog } from "@/server/catalog/publish"
 import { getDb } from "@/server/firebase/firestore"
 
 const catalogRoles = ["superadmin", "admin"] as const
-const pageSize = 200
-
-class CatalogError extends Error {
-  readonly status: number
-
-  constructor(status: number, message: string) {
-    super(message)
-    this.name = "CatalogError"
-    this.status = status
-  }
-}
 
 const categoryInput = z
   .object({
@@ -75,18 +68,19 @@ async function readCatalogEditor(session: StaffSession | null) {
 async function listCatalogForStaff(session: StaffSession | null) {
   assertStaff(session, catalogRoles)
   assertFirebaseDataEnabled()
+  await ensurePublicCatalog()
   const db = getDb()
   const [categories, products] = await Promise.all([
-    db.collection(collections.categories).orderBy("sortOrder").limit(pageSize).get(),
-    db.collection(collections.products).orderBy("sortOrder").limit(pageSize).get(),
+    readEvery(db.collection(collections.categories).orderBy(FieldPath.documentId())),
+    readEvery(db.collection(collections.products).orderBy(FieldPath.documentId())),
   ])
 
   return {
-    categories: categories.docs.flatMap((item) => {
+    categories: categories.flatMap((item) => {
       const parsed = categorySchema.safeParse(item.data())
       return parsed.success ? [{ id: item.id, ...parsed.data }] : []
     }),
-    products: products.docs.flatMap((item) => {
+    products: products.flatMap((item) => {
       const parsed = productSchema.safeParse(item.data())
       return parsed.success ? [{ id: item.id, ...parsed.data }] : []
     }),
@@ -100,12 +94,24 @@ async function saveCategory(session: StaffSession | null, input: unknown) {
   const id = data.id || catalogSlug(data.name)
   if (!id) throw new CatalogError(400, "La categoría necesita un nombre.")
   const description = data.description?.trim() ? data.description.trim() : null
-  await getDb().collection(collections.categories).doc(id).set({
+  const record = {
     slug: id,
     name: data.name,
     description,
     sortOrder: data.sortOrder,
     isVisible: data.isVisible,
+  }
+  await commitCatalogMutation((state) => {
+    const next = { id, ...record }
+    const categories = state.categories.some((category) => category.id === id)
+      ? state.categories.map((category) => (category.id === id ? next : category))
+      : [...state.categories, next]
+    return {
+      state: { ...state, categories },
+      apply(tx) {
+        tx.set(getDb().collection(collections.categories).doc(id), record)
+      },
+    }
   })
   return { id }
 }
@@ -113,48 +119,99 @@ async function saveCategory(session: StaffSession | null, input: unknown) {
 async function deleteCategory(session: StaffSession | null, id: string) {
   assertStaff(session, catalogRoles)
   assertFirebaseDataEnabled()
-  const db = getDb()
-  const products = await db.collection(collections.products).where("categoryId", "==", id).limit(1).get()
-  if (!products.empty) throw new CatalogError(409, "Esa categoría todavía tiene productos. Muévelos o elimínalos antes.")
-  await db.collection(collections.categories).doc(id).delete()
+  await commitCatalogMutation((state) => {
+    if (!state.categories.some((category) => category.id === id)) {
+      throw new CatalogError(404, "Esa categoría no está en la carta.")
+    }
+    if (state.products.some((product) => product.categoryId === id)) {
+      throw new CatalogError(409, "Esa categoría todavía tiene productos. Muévelos o elimínalos antes.")
+    }
+    return {
+      state: { ...state, categories: state.categories.filter((category) => category.id !== id) },
+      apply(tx) {
+        tx.delete(getDb().collection(collections.categories).doc(id))
+      },
+    }
+  })
 }
 
 async function saveProduct(session: StaffSession | null, input: unknown) {
   assertStaff(session, catalogRoles)
   assertFirebaseDataEnabled()
   const data = parse(productInput, input)
-  const db = getDb()
-  const category = await db.collection(collections.categories).doc(data.categoryId).get()
-  if (!category.exists) throw new CatalogError(400, "Esa categoría no existe.")
-
   const id = data.id || randomUUID()
-  const ref = db.collection(collections.products).doc(id)
-  const current = data.id ? await ref.get() : null
-  if (data.id && !current?.exists) throw new CatalogError(404, "Ese producto no está en la carta.")
-  const imageUrl = current?.get("imageUrl")
-  const record = productSchema.parse({
+  const fields = productSchema.omit({ imageUrl: true }).parse({
     categoryId: data.categoryId,
     name: data.name,
     description: data.description,
     priceClp: data.priceClp,
-    imageUrl: typeof imageUrl === "string" ? imageUrl : null,
     availability: data.availability,
     isFeatured: data.isFeatured,
     isVisible: data.isVisible,
     sortOrder: data.sortOrder,
   })
-  await ref.set(record)
+  await commitCatalogMutation((state) => {
+    if (!state.categories.some((category) => category.id === data.categoryId)) {
+      throw new CatalogError(400, "Esa categoría no existe.")
+    }
+    const current = state.products.find((product) => product.id === id)
+    if (data.id && !current) throw new CatalogError(404, "Ese producto no está en la carta.")
+    const next = { id, ...fields, imageUrl: current?.imageUrl ?? null }
+    const products = current
+      ? state.products.map((product) => (product.id === id ? next : product))
+      : [...state.products, next]
+    return {
+      state: { ...state, products },
+      apply(tx) {
+        tx.set(getDb().collection(collections.products).doc(id), {
+          categoryId: next.categoryId,
+          name: next.name,
+          description: next.description,
+          priceClp: next.priceClp,
+          imageUrl: next.imageUrl,
+          availability: next.availability,
+          isFeatured: next.isFeatured,
+          isVisible: next.isVisible,
+          sortOrder: next.sortOrder,
+        })
+      },
+    }
+  })
   return { id }
 }
 
 async function deleteProduct(session: StaffSession | null, id: string) {
   assertStaff(session, catalogRoles)
   assertFirebaseDataEnabled()
-  const ref = getDb().collection(collections.products).doc(id)
-  const current = await ref.get()
-  if (!current.exists) throw new CatalogError(404, "Ese producto no está en la carta.")
-  await ref.delete()
+  await commitCatalogMutation((state) => {
+    if (!state.products.some((product) => product.id === id)) {
+      throw new CatalogError(404, "Ese producto no está en la carta.")
+    }
+    return {
+      state: { ...state, products: state.products.filter((product) => product.id !== id) },
+      apply(tx) {
+        tx.delete(getDb().collection(collections.products).doc(id))
+      },
+    }
+  })
   await deleteStoredPhotos(id)
+}
+
+async function publishProductImage(session: StaffSession | null, id: string, imageUrl: string) {
+  assertStaff(session, catalogRoles)
+  assertFirebaseDataEnabled()
+  if (!isCatalogPhotoUrl(imageUrl)) throw new CatalogError(500, "No se pudo publicar la foto.")
+  await commitCatalogMutation((state) => {
+    const current = state.products.find((product) => product.id === id)
+    if (!current) throw new CatalogError(404, "Ese producto no está en la carta.")
+    const next = { ...current, imageUrl }
+    return {
+      state: { ...state, products: state.products.map((product) => (product.id === id ? next : product)) },
+      apply(tx) {
+        tx.update(getDb().collection(collections.products).doc(id), { imageUrl })
+      },
+    }
+  })
 }
 
 async function replaceProductPhoto(session: StaffSession | null, id: string, file: Buffer) {
@@ -187,9 +244,19 @@ async function replaceProductPhoto(session: StaffSession | null, id: string, fil
   })
 
   const imageUrl = photoUrl(bucketName, path, token)
-  if (!isCatalogPhotoUrl(imageUrl)) throw new CatalogError(500, "No se pudo publicar la foto.")
-  await ref.set({ imageUrl }, { merge: true })
-  await deleteStoredPhotos(id, path)
+  const stored = bucket.file(path)
+  if (!isCatalogPhotoUrl(imageUrl)) {
+    await stored.delete().catch(() => undefined)
+    throw new CatalogError(500, "No se pudo publicar la foto.")
+  }
+  try {
+    await publishProductImage(session, id, imageUrl)
+  } catch (error) {
+    await stored.delete().catch(() => undefined)
+    throw error
+  }
+  const fresh = await ref.get()
+  if (fresh.get("imageUrl") === imageUrl) await deleteStoredPhotos(id, path)
   return { imageUrl }
 }
 
@@ -205,7 +272,8 @@ async function deleteStoredPhotos(productId: string, keep?: string) {
   if (!bucketName) return
   const bucket = getStorage(getAdminApp()).bucket(bucketName)
   const [files] = await bucket.getFiles({ prefix: `products/${productId}/` })
-  await Promise.all(files.filter((file) => file.name !== keep).map((file) => file.delete().catch(() => undefined)))
+  const stale = new Set(photosToDelete(files.map((file) => file.name), productId, keep))
+  await Promise.all(files.filter((file) => stale.has(file.name)).map((file) => file.delete().catch(() => undefined)))
 }
 
 export {
@@ -214,6 +282,7 @@ export {
   deleteCategory,
   deleteProduct,
   listCatalogForStaff,
+  publishProductImage,
   readCatalogEditor,
   replaceProductPhoto,
   saveCategory,
