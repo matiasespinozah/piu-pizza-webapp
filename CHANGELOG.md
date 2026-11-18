@@ -11,11 +11,16 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- En el encabezado, «Mi reserva» abre una ventana con PIU- ya escrito. Los cuatro números llevan a `/reservas/estado`, que se actualiza solo cada 30 segundos mientras la página está abierta. Un código que no existe no revela si hay otra reserva. Cada consulta sigue limitada por hora.
 - En `/admin/reservas`, `admin` y `superadmin` pueden crear una reserva recibida en el local o por teléfono, reagendar, anotar una mesa opcional y guardar una nota interna. Si el grupo o el horario superan los cupos, el panel avisa y permite continuar solo con una excepción explícita. Queda registrado quién la autorizó, cuándo y por qué, sin cambiar la configuración del local ni las reglas del formulario público.
 - El panel muestra una campana con avisos persistidos: solicitud nueva, reserva próxima, pendiente que sigue esperando, cambio de horario, cancelación y cambios de otro integrante. Se actualizan solos, se pueden marcar como leídos y abren la reserva. El sonido es opcional. Esas lecturas usan el servidor y Firestore sigue cerrado al navegador.
 
 ### Cambiado
 
+- En la ficha de una reserva, la mesa y la nota interna se editan tocando su casilla. Las acciones quedan en confirmar y reagendar. El seguimiento copia el enlace del cliente. Una reserva rechazada se puede confirmar o reagendar de nuevo.
+- En `/admin/reservas`, Filtrar queda como un botón a la izquierda. Al pulsarlo, los campos entran deslizándose desde la derecha; en el celular quedan uno bajo otro.
+- En `/admin/reservas`, Reagendar abre la reserva para elegir día, hora y zona. Al guardar queda pendiente de confirmación, sin confirmar la mesa, y se puede copiar o enviar al cliente el enlace de estado.
+- En el celular, el panel de avisos queda dentro de la pantalla y el título de Reservas ya no se aprieta contra los botones. El interruptor de reservas activas y la campana usan el verde de cupos disponibles para que se distingan del oliva del panel.
 - En el panel, un aviso nuevo se despliega bajo la campana y permanece unos 2 minutos, con un timbre. Mientras queden avisos sin abrir, la campana palpita. El sonido se puede apagar desde el panel de avisos.
 - En `/admin/reservas`, el cierre de una fecha es el botón verde «Cerrar un día». El administrador elige la fecha y ese día deja de aceptar reservas en `/reservas`. «Abrir este día» lo vuelve a habilitar. Las reservas ya hechas no se cancelan.
 - En `/admin/reservas`, pausar las reservas online es un interruptor. Al pausar se elige uno de los cuatro mensajes de Configuración; el texto no se edita en esa pantalla y los mensajes guardados no cambian. Al activarlas de nuevo no se pide un mensaje.

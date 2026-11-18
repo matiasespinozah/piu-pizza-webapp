@@ -122,6 +122,10 @@ test("confirmar, llegar y finalizar se ven en la consulta, sin la mesa ni el tra
   await transitionReservation(admin, { id: created.id, action: "confirm", revision: 1 }, now)
   const confirmed = await readPublicStatus(created.trackingToken, nextIp(), now)
   assert.equal(confirmed.status, "confirmed")
+  const byCode = await readPublicStatus(created.receipt.referenceCode, nextIp(), now)
+  assert.equal(byCode.status, "confirmed")
+  assert.equal(byCode.referenceCode, created.receipt.referenceCode)
+  assert.equal(JSON.stringify(byCode).includes(created.trackingToken), false)
   assertPublic(confirmed, created.trackingToken)
   await transitionReservation(admin, { id: created.id, action: "arrive", revision: 2 }, now)
   assert.equal((await readPublicStatus(created.trackingToken, nextIp(), now)).status, "arrived")
@@ -158,16 +162,18 @@ test("un secreto inválido, alterado, ajeno o vencido no dice si la reserva exis
   const created = await send(payload())
   const other = await send(payload({ customerName: "Luis Mora", customerPhone: "+56 9 8765 4321" }))
   const ip = nextIp()
+  const byCode = await readPublicStatus(created.receipt.referenceCode.toLowerCase(), nextIp(), now)
+  assert.equal(byCode.referenceCode, created.receipt.referenceCode)
+  const missing = [created.receipt.referenceCode, other.receipt.referenceCode].includes("PIU-9999") ? "PIU-9998" : "PIU-9999"
   await assert.rejects(() => readPublicStatus("hola", ip, now), (error) => error.status === 400)
-  await assert.rejects(() => readPublicStatus(created.receipt.referenceCode, ip, now), (error) => error.status === 404)
-  await assert.rejects(() => readPublicStatus(other.receipt.referenceCode, ip, now), (error) => error.status === 404)
+  await assert.rejects(() => readPublicStatus(missing, ip, now), (error) => error.status === 404)
   const flipped = `${created.trackingToken.slice(0, 42)}${created.trackingToken.endsWith("A") ? "B" : "A"}`
   await assert.rejects(() => readPublicStatus(flipped, ip, now), (error) => error.status === 404)
   await assert.rejects(() => readPublicStatus(createTrackingSecret(), ip, now), (error) => error.status === 404)
   await getDb().collection("reservationAccess").doc(hashTrackingSecret(created.trackingToken)).update({ expiresOn: "2020-01-01" })
   await assert.rejects(() => readPublicStatus(created.trackingToken, ip, now), (error) => error.status === 404)
   const messages = []
-  for (const credential of [created.receipt.referenceCode, flipped, createTrackingSecret()]) {
+  for (const credential of [missing, flipped, createTrackingSecret()]) {
     await assert.rejects(() => readPublicStatus(credential, nextIp(), now), (error) => {
       messages.push(error.message)
       return error.status === 404 || error.status === 400

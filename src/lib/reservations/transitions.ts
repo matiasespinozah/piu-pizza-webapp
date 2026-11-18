@@ -5,22 +5,22 @@ const staffActions = ["confirm", "reject", "propose", "reschedule", "cancel", "a
 type StaffAction = (typeof staffActions)[number]
 
 const allowedFrom: Record<StaffAction, readonly ReservationStatus[]> = {
-  confirm: ["pending", "reschedule_requested"],
+  confirm: ["pending", "reschedule_requested", "rejected"],
   reject: ["pending", "reschedule_requested"],
   propose: ["pending", "confirmed", "reschedule_requested"],
-  reschedule: ["pending", "confirmed", "reschedule_requested"],
+  reschedule: ["pending", "confirmed", "reschedule_requested", "rejected"],
   cancel: ["pending", "confirmed", "reschedule_requested", "arrived"],
   arrive: ["confirmed"],
   complete: ["arrived"],
   note: ["pending", "confirmed", "reschedule_requested", "arrived", "rejected", "cancelled", "completed"],
-  assign: ["pending", "confirmed", "reschedule_requested", "arrived"],
+  assign: ["pending", "confirmed", "reschedule_requested", "arrived", "rejected"],
 }
 
 const nextStatus: Record<StaffAction, ReservationStatus> = {
   confirm: "confirmed",
   reject: "rejected",
   propose: "reschedule_requested",
-  reschedule: "confirmed",
+  reschedule: "pending",
   cancel: "cancelled",
   arrive: "arrived",
   complete: "completed",

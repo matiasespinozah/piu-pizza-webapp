@@ -16,6 +16,7 @@ import {
   unwrapTrackingSecret,
   wrapTrackingSecret,
 } from "@/lib/reservations/tracking"
+import { publicReferencePattern } from "@/lib/reservations/reference"
 import { parseTrackingCredential, publicReservationStatus, type PublicReservationStatus } from "@/lib/reservations/tracking-link"
 import type { ReservationTrackingState } from "@/lib/reservations/views"
 import { reservationStatusEnabled, reservationWritesEnabled } from "@/lib/reservations/writes"
@@ -71,8 +72,18 @@ async function readPublicStatus(credential: string, address: string, now = new D
     throw new ReservationError(400, "invalid", "Pega el enlace completo de seguimiento.")
   }
   if (parsed.kind === "reference") {
-    await consumeBudget(db, statusRateId("fail", address, now), trackingLimits.failuresPerAddressPerHour)
-    throw notFound()
+    if (!publicReferencePattern.test(parsed.code)) {
+      await consumeBudget(db, statusRateId("fail", address, now), trackingLimits.failuresPerAddressPerHour)
+      throw notFound()
+    }
+    const found = await db.collection(collections.reservations).where("referenceCode", "==", parsed.code).limit(1).get()
+    const status = found.empty ? null : plainReservation(found.docs[0]?.data() ?? {})
+    if (!status) {
+      await consumeBudget(db, statusRateId("fail", address, now), trackingLimits.failuresPerAddressPerHour)
+      throw notFound()
+    }
+    await consumeBudget(db, statusRateId("token", `ref:${parsed.code}`, now), trackingLimits.checksPerTokenPerHour)
+    return status
   }
 
   const trackingId = hashTrackingSecret(parsed.token)
@@ -191,12 +202,28 @@ async function revokeReservationTracking(session: StaffSession | null, id: strin
   })
 }
 
+async function activeTrackingTokenForStaff(session: StaffSession | null, id: string) {
+  assertStaff(session, ["superadmin", "admin"])
+  assertReservationId(id)
+  const db = getDb()
+  const reservation = await db.collection(collections.reservations).doc(id).get()
+  if (!reservation.exists) return null
+  const trackingId = reservation.get("trackingId")
+  if (typeof trackingId !== "string" || trackingId.length === 0) return null
+  const access = await db.collection(collections.reservationAccess).doc(trackingId).get()
+  const expiresOn = access.get("expiresOn")
+  if (!access.exists || access.get("revokedAt") != null || typeof expiresOn !== "string" || trackingExpired(expiresOn)) return null
+  const key = typeof access.get("reservationId") === "string" ? access.get("reservationId") : id
+  return recoverTrackingToken(access.get("wrapped"), null, key)
+}
+
 function recoverTrackingToken(wrapped: unknown, revokedAt: unknown, idempotencyKey: string) {
   if (revokedAt != null || typeof wrapped !== "string") return null
   return unwrapTrackingSecret(wrapped, idempotencyKey)
 }
 
 export {
+  activeTrackingTokenForStaff,
   issueReservationTracking,
   readPublicStatus,
   readTrackingState,

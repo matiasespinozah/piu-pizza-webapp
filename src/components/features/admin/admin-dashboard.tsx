@@ -56,7 +56,7 @@ function AdminDashboard({
   closed: boolean
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-[76rem] flex-col gap-3.5 lg:gap-5">
+    <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-3.5 lg:gap-5">
       <header className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <h1 className="min-w-0 font-heading text-[1.7rem] leading-none font-extrabold tracking-tight text-olive">Dashboard</h1>
@@ -83,7 +83,7 @@ function AdminDashboard({
         ))}
       </ul>
 
-      <div className="grid grid-cols-1 gap-2.5 min-[390px]:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.7fr)] lg:gap-4">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.7fr)] lg:gap-4">
         <section className="admin-card px-3.5 py-3.5">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="font-heading text-base font-extrabold text-olive">Reservas próximas</h2>

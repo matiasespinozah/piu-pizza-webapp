@@ -7,7 +7,7 @@ import { staffActions, type StaffAction } from "@/lib/reservations/transitions"
 import { StaffAccessError } from "@/server/auth/authorization"
 import { readStaffGate } from "@/server/auth/session"
 import { getReservationForStaff, transitionReservation } from "@/server/reservations/service"
-import { issueReservationTracking, revokeReservationTracking } from "@/server/reservations/tracking"
+import { activeTrackingTokenForStaff, issueReservationTracking, revokeReservationTracking } from "@/server/reservations/tracking"
 
 const noStore = { "Cache-Control": "no-store" }
 
@@ -27,7 +27,7 @@ const transitionBody = z
 
 const trackingBody = z
   .object({
-    action: z.enum(["issue_tracking", "revoke_tracking"]),
+    action: z.enum(["issue_tracking", "revoke_tracking", "share_tracking"]),
     revision: z.number().int().positive(),
   })
   .strict()
@@ -89,7 +89,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     let trackingToken: string | null = null
     const data = parsed.data
-    if (data.action === "issue_tracking") {
+    if (data.action === "share_tracking") {
+      trackingToken = await activeTrackingTokenForStaff(gate.session, id)
+      if (!trackingToken) {
+        const current = await getReservationForStaff(gate.session, id)
+        trackingToken = await issueReservationTracking(gate.session, id, current.revision)
+      }
+    } else if (data.action === "issue_tracking") {
       trackingToken = await issueReservationTracking(gate.session, id, data.revision)
     } else if (data.action === "revoke_tracking") {
       await revokeReservationTracking(gate.session, id, data.revision)
@@ -106,6 +112,13 @@ export async function PATCH(request: Request, context: RouteContext) {
         internalNotes: "internalNotes" in data ? data.internalNotes : undefined,
         exceptionConfirmed: "exceptionConfirmed" in data ? data.exceptionConfirmed : undefined,
       })
+      if (data.action === "reschedule") {
+        trackingToken = await activeTrackingTokenForStaff(gate.session, id)
+        if (!trackingToken) {
+          const current = await getReservationForStaff(gate.session, id)
+          trackingToken = await issueReservationTracking(gate.session, id, current.revision)
+        }
+      }
     }
     const reservation = await getReservationForStaff(gate.session, id)
     return NextResponse.json(

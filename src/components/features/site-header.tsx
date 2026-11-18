@@ -5,6 +5,7 @@ import Link from "next/link"
 import { MenuIcon } from "lucide-react"
 import { cn } from "cn"
 
+import { ReservationLookupButton } from "@/components/features/reservations/reservation-code-form"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Logo } from "@/components/ui/logo"
 import {
@@ -87,6 +88,8 @@ function SiteHeader({ page = "home" }: SiteHeaderProps) {
           ))}
         </nav>
 
+        <ReservationLookupButton className="ms-auto md:ms-1" />
+
         <Button asChild variant="accent" size="md" className="ms-1 hidden md:inline-flex">
           <Link href="/reservas">Reservar</Link>
         </Button>
@@ -96,7 +99,7 @@ function SiteHeader({ page = "home" }: SiteHeaderProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="ms-auto text-olive hover:bg-olive-hover hover:text-olive focus-visible:outline-olive md:hidden"
+              className="text-olive hover:bg-olive-hover hover:text-olive focus-visible:outline-olive md:hidden"
               aria-label="Abrir menú"
             >
               <MenuIcon />
