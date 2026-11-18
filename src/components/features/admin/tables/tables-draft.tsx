@@ -22,6 +22,7 @@ function rulesPayload(next: OperationRules) {
   return {
     serviceMinutes: next.serviceMinutes,
     receptionPaused: next.receptionPaused,
+    receptionNotice: next.receptionNotice,
     fullNotice: next.notices.full.text.trim(),
     pausedNotice: next.notices.paused.text.trim(),
     closedDayNotice: next.notices.closedDay.text.trim(),
@@ -115,7 +116,7 @@ function useTablesDraft(rules: OperationRules, confirmedCount: number, preview: 
     const saved = await post({ action: "save-day", day: next })
     setPending(false)
     if (!saved) return
-    setMessage(next.full ? "Ese día quedó marcado como completo." : "Ese día vuelve a aceptar reservas.")
+    setMessage(next.closed ? "Ese día quedó cerrado. No entran reservas online." : next.full ? "Ese día quedó marcado como completo." : "Ese día vuelve a aceptar reservas.")
     router.refresh()
   }
 

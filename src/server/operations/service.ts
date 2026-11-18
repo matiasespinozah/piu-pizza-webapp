@@ -59,6 +59,7 @@ const rulesInput = z
   .object({
     serviceMinutes: z.number().int().min(30).max(300),
     receptionPaused: z.boolean(),
+    receptionNotice: z.enum(["full", "paused", "closedDay", "venueClosed"]).optional(),
     fullNotice: z.string().trim().min(8).max(400),
     pausedNotice: z.string().trim().min(8).max(400).optional(),
     closedDayNotice: z.string().trim().min(8).max(400).optional(),
@@ -163,6 +164,7 @@ async function saveFloor(session: StaffSession | null, input: unknown, sectionIn
     ...stored,
     serviceMinutes: parsed.data.serviceMinutes,
     receptionPaused: parsed.data.receptionPaused,
+    receptionNotice: parsed.data.receptionNotice ?? stored.receptionNotice,
     sectors: parsed.data.sectors,
     week: parsed.data.week,
     clock: clockFromWeek(parsed.data.week, stored.clock),

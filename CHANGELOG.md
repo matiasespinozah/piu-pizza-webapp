@@ -16,6 +16,9 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En el panel, un aviso nuevo se despliega bajo la campana y permanece unos 2 minutos, con un timbre. Mientras queden avisos sin abrir, la campana palpita. El sonido se puede apagar desde el panel de avisos.
+- En `/admin/reservas`, el cierre de una fecha es el botón verde «Cerrar un día». El administrador elige la fecha y ese día deja de aceptar reservas en `/reservas`. «Abrir este día» lo vuelve a habilitar. Las reservas ya hechas no se cancelan.
+- En `/admin/reservas`, pausar las reservas online es un interruptor. Al pausar se elige uno de los cuatro mensajes de Configuración; el texto no se edita en esa pantalla y los mensajes guardados no cambian. Al activarlas de nuevo no se pide un mensaje.
 - Next.js y `eslint-config-next` pasan de 16.4.4 a 16.4.6, dentro de la misma línea, para corregir los avisos de seguridad de noviembre de 2026. App Hosting, Auth, reservas, catálogo y las APIs siguen con la misma configuración.
 - La pestaña del navegador usa el logo PIÙ en vez del ícono de Next.
 - Guardar un producto ya no reescribe su foto. La carta pública y las sugerencias del inicio leen el documento `catalog/public`, escrito en la misma operación. Si esa publicación falla, el panel no muestra el cambio como guardado. Cada instancia y el CDN pueden seguir con la página anterior hasta 5 minutos. El sitio publicado es https://piupizzas.cl.
