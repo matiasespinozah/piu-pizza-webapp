@@ -7,7 +7,7 @@ import { getStorage } from "firebase-admin/storage"
 import { z } from "zod"
 
 import type { StaffSession } from "@/lib/auth/roles"
-import { catalogSlug } from "@/lib/catalog/slug"
+import { newCategoryId } from "@/lib/catalog/slug"
 import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
 import { categorySchema, collections, productSchema } from "@/lib/firebase/model"
 import { assertStaff } from "@/server/auth/authorization"
@@ -29,6 +29,22 @@ const categoryInput = z
     description: z.string().trim().max(280).nullable().optional(),
     sortOrder: z.number().int().min(0).max(999),
     isVisible: z.boolean(),
+  })
+  .strict()
+
+const reorderInput = z
+  .object({
+    moves: z
+      .array(
+        z
+          .object({
+            id: z.string().trim().min(1).max(80),
+            sortOrder: z.number().int().min(0).max(999),
+          })
+          .strict(),
+      )
+      .min(2)
+      .max(2),
   })
   .strict()
 
@@ -91,19 +107,24 @@ async function saveCategory(session: StaffSession | null, input: unknown) {
   assertStaff(session, catalogRoles)
   assertFirebaseDataEnabled()
   const data = parse(categoryInput, input)
-  const id = data.id || catalogSlug(data.name)
-  if (!id) throw new CatalogError(400, "La categoría necesita un nombre.")
   const description = data.description?.trim() ? data.description.trim() : null
-  const record = {
-    slug: id,
-    name: data.name,
-    description,
-    sortOrder: data.sortOrder,
-    isVisible: data.isVisible,
-  }
-  await commitCatalogMutation((state) => {
+  const saved = await commitCatalogMutation((state) => {
+    const existingIds = state.categories.map((category) => category.id)
+    let id = data.id
+    if (!id) {
+      const created = newCategoryId(data.name, existingIds)
+      if (!created.ok) throw new CatalogError(created.status, created.message)
+      id = created.id
+    }
+    const record = {
+      slug: id,
+      name: data.name,
+      description,
+      sortOrder: data.sortOrder,
+      isVisible: data.isVisible,
+    }
     const next = { id, ...record }
-    const categories = state.categories.some((category) => category.id === id)
+    const categories = existingIds.includes(id)
       ? state.categories.map((category) => (category.id === id ? next : category))
       : [...state.categories, next]
     return {
@@ -111,9 +132,37 @@ async function saveCategory(session: StaffSession | null, input: unknown) {
       apply(tx) {
         tx.set(getDb().collection(collections.categories).doc(id), record)
       },
+      result: { id },
     }
   })
-  return { id }
+  return saved
+}
+
+async function reorderCategories(session: StaffSession | null, input: unknown) {
+  assertStaff(session, catalogRoles)
+  assertFirebaseDataEnabled()
+  const data = parse(reorderInput, input)
+  if (data.moves[0].id === data.moves[1].id) throw new CatalogError(400, "El orden necesita dos categorías distintas.")
+  await commitCatalogMutation((state) => {
+    const byId = new Map(state.categories.map((category) => [category.id, category]))
+    for (const move of data.moves) {
+      if (!byId.has(move.id)) throw new CatalogError(404, "Esa categoría no está en la carta.")
+    }
+    const order = new Map(data.moves.map((move) => [move.id, move.sortOrder]))
+    return {
+      state: {
+        ...state,
+        categories: state.categories.map((category) => {
+          const sortOrder = order.get(category.id)
+          return sortOrder === undefined ? category : { ...category, sortOrder }
+        }),
+      },
+      apply(tx) {
+        const categories = getDb().collection(collections.categories)
+        for (const move of data.moves) tx.update(categories.doc(move.id), { sortOrder: move.sortOrder })
+      },
+    }
+  })
 }
 
 async function deleteCategory(session: StaffSession | null, id: string) {
@@ -284,6 +333,7 @@ export {
   listCatalogForStaff,
   publishProductImage,
   readCatalogEditor,
+  reorderCategories,
   replaceProductPhoto,
   saveCategory,
   saveProduct,

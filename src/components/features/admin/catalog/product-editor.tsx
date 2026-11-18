@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Text } from "@/components/ui/typography"
 import type { AdminCategory, AdminProduct } from "@/lib/catalog/types"
 
+import { ConfirmDeleteDialog } from "./catalog-confirm"
 import { postCatalog, postCatalogPhoto, type ProductInput } from "./catalog-requests"
 
 const controlClass = "h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base"
@@ -51,7 +52,8 @@ function ProductEditor({ open, categories, product, defaultCategoryId, onOpenCha
   const [fieldError, setFieldError] = useState("")
   const [formError, setFormError] = useState("")
   const [pending, setPending] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
   const [discardOpen, setDiscardOpen] = useState(false)
 
   useEffect(() => {
@@ -135,11 +137,11 @@ function ProductEditor({ open, categories, product, defaultCategoryId, onOpenCha
   async function remove() {
     if (!product) return
     setPending(true)
-    setFormError("")
+    setDeleteError("")
     const result = await postCatalog({ action: "delete-product", id: product.id })
     setPending(false)
     if (!result.ok) {
-      setFormError(result.message)
+      setDeleteError(result.message)
       return
     }
     onSaved("Producto eliminado.")
@@ -294,20 +296,35 @@ function ProductEditor({ open, categories, product, defaultCategoryId, onOpenCha
                 {product ? "Guardar producto" : "Crear producto"}
               </Button>
               {product ? (
-                confirmDelete ? (
-                  <Button type="button" variant="secondary" disabled={pending} onClick={() => void remove()}>
-                    Confirmar eliminación
-                  </Button>
-                ) : (
-                  <Button type="button" variant="secondary" disabled={pending} onClick={() => setConfirmDelete(true)}>
-                    Eliminar producto
-                  </Button>
-                )
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={pending}
+                  onClick={() => {
+                    setDeleteError("")
+                    setDeleteOpen(true)
+                  }}
+                >
+                  Eliminar producto
+                </Button>
               ) : null}
             </SheetFooter>
           </form>
         </SheetContent>
       </Sheet>
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        title={product ? `Eliminar ${product.name}` : "Eliminar producto"}
+        description={
+          product
+            ? `«${product.name}» deja de verse en la carta. También se quita su foto. No se puede deshacer.`
+            : ""
+        }
+        pending={pending}
+        error={deleteError}
+        onOpenChange={setDeleteOpen}
+        onConfirm={() => void remove()}
+      />
       <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
         <DialogContent>
           <DialogHeader>
