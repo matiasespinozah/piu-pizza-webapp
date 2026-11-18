@@ -43,8 +43,8 @@ const reorderInput = z
           })
           .strict(),
       )
-      .min(2)
-      .max(2),
+      .min(1)
+      .max(80),
   })
   .strict()
 
@@ -142,7 +142,8 @@ async function reorderCategories(session: StaffSession | null, input: unknown) {
   assertStaff(session, catalogRoles)
   assertFirebaseDataEnabled()
   const data = parse(reorderInput, input)
-  if (data.moves[0].id === data.moves[1].id) throw new CatalogError(400, "El orden necesita dos categorías distintas.")
+  const ids = data.moves.map((move) => move.id)
+  if (new Set(ids).size !== ids.length) throw new CatalogError(400, "Hay categorías repetidas en el orden.")
   await commitCatalogMutation((state) => {
     const byId = new Map(state.categories.map((category) => [category.id, category]))
     for (const move of data.moves) {
