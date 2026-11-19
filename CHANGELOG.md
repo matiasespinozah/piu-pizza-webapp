@@ -20,6 +20,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En `/admin/carta`, Mostrar y Ocultar quedan bloqueados hasta que la lista confirma el cambio. Si el producto estaba en Ocultos, el aviso dice que salió de esa lista y sigue en Todos.
 - En `/admin/carta`, Agregar deja crear un producto o «Añadir nueva categoría». Borrar un producto o una categoría abre una ventana de confirmación. En Configuración, las categorías de la carta se reubican arrastrando el punto o con subir y bajar.
 - En el pie, «Acceso empleados» queda con marco crema para distinguirlo del texto legal.
 - Al cambiar de sección en el panel, la pantalla avisa que está cargando. La sesión se comprueba una vez por visita y los conteos de reservas se leen juntos. La revocación sigue vigente en la visita siguiente.
@@ -44,6 +45,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- Al abrir un producto de la carta, la foto queda cuadrada, como en la lista, y la pizza no se recorta.
 - Crear una categoría con un nombre que ya existe no reemplaza la anterior. Subir o bajar dos categorías se guarda en una sola operación.
 - Una recarga forzada de `/carta` ya no depende de que el servidor esté despierto. El CDN puede entregar la página anterior mientras revalida, hasta un día. La copia fresca sigue durando 5 minutos.
 - La consulta por código navega dentro del sitio. Al abrir reagendar, el formulario vuelve a tomar el día, la hora y la zona de esa reserva.

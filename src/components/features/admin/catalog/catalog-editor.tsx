@@ -74,12 +74,42 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
   const [status, setStatus] = useState("")
   const [error, setError] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [heldVisibility, setHeldVisibility] = useState<Record<string, boolean>>({})
+  const heldTimers = useRef<Record<string, number>>({})
   const [productSession, setProductSession] = useState<ProductSession | null>(null)
   const [categorySession, setCategorySession] = useState<CategorySession | null>(null)
   const [priceTarget, setPriceTarget] = useState<AdminProduct | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<AdminCategory | null>(null)
   const [deleteError, setDeleteError] = useState("")
+
+  useEffect(() => {
+    const timers = heldTimers.current
+    return () => {
+      for (const timer of Object.values(timers)) window.clearTimeout(timer)
+    }
+  }, [])
+
+  function productIsBusy(id: string) {
+    return busyId === id || id in heldVisibility
+  }
+
+  const releasedVisibility = Object.keys(heldVisibility).filter((id) => {
+    const visible = heldVisibility[id]
+    return products.some((product) => product.id === id && product.isVisible === visible)
+  })
+  if (releasedVisibility.length > 0) {
+    setHeldVisibility((current) => {
+      const next = { ...current }
+      let changed = false
+      for (const id of releasedVisibility) {
+        if (!(id in next)) continue
+        delete next[id]
+        changed = true
+      }
+      return changed ? next : current
+    })
+  }
 
   useEffect(() => {
     if (pendingScroll.current == null) return
@@ -143,16 +173,40 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
   }
 
   async function patchProduct(product: AdminProduct, patch: Parameters<typeof productInput>[1], message: string) {
+    if (productIsBusy(product.id)) return false
     setBusyId(product.id)
     setError("")
     const result = await postCatalog({ action: "save-product", product: productInput(product, patch) })
-    setBusyId(null)
     if (!result.ok) {
+      setBusyId(null)
       setError(result.message)
       return false
     }
+    if (typeof patch?.isVisible === "boolean") {
+      const visible = patch.isVisible
+      setHeldVisibility((current) => ({ ...current, [product.id]: visible }))
+      const previous = heldTimers.current[product.id]
+      if (previous) window.clearTimeout(previous)
+      heldTimers.current[product.id] = window.setTimeout(() => {
+        setHeldVisibility((current) => {
+          if (!(product.id in current) || current[product.id] !== visible) return current
+          const next = { ...current }
+          delete next[product.id]
+          return next
+        })
+      }, 12_000)
+    }
+    setBusyId(null)
     refresh(message)
     return true
+  }
+
+  function visibilityMessage(product: AdminProduct, nextVisible: boolean) {
+    if (!nextVisible) return `${product.name} quedó oculto.`
+    if (shortcut === "hidden") {
+      return `${product.name} volvió a la carta y salió de Ocultos. Búscalo en Todos. En el sitio puede tardar unos minutos.`
+    }
+    return `${product.name} volvió a la carta. En el sitio puede tardar unos minutos.`
   }
 
   async function swapOrder(
@@ -479,7 +533,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
 
           {visibleProducts.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-olive-soft px-4 py-10 text-center">
-              <Text>No hay productos con ese filtro.</Text>
+              <Text>{shortcut === "hidden" ? "No hay productos ocultos. Los que mostraste están en Todos." : "No hay productos con ese filtro."}</Text>
             </div>
           ) : (
             <>
@@ -490,7 +544,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
                     product={product}
                     categoryName={names.get(product.categoryId) ?? "Sin categoría"}
                     showCategory={categoryId === "all"}
-                    busy={busyId === product.id}
+                    busy={productIsBusy(product.id)}
                     canReorder={canReorder}
                     isFirst={index === 0}
                     isLast={index === visibleProducts.length - 1}
@@ -507,7 +561,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
                       void patchProduct(
                         product,
                         { isVisible: !product.isVisible },
-                        product.isVisible ? `${product.name} quedó oculto.` : `${product.name} volvió a la carta.`,
+                        visibilityMessage(product, !product.isVisible),
                       )
                     }
                     onMove={(direction) => moveProduct(product, direction)}
@@ -519,6 +573,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
               products={visibleProducts}
               names={names}
               busyId={busyId}
+              heldVisibility={heldVisibility}
               canReorder={canReorder}
               onEdit={(product) => setProductSession({ key: product.id, product })}
               onPrice={setPriceTarget}
@@ -533,7 +588,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
                 void patchProduct(
                   product,
                   { isVisible: !product.isVisible },
-                  product.isVisible ? `${product.name} quedó oculto.` : `${product.name} volvió a la carta.`,
+                  visibilityMessage(product, !product.isVisible),
                 )
               }
               onMove={moveProduct}
@@ -731,6 +786,7 @@ function ProductTable({
   products,
   names,
   busyId,
+  heldVisibility,
   canReorder,
   onEdit,
   onPrice,
@@ -741,6 +797,7 @@ function ProductTable({
   products: AdminProduct[]
   names: Map<string, string>
   busyId: string | null
+  heldVisibility: Record<string, boolean>
   canReorder: boolean
   onEdit: (product: AdminProduct) => void
   onPrice: (product: AdminProduct) => void
@@ -764,7 +821,7 @@ function ProductTable({
         </thead>
         <tbody>
           {products.map((product, index) => {
-            const busy = busyId === product.id
+            const busy = busyId === product.id || product.id in heldVisibility
             return (
               <tr key={product.id} aria-busy={busy} className="border-b border-olive-line/70 last:border-b-0">
                 <td className="px-4 py-3">
