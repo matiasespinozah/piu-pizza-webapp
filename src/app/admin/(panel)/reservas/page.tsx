@@ -6,11 +6,13 @@ import { ManualReservationForm } from "@/components/features/admin/reservations/
 import { ReservationListCard, SummaryTile } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
 import { ReservationFilters } from "@/components/features/admin/reservations/reservation-filters"
+import { ReservationScope } from "@/components/features/admin/reservations/reservation-scope"
 import { ReservationQuickActions } from "@/components/features/admin/reservations/reservation-quick-actions"
 import { ReservationReception } from "@/components/features/admin/reservations/reservation-reception"
 import { Heading } from "@/components/ui/typography"
 import { cn } from "cn"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
+import { pastWindow, staffView } from "@/lib/reservations/staff-views"
 import { requireSection } from "@/server/auth/access"
 import { readFloor } from "@/server/operations/service"
 import { getReservationForStaff, listReservationsForStaff } from "@/server/reservations/service"
@@ -42,24 +44,33 @@ function hrefOf(params: Record<string, string | undefined>) {
 export default async function AdminReservasPage({ searchParams }: PageProps) {
   const session = await requireSection("reservas")
   const params = await searchParams
+  const today = todayIsoInSantiago()
+  const rawView = one(params.view)
+  const requested = rawView ? staffView(rawView) : undefined
+  const filtersOnly = Boolean(one(params.date) || one(params.status) || one(params.zone) || one(params.q))
+  const view = requested ?? (filtersOnly ? undefined : "today")
+  const past = pastWindow(view === "past" ? one(params.month) : undefined, today)
   const query = {
     date: one(params.date),
     status: one(params.status),
     zone: one(params.zone),
-    view: one(params.view),
+    view,
+    month: view === "past" ? past.month : undefined,
     q: one(params.q),
     cursor: one(params.cursor),
   }
   const serviceRequested = one(params.serviceDate)
-  const serviceDate = serviceRequested && /^\d{4}-\d{2}-\d{2}$/.test(serviceRequested) ? serviceRequested : todayIsoInSantiago()
+  const serviceDate = serviceRequested && /^\d{4}-\d{2}-\d{2}$/.test(serviceRequested) ? serviceRequested : today
   const selectedId = one(params.id)
   const [result, floor, detail] = await Promise.all([
     listReservationsForStaff(session, query),
     readFloor(session, serviceDate).catch(() => null),
     selectedId ? getReservationForStaff(session, selectedId).catch(() => null) : Promise.resolve(null),
   ])
-  const filters = { date: query.date, status: query.status, zone: query.zone, view: query.view, q: query.q }
-  const anyFilter = Boolean(query.date || query.status || query.zone || query.q || query.view)
+  const filters = { date: query.date, status: query.status, zone: query.zone, view: query.view, month: query.month, q: query.q }
+  const anyFilter = Boolean(query.date || query.status || query.zone || query.q)
+  const scope = query.view === "today" || query.view === "future" || query.view === "past" ? query.view : null
+  const partial = Boolean(query.cursor || result.nextCursor)
 
   return (
     <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-4">
@@ -70,7 +81,10 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
           </Heading>
           <p className="text-sm text-olive-muted">Confirma, reagenda o anota una mesa. Los cupos avisan, no te frenan.</p>
         </div>
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link href="/admin/reservas/historial" className="inline-flex h-11 items-center text-sm font-semibold text-olive">
+            Todas las reservas
+          </Link>
           <Link href="/admin/reservas/disponibilidad" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta lg:hidden">
             Cupos
           </Link>
@@ -112,12 +126,12 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
             active={query.view === "pending"}
           />
           <SummaryTile
-            href={hrefOf({ view: "today" })}
+            href={hrefOf({ status: "confirmed", date: today })}
             label="Confirmadas hoy"
             value={result.summary?.confirmedToday}
             icon={CalendarCheck}
             iconClass="bg-status-good-soft text-status-good"
-            active={query.view === "today"}
+            active={!query.view && query.status === "confirmed" && query.date === today}
           />
           <SummaryTile
             href={hrefOf({ view: "upcoming" })}
@@ -130,7 +144,17 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
         </ul>
       )}
 
-      <ReservationFilters q={query.q} date={query.date} status={query.status} zone={query.zone} view={query.view} active={anyFilter} />
+      <ReservationScope active={scope} past={past} />
+
+      <ReservationFilters
+        q={query.q}
+        date={query.date}
+        status={query.status}
+        zone={query.zone}
+        view={rawView ? query.view : undefined}
+        month={query.month}
+        active={anyFilter}
+      />
 
       {result.ready ? (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_26rem]">
@@ -149,13 +173,19 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
 
           <div className={cn("flex min-w-0 flex-col gap-2.5 lg:col-start-1 lg:row-start-1 lg:max-h-[calc(100svh-3rem)] lg:overflow-y-auto", detail && "max-lg:hidden")}>
             <p className="px-1 text-xs font-semibold text-olive-muted">
-              {result.items.length === 0 ? "Sin resultados" : `${result.items.length} ${result.items.length === 1 ? "solicitud" : "solicitudes"}`}
+              {result.items.length === 0 ? "Sin resultados" : partial ? `${result.items.length} en esta página` : `${result.items.length} ${result.items.length === 1 ? "solicitud" : "solicitudes"}`}
             </p>
             <ul className="flex flex-col gap-2.5">
               {result.items.length === 0 ? (
                 <li className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-olive-line px-6 py-10 text-center">
                   <Search aria-hidden className="size-6 text-olive-soft" />
-                  <p className="text-sm text-olive-muted">No hay solicitudes con ese filtro.</p>
+                  <p className="text-sm text-olive-muted">
+                    {scope === "past" && past.empty
+                      ? `Hoy es el primer día de ${past.label}. Lo de hoy está en Hoy.`
+                      : scope === "past"
+                        ? `No hay solicitudes en ${past.label}.`
+                        : "No hay solicitudes con ese filtro."}
+                  </p>
                 </li>
               ) : null}
               {result.items.map((item) => {

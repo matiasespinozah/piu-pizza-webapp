@@ -41,9 +41,9 @@ function AdminDashboardPreview() {
             { title: "Requieren atención", value: 6, icon: AlertCircle, href: "#reservas" },
           ]}
           upcoming={[
-            { id: "a", referenceCode: "PIU-1001", status: "confirmed", date: "2026-11-10", preferredTime: "13:30", partySize: 4, preferredZone: "salon", customerName: "María Torres", createdAt: "2026-11-10T12:00:00.000Z", revision: 1 },
-            { id: "b", referenceCode: "PIU-1002", status: "confirmed", date: "2026-11-10", preferredTime: "14:00", partySize: 2, preferredZone: "terrace", customerName: "Luis Gómez", createdAt: "2026-11-10T12:00:00.000Z", revision: 1 },
-            { id: "c", referenceCode: "PIU-1003", status: "confirmed", date: "2026-11-10", preferredTime: "14:30", partySize: 6, preferredZone: "salon", customerName: "Ana Ruiz", createdAt: "2026-11-10T12:00:00.000Z", revision: 1 },
+            { id: "a", referenceCode: "PIU-1001", status: "confirmed", date: "2026-11-10", preferredTime: "13:30", partySize: 4, preferredZone: "salon", customerName: "María Torres", customerEmail: null, requestCount: null, createdAt: "2026-11-10T12:00:00.000Z", revision: 1 },
+            { id: "b", referenceCode: "PIU-1002", status: "confirmed", date: "2026-11-10", preferredTime: "14:00", partySize: 2, preferredZone: "terrace", customerName: "Luis Gómez", customerEmail: null, requestCount: null, createdAt: "2026-11-10T12:00:00.000Z", revision: 1 },
+            { id: "c", referenceCode: "PIU-1003", status: "confirmed", date: "2026-11-10", preferredTime: "14:30", partySize: 6, preferredZone: "salon", customerName: "Ana Ruiz", customerEmail: null, requestCount: null, createdAt: "2026-11-10T12:00:00.000Z", revision: 1 },
           ]}
           alerts={[
             { id: "pending", text: "5 solicitudes pendientes de confirmar.", tone: "waiting" },

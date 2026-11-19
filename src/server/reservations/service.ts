@@ -1,7 +1,7 @@
 import "server-only"
 
 import { createHash, randomInt, randomUUID } from "node:crypto"
-import { Timestamp, type Firestore, type Query } from "firebase-admin/firestore"
+import { FieldPath, Timestamp, type Firestore, type Query } from "firebase-admin/firestore"
 
 import type { StaffSession } from "@/lib/auth/roles"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
@@ -11,7 +11,10 @@ import { admitStored, limitsStored, quotaReason, readDayOverride } from "@/lib/r
 import { ReservationError } from "@/lib/reservations/errors"
 import type { PublicReservationInput } from "@/lib/reservations/public-request"
 import { claimPublicReference } from "@/lib/reservations/reference"
+import { optionalReservationEmail, planReservationCreate, storedReservationEmail } from "@/lib/reservations/email"
 import { isPastDate, todayIsoInSantiago } from "@/lib/reservations/schedule"
+import { pastWindow, staffView } from "@/lib/reservations/staff-views"
+import { guestDocumentId, requestCountFor, reservationGuestSecret, withRequestCounts } from "@/server/reservations/guest"
 import { canTransition, nextStatus, type StaffAction } from "@/lib/reservations/transitions"
 import type { ReservationStatus, ReservationZone } from "@/lib/reservations/types"
 import { createTrackingSecret, hashTrackingSecret, trackingExpiresOn, wrapTrackingSecret } from "@/lib/reservations/tracking"
@@ -46,6 +49,7 @@ type ListQuery = {
   status?: string
   zone?: string
   view?: string
+  month?: string
   q?: string
   cursor?: string
 }
@@ -62,7 +66,7 @@ function fingerprint(input: PublicReservationInput) {
   const phone = normalizeChileMobile(input.customerPhone) ?? ""
   return createHash("sha256")
     .update(
-      [input.date, input.preferredTime, String(input.partySize), input.preferredZone, phone, input.customerName.trim().toLocaleLowerCase("es-CL"), input.notes.trim()].join("|")
+      [input.date, input.preferredTime, String(input.partySize), input.preferredZone, phone, input.customerName.trim().toLocaleLowerCase("es-CL"), input.customerEmail, input.marketingOptIn ? "1" : "0", input.notes.trim()].join("|")
     )
     .digest("hex")
 }
@@ -122,6 +126,8 @@ function listItem(id: string, data: ReservationData): ReservationListItem | null
     partySize: Number(data.partySize),
     preferredZone: zone,
     customerName: text(data.customerName),
+    customerEmail: storedReservationEmail(data.customerEmail),
+    requestCount: null,
     createdAt: iso(data.createdAt),
     revision: data.revision,
   }
@@ -175,6 +181,8 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
   assertWritable()
   const phone = normalizeChileMobile(input.customerPhone)
   if (!phone) throw new ReservationError(422, "invalid", "Ingresa un celular chileno, por ejemplo +56 9 2887 3619.")
+  const secret = reservationGuestSecret()
+  if (!secret) throw new ReservationError(503, "disabled", "Falta la clave del contador de correos. La reserva no se guardó.")
 
   const db = getDb()
   const ref = db.collection(collections.reservations).doc(input.idempotencyKey)
@@ -193,7 +201,8 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
     const current = await tx.get(ref)
     if (current.exists) {
       const data = current.data() ?? {}
-      if (data.fingerprint !== mark) {
+      const plan = planReservationCreate(true, data.fingerprint === mark, input.customerEmail, 0)
+      if (plan.action === "conflict") {
         throw new ReservationError(409, "idempotency", "Esa solicitud ya se envió con otros datos.")
       }
       const trackingId = typeof data.trackingId === "string" ? data.trackingId : ""
@@ -229,6 +238,10 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       throw new ReservationError(503, "reference", "No pudimos asignar una referencia. Inténtalo otra vez.")
     }
 
+    const guestRef = db.collection(collections.reservationGuests).doc(guestDocumentId(input.customerEmail, secret))
+    const guestSnap = await tx.get(guestRef)
+    const plan = planReservationCreate(false, true, input.customerEmail, guestSnap.get("requestCount"))
+
     const data = {
       referenceCode,
       status: "pending",
@@ -239,6 +252,7 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       customerName: input.customerName,
       customerNameKey: input.customerName.toLocaleLowerCase("es-CL"),
       customerPhone: phone,
+      customerEmail: input.customerEmail,
       notes: input.notes,
       createdAt: stamp,
       updatedAt: stamp,
@@ -257,8 +271,19 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       cancelledAt: null,
       fingerprint: mark,
       trackingId: freshId,
+      ...(input.marketingOptIn
+        ? {
+            marketingConsent: true,
+            marketingConsentAt: stamp,
+            marketingConsentSource: "web_reservation",
+            marketingConsentVersion: "v1",
+          }
+        : {}),
     }
     tx.set(ref, data)
+    if (plan.action === "create" && plan.requestCount != null) {
+      tx.set(guestRef, { requestCount: plan.requestCount, updatedAt: stamp }, { merge: true })
+    }
     tx.set(db.collection(collections.reservationAccess).doc(freshId), {
       reservationId: input.idempotencyKey,
       expiresOn,
@@ -294,32 +319,55 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
   return { duplicate: outcome.duplicate, receipt: receiptOf(outcome.data), trackingToken: outcome.trackingToken }
 }
 
+function byVisit(query: Query, direction: "asc" | "desc") {
+  return query.orderBy("date", direction).orderBy("preferredTime", direction).orderBy(FieldPath.documentId(), direction)
+}
+
 function listQuery(db: Firestore, query: ListQuery) {
   const ref: Query = db.collection(collections.reservations)
   const q = query.q?.trim() ?? ""
   const today = todayIsoInSantiago()
-  if (q.startsWith("PIU-")) return ref.where("referenceCode", "==", q.toUpperCase())
+  const view = query.view ? staffView(query.view) : undefined
+  if (q.startsWith("PIU-")) return { built: ref.where("referenceCode", "==", q.toUpperCase()), schedule: false }
   if (q) {
     const name = q.toLocaleLowerCase("es-CL")
-    return ref.where("customerNameKey", ">=", name).where("customerNameKey", "<=", `${name}\uf8ff`).orderBy("customerNameKey")
+    return {
+      built: ref.where("customerNameKey", ">=", name).where("customerNameKey", "<=", `${name}\uf8ff`).orderBy("customerNameKey"),
+      schedule: false,
+    }
   }
-  if (query.view === "pending" || query.status === "pending") {
-    return ref.where("status", "==", "pending").orderBy("createdAt", "desc")
+  if (view === "pending") {
+    return { built: ref.where("status", "==", "pending").orderBy("createdAt", "desc"), schedule: false }
   }
-  if (query.view === "upcoming") {
-    return ref.where("status", "==", "confirmed").where("date", ">=", today).orderBy("date")
+  if (view === "upcoming") {
+    return { built: ref.where("status", "==", "confirmed").where("date", ">=", today).orderBy("date"), schedule: false }
   }
-  if (query.view === "today") return ref.where("date", "==", today).orderBy("createdAt", "desc")
+  if (view === "future") return { built: byVisit(ref.where("date", ">", today), "asc"), schedule: true }
+  if (view === "past") {
+    const window = pastWindow(query.month, today)
+    if (window.empty) return { built: null, schedule: true }
+    return { built: byVisit(ref.where("date", ">=", window.from).where("date", "<=", window.to), "desc"), schedule: true }
+  }
+  if (view === "today" || (!view && !query.status && !query.date && !query.zone)) {
+    return {
+      built: ref.where("date", "==", today).orderBy("preferredTime", "asc").orderBy(FieldPath.documentId(), "asc"),
+      schedule: true,
+    }
+  }
   if (asStatus(query.status) && query.date) {
-    return ref.where("status", "==", query.status).where("date", "==", query.date).orderBy("createdAt", "desc")
+    return { built: ref.where("status", "==", query.status).where("date", "==", query.date).orderBy("createdAt", "desc"), schedule: false }
   }
-  if (asStatus(query.status)) return ref.where("status", "==", query.status).orderBy("createdAt", "desc")
+  if (asStatus(query.status)) return { built: ref.where("status", "==", query.status).orderBy("createdAt", "desc"), schedule: false }
   if (query.date && asZone(query.zone)) {
-    return ref.where("date", "==", query.date).where("preferredZone", "==", query.zone).orderBy("createdAt", "desc")
+    return { built: ref.where("date", "==", query.date).where("preferredZone", "==", query.zone).orderBy("createdAt", "desc"), schedule: false }
   }
-  if (query.date) return ref.where("date", "==", query.date).orderBy("createdAt", "desc")
-  if (asZone(query.zone)) return ref.where("preferredZone", "==", query.zone).orderBy("createdAt", "desc")
-  return ref.orderBy("createdAt", "desc")
+  if (query.date) return { built: ref.where("date", "==", query.date).orderBy("createdAt", "desc"), schedule: false }
+  if (asZone(query.zone)) return { built: ref.where("preferredZone", "==", query.zone).orderBy("createdAt", "desc"), schedule: false }
+  return { built: ref.orderBy("createdAt", "desc"), schedule: false }
+}
+
+function cursorKeepsSchedule(data: ReservationData | undefined) {
+  return typeof data?.date === "string" && typeof data.preferredTime === "string" && data.preferredTime.length > 0
 }
 
 async function listReservationsForStaff(
@@ -345,20 +393,44 @@ async function listReservationsForStaff(
       .filter((item): item is ReservationListItem => item != null)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, pageSize)
-    return { ready: true as const, items, nextCursor: null, summary }
+    return { ready: true as const, items: await withRequestCounts(db, items), nextCursor: null, summary }
   }
 
-  let built = listQuery(db, query)
+  const planned = listQuery(db, query)
+  if (!planned.built) {
+    const summary = await summaryPromise
+    return { ready: true as const, items: [] as ReservationListItem[], nextCursor: null, summary }
+  }
+  let built = planned.built
   const searchable = !query.q?.trim()
   if (query.cursor && searchable) {
     const cursor = await db.collection(collections.reservations).doc(query.cursor).get()
-    if (cursor.exists) built = built.startAfter(cursor)
+    const usable = cursor.exists && (!planned.schedule || cursorKeepsSchedule(cursor.data()))
+    if (usable) built = built.startAfter(cursor)
   }
   const [summary, snap] = await Promise.all([summaryPromise, built.limit(pageSize + 1).get()])
   const docs = snap.docs.slice(0, pageSize)
   const items = docs.map((item) => listItem(item.id, item.data())).filter((item): item is ReservationListItem => item != null)
   const nextCursor = snap.docs.length > pageSize ? docs.at(-1)?.id ?? null : null
-  return { ready: true as const, items, nextCursor, summary }
+  return { ready: true as const, items: await withRequestCounts(db, items), nextCursor, summary }
+}
+
+async function listReservationHistory(session: StaffSession | null, cursor?: string) {
+  assertStaff(session, ["superadmin", "admin"])
+  if (!firebaseDataAccessEnabled()) {
+    return { ready: false as const, items: [] as ReservationListItem[], nextCursor: null }
+  }
+  const db = getDb()
+  let built = byVisit(db.collection(collections.reservations), "desc")
+  if (cursor) {
+    const snap = await db.collection(collections.reservations).doc(cursor).get()
+    if (snap.exists && cursorKeepsSchedule(snap.data())) built = built.startAfter(snap)
+  }
+  const page = await built.limit(pageSize + 1).get()
+  const docs = page.docs.slice(0, pageSize)
+  const items = docs.map((item) => listItem(item.id, item.data())).filter((item): item is ReservationListItem => item != null)
+  const nextCursor = page.docs.length > pageSize ? docs.at(-1)?.id ?? null : null
+  return { ready: true as const, items: await withRequestCounts(db, items), nextCursor }
 }
 
 async function getReservationForStaff(session: StaffSession | null, id: string): Promise<ReservationDetail> {
@@ -375,6 +447,7 @@ async function getReservationForStaff(session: StaffSession | null, id: string):
   const data = snap.data() ?? {}
   const item = listItem(snap.id, data)
   if (!item) throw new ReservationError(404, "missing", "No encontramos esa solicitud.")
+  item.requestCount = await requestCountFor(db, item.customerEmail)
 
   const eventsSnap = await ref.collection("events").orderBy("at", "desc").limit(20).get()
   const events: ReservationEvent[] = eventsSnap.docs.map((event) => {
@@ -403,6 +476,7 @@ async function getReservationForStaff(session: StaffSession | null, id: string):
     exceptionReason: typeof data.exception === "object" && data.exception && "reason" in data.exception && typeof data.exception.reason === "string" ? data.exception.reason : null,
     events,
     tracking: await readTrackingState(db, data),
+    marketingConsent: data.marketingConsent === true,
   }
 }
 
@@ -476,6 +550,8 @@ async function transitionReservation(session: StaffSession | null, input: Transi
           preferredTime: input.proposedTime,
           customerName: "ok",
           customerPhone: "",
+          customerEmail: "",
+          marketingOptIn: false,
           notes: "",
         },
         now
@@ -719,6 +795,7 @@ type StaffReservationInput = {
   preferredZone: ReservationZone
   customerName: string
   customerPhone: string
+  customerEmail?: string
   notes?: string
   tableLabel?: string
   confirm?: boolean
@@ -745,6 +822,11 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
   }
   const notes = (input.notes ?? "").trim()
   if (notes.length > 280) throw new ReservationError(422, "invalid", "La nota es demasiado larga.")
+  const emailResult = optionalReservationEmail(input.customerEmail ?? "")
+  if ("error" in emailResult) throw new ReservationError(422, "invalid", emailResult.error)
+  const email = emailResult.email
+  const secret = email ? reservationGuestSecret() : null
+  if (email && !secret) throw new ReservationError(503, "disabled", "Falta la clave del contador de correos. La reserva no se guardó.")
   const exceptionReason = (input.exceptionReason ?? "").trim()
   if (!input.exceptionConfirmed) {
     const errors = validateTime(
@@ -755,6 +837,8 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
         preferredTime: input.preferredTime,
         customerName: name,
         customerPhone: phone,
+        customerEmail: "",
+        marketingOptIn: false,
         notes,
       },
       now,
@@ -781,43 +865,52 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
   if (!referenceCode) throw new ReservationError(503, "reference", "No pudimos asignar una referencia. Inténtalo otra vez.")
 
   const ref = db.collection(collections.reservations).doc(id)
-  await ref.set({
-    referenceCode,
-    status: "pending",
-    date: input.date,
-    preferredTime: input.preferredTime,
-    partySize: input.partySize,
-    preferredZone: input.preferredZone,
-    customerName: name,
-    customerNameKey: name.toLocaleLowerCase("es-CL"),
-    customerPhone: phone,
-    notes,
-    internalNotes: "",
-    tableLabel: null,
-    createdAt: stamp,
-    updatedAt: stamp,
-    revision: 1,
-    createdSource: "staff",
-    assignedTableIds: [],
-    holdDate: null,
-    holdZone: null,
-    confirmedBy: null,
-    lastModifiedBy: actor.uid,
-    proposedDate: null,
-    proposedTime: null,
-    proposedZone: null,
-    rejectionReason: null,
-    confirmedAt: null,
-    cancelledAt: null,
-    trackingId: "",
-  })
-  await ref.collection("events").add({
-    action: "received",
-    fromStatus: null,
-    toStatus: "pending",
-    actorUid: actor.uid,
-    at: stamp,
-    reason: "Registro del personal",
+  await db.runTransaction(async (tx) => {
+    const guestRef = email && secret ? db.collection(collections.reservationGuests).doc(guestDocumentId(email, secret)) : null
+    const guestSnap = guestRef ? await tx.get(guestRef) : null
+    const plan = planReservationCreate(false, true, email, guestSnap?.get("requestCount"))
+    tx.set(ref, {
+      referenceCode,
+      status: "pending",
+      date: input.date,
+      preferredTime: input.preferredTime,
+      partySize: input.partySize,
+      preferredZone: input.preferredZone,
+      customerName: name,
+      customerNameKey: name.toLocaleLowerCase("es-CL"),
+      customerPhone: phone,
+      ...(email ? { customerEmail: email } : {}),
+      notes,
+      internalNotes: "",
+      tableLabel: null,
+      createdAt: stamp,
+      updatedAt: stamp,
+      revision: 1,
+      createdSource: "staff",
+      assignedTableIds: [],
+      holdDate: null,
+      holdZone: null,
+      confirmedBy: null,
+      lastModifiedBy: actor.uid,
+      proposedDate: null,
+      proposedTime: null,
+      proposedZone: null,
+      rejectionReason: null,
+      confirmedAt: null,
+      cancelledAt: null,
+      trackingId: "",
+    })
+    if (guestRef && plan.action === "create" && plan.requestCount != null) {
+      tx.set(guestRef, { requestCount: plan.requestCount, updatedAt: stamp }, { merge: true })
+    }
+    tx.set(ref.collection("events").doc(), {
+      action: "received",
+      fromStatus: null,
+      toStatus: "pending",
+      actorUid: actor.uid,
+      at: stamp,
+      reason: "Registro del personal",
+    })
   })
   await publishReservationNotice({
     action: "received",
@@ -858,6 +951,7 @@ export {
   createPublicReservation,
   createStaffReservation,
   getReservationForStaff,
+  listReservationHistory,
   listReservationsForStaff,
   rateLimitPerHour,
   reservationSummary,

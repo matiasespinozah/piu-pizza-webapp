@@ -41,7 +41,31 @@ Hay un tope aparte del de las solicitudes: 30 consultas por hora para un mismo e
 
 ## Panel
 
-`/admin/reservas` lista de a 20, con filtro por fecha, estado, zona, pendientes, hoy, próximas y atención. El celular y las observaciones están en el detalle. Cada cambio pide la revisión que el servidor guardó; si otro trabajador ya la cambió, la operación responde 409.
+`/admin/reservas` abre en Hoy: la fecha civil de Chile, todos los estados, de la hora más temprana a la más tarde. El id del documento desempata. Futuras toma las fechas posteriores a hoy, en ese mismo orden. Pasadas recorre un mes: el mes actual hasta ayer, y cualquier mes anterior completo, de la visita más nueva a la más antigua. No se puede avanzar a un mes que todavía no llega. Cada lista pide 20 documentos y el cursor sigue ese orden; cambia la vista, el mes o el filtro y el cursor vuelve a empezar.
+
+«Todas las reservas» abre `/admin/reservas/historial`. No está en el menú. La página exige `requireSection("reservas")`, igual que el resto de reservas, y además no se indexa. El orden es fecha, hora e id, de la más nueva a la más antigua.
+
+Los cuatro recuadros siguen siendo conteos de toda la colección, no de las 20 filas visibles. Pendientes cuenta y lista solicitudes pendientes de cualquier fecha, de a 20. Confirmadas hoy abre solo las confirmadas de esa fecha.
+
+Esas vistas ordenadas por `date` y `preferredTime` usan dos índices compuestos en `firestore.indexes.json`: uno ascendente y otro descendente, con `__name__` al final. No están publicados. Un documento antiguo sin `preferredTime` queda fuera de Hoy, Futuras, Pasadas e Historial, porque `orderBy` no lo devuelve. No se migró ninguno. Pendientes no usa ese orden y sí puede mostrarlo.
+
+El correo de una reserva nueva se guarda en `customerEmail`, en minúsculas. El formulario público lo exige. La reserva manual puede omitirlo: si no hay correo, no se inventa uno y no hay contador. Las reservas anteriores, sin ese campo, siguen en las listas.
+
+El contador vive en `reservationGuests/{hmac}`. El id es HMAC-SHA256 del correo normalizado con `PIU_RESERVATION_GUEST_SECRET`, una clave de al menos 32 caracteres que solo existe en Secret Manager. No va en el repositorio, ni en `apphosting.yaml`, ni en el navegador. El documento guarda `requestCount` y `updatedAt`, no el correo. El alta y el incremento ocurren en la misma transacción. Un reintento con la misma clave de idempotencia no suma otra vez. Cancelar, rechazar o reagendar no resta. El correo no se puede corregir desde el panel; si más adelante se permite, hay que mover el conteo en una sola transacción, sin dejarlo bajo cero, y anotar quién lo cambió.
+
+La lista lee esos contadores de una sola vez, solo para los correos distintos de la página. El seguimiento público no recibe el correo. Las reglas niegan lectura y escritura de `reservationGuests` al navegador.
+
+## Promociones
+
+En el último paso de `/reservas` la casilla nace marcada. El texto, versión `v1`, es: «Acepto recibir información, novedades y promociones de PIÙ Pizza & Dolce por correo electrónico.» Quien no la quiera la desmarca. La reserva se envía de todas formas. No autoriza WhatsApp ni SMS, ni los avisos de la mesa.
+
+Si llega marcada, la misma reserva guarda `marketingConsent: true`, `marketingConsentAt` con la hora del servidor, `marketingConsentSource: "web_reservation"` y `marketingConsentVersion: "v1"`. El correo sigue siendo `customerEmail`. No hay otra colección de contactos. Si llega desmarcada, esos campos no se escriben: esa reserva no autoriza promociones y no borra una aceptación de una reserva anterior. Un reintento con la misma clave y la misma casilla no vuelve a escribir. Si la casilla cambia, la clave responde 409. Una petición sin el campo no cuenta como aceptación. La reserva manual tampoco.
+
+El formato del correo se valida. No se afirma que el buzón exista. No se envía ningún correo ni hay enlace de confirmación o de baja. `marketingSubscribers` y `marketingTokens` quedan cerrados en las reglas por si el emulador tiene documentos del diseño anterior. Este código no los lee ni los convierte en aceptaciones.
+
+Esto no es el consentimiento de Analytics y el correo no sale al seguimiento público. Antes de una campaña real faltan la información de privacidad, la revisión legal de PIÙ y la forma de gestionar bajas y demás derechos. La Ley 19.496, artículo 28 B, y la Ley 21.719, vigente el 1 de diciembre de 2026, quedan como referencia para esa revisión. El código no declara que esas normas estén cumplidas. Una casilla que nace marcada es una decisión de este formulario y tiene que pasar por esa revisión antes de usarse para publicidad.
+
+El celular y las observaciones están en el detalle. Cada cambio pide la revisión que el servidor guardó; si otro trabajador ya la cambió, la operación responde 409.
 
 Confirmar, rechazar, proponer otro horario, cancelar, marcar llegada y finalizar pasan por `PATCH /api/admin/reservations/[id]`. Ese PATCH exige la cookie `piu_session` y el mismo encabezado del ingreso. El historial queda en `reservations/{id}/events` dentro de la misma transacción. El personal no puede editarlo.
 

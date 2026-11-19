@@ -12,6 +12,7 @@ type ReservationRequest = {
   preferredZone: ReservationZone
   customerName: string
   customerPhone: string
+  customerEmail: string
   notes: string
 }
 
@@ -32,12 +33,14 @@ type ReservationDraft = {
   preferredTime: string
   customerName: string
   customerPhone: string
+  customerEmail: string
+  marketingOptIn: boolean
   notes: string
 }
 
 type ReservationStep = 1 | 2 | 3
 
-type ReservationField = "date" | "partySize" | "zone" | "preferredTime" | "customerName" | "customerPhone" | "notes"
+type ReservationField = "date" | "partySize" | "zone" | "preferredTime" | "customerName" | "customerPhone" | "customerEmail" | "notes"
 
 type ReservationErrors = Partial<Record<ReservationField, string>>
 

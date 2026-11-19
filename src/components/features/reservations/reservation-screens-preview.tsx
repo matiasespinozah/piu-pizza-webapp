@@ -52,6 +52,8 @@ function ReservationScreensPreview() {
               partySize: 2 + index,
               preferredZone: index % 2 ? "terrace" : "salon",
               customerName: "Camila Rojas",
+              customerEmail: index === 0 ? "camila@correo.cl" : null,
+              requestCount: index === 0 ? 2 : null,
               createdAt: "2026-11-08T21:10:00.000Z",
               revision: 1,
             }}
@@ -71,6 +73,8 @@ function ReservationScreensPreview() {
           partySize: 4,
           preferredZone: "terrace",
           customerName: "Camila Rojas",
+          customerEmail: "camila@correo.cl",
+          requestCount: 2,
           createdAt: "2026-11-08T21:10:00.000Z",
           revision: 1,
           customerPhone: "+56 9 0000 0000",
@@ -85,6 +89,7 @@ function ReservationScreensPreview() {
           exceptionReason: null,
           events: [{ action: "received", fromStatus: null, toStatus: "pending", actorUid: null, at: "2026-11-08T21:10:00.000Z", reason: null }],
           tracking: { state: "active", expiresOn: "2026-11-14" },
+          marketingConsent: true,
         }}
       />
 
