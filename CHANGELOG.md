@@ -46,6 +46,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- Las fotos de producto se guardan hasta en 1600 px y calidad 72, con un tope de 400 KB. En el celular y en el computador la ficha usa esa misma nitidez.
 - Al abrir un producto de la carta, la foto queda cuadrada, como en la lista, y la pizza no se recorta.
 - Crear una categoría con un nombre que ya existe no reemplaza la anterior. Subir o bajar dos categorías se guarda en una sola operación.
 - Una recarga forzada de `/carta` ya no depende de que el servidor esté despierto. El CDN puede entregar la página anterior mientras revalida, hasta un día. La copia fresca sigue durando 5 minutos.
