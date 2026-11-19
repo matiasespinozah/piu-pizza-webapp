@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- `/nosotros` cuenta la historia de Felipe y Camila. El enlace Nosotros del encabezado abre esa página. Faltan fotos de los inicios y de la familia; el local y la terraza usan las imágenes que ya tiene el sitio.
 - En `/admin/reservas`, Hoy, Futuras y Pasadas ordenan por la visita y muestran 20 por página. Hoy es la vista inicial. Pasadas recorre el mes y, en el mes en curso, llega solo hasta ayer. «Todas las reservas» abre `/admin/reservas/historial`, fuera del menú y con la misma autorización de reservas. Los índices de `date` y `preferredTime` quedaron escritos en `firestore.indexes.json`; no se publicaron.
 - El formulario público pide el correo y lo guarda en minúsculas. La reserva manual puede quedar sin correo. El panel muestra «N solicitudes realizadas» para los correos de la página, con un contador cuyo identificador no es el correo. El seguimiento público no lo recibe. Hace falta `PIU_RESERVATION_GUEST_SECRET` en Secret Manager; sin esa clave no se guarda una reserva que traiga correo.
 - En `/reservas`, la casilla de promociones por correo nace marcada y se puede desmarcar. Si queda marcada, esa reserva guarda el correo y la aceptación. Si se desmarca, la reserva sigue y no borra una aceptación anterior. No hay correo de confirmación ni baja automática.
