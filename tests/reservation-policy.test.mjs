@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 
 import { planAssignment, readCapacity } from "@/lib/reservations/capacity"
 import { admitRequest, quotaReason } from "@/lib/reservations/day-policy"
@@ -8,7 +8,8 @@ import { applyFloorSection, criticalFingerprint, declaredTables, defaultOperatio
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
-import { confirmedClock, defaultWeek, isClosedDay, openingWindow, preferenceSlots, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
+import { pageSchedule, pastWindow, staffView } from "@/lib/reservations/staff-views"
 import { canTransition } from "@/lib/reservations/transitions"
 import { clientAddress } from "@/lib/reservations/client-address"
 import { createTrackingSecret, hashTrackingSecret, trackingExpired, trackingExpiresOn, unwrapTrackingSecret, wrapTrackingSecret } from "@/lib/reservations/tracking"
@@ -16,6 +17,8 @@ import { claimPublicReference, formatPublicReference } from "@/lib/reservations/
 import { parseTrackingCredential, publicReservationStatus } from "@/lib/reservations/tracking-link"
 import { reservationStatusEnabled, reservationWritesEnabled } from "@/lib/reservations/writes"
 import { requestIsTrusted } from "@/lib/auth/session-policy"
+import { normalizeReservationEmail, optionalReservationEmail, planReservationCreate, requestCountLabel } from "@/lib/reservations/email"
+import { guestDocumentId, guestSecretMinLength } from "@/lib/reservations/guest-id"
 
 const now = new Date("2026-11-07T18:00:00Z")
 
@@ -28,6 +31,7 @@ function body(overrides = {}) {
     preferredZone: "salon",
     customerName: "Ana Soto",
     customerPhone: "+56 9 2887 3619",
+    customerEmail: "ana.soto@correo.cl",
     notes: "",
     ...overrides,
   }
@@ -117,6 +121,15 @@ test("una solicitud válida queda limitada a los datos del cliente", () => {
   fails({ ...body(), customerName: " " }, 422)
   fails({ ...body(), partySize: 0 }, 422)
   fails({ ...body(), notes: "a".repeat(281) }, 422)
+  assert.equal(parsed.customerEmail, "ana.soto@correo.cl")
+  assert.equal(parsed.marketingOptIn, false)
+  assert.equal(readPublicBody(JSON.stringify(body({ marketingOptIn: true })), now).marketingOptIn, true)
+  fails({ ...body(), marketingOptIn: "si" }, 400)
+  const normalized = readPublicBody(JSON.stringify(body({ customerEmail: "  ANA.SOTO@Correo.CL " })), now)
+  assert.equal(normalized.customerEmail, "ana.soto@correo.cl")
+  fails({ ...body(), customerEmail: "ana" }, 422)
+  fails({ ...body(), customerEmail: `${"a".repeat(121)}@correo.cl` }, 422)
+  fails({ ...body(), customerEmail: "" }, 422)
 })
 
 test("la mesa se asigna de a una y no se confirma sin configuración", () => {
@@ -371,6 +384,7 @@ test("el seguimiento no se enciende con las escrituras y el secreto no sale de c
     proposedZone: "terrace",
     customerName: "Ana Soto",
     customerPhone: "+56 9 2887 3619",
+    customerEmail: "ana.soto@correo.cl",
     notes: "cumpleaños",
     assignedTableIds: ["mesa-1"],
     confirmedBy: "staff-admin",
@@ -381,6 +395,7 @@ test("el seguimiento no se enciende con las escrituras y el secreto no sale de c
   assert.deepEqual(Object.keys(dto).sort(), ["date", "partySize", "proposal", "referenceCode", "status", "time", "updatedAt", "zone"])
   const json = JSON.stringify(dto)
   assert.equal(json.includes("Ana"), false)
+  assert.equal(json.includes("ana.soto@correo.cl"), false)
   assert.equal(json.includes("2887"), false)
   assert.equal(json.includes("cumpleaños"), false)
   assert.equal(json.includes("staff-admin"), false)
@@ -428,4 +443,161 @@ test("guardar una sección no trae de vuelta el resto desde una copia vieja", ()
   assert.equal(next.sectors.salon.web, 3)
   assert.equal(next.week.mon.opensAt, "12:00")
   assert.equal(next.serviceMinutes, stored.serviceMinutes)
+})
+
+test("hoy, futuras y pasadas usan el día de Chile, el mes y un desempate estable", () => {
+  const beforeMidnight = new Date("2026-04-01T02:30:00Z")
+  const afterMidnight = new Date("2026-04-01T05:30:00Z")
+  const before = todayIsoInSantiago(beforeMidnight)
+  const after = todayIsoInSantiago(afterMidnight)
+  assert.notEqual(before, after)
+  assert.equal(after > before, true)
+  const opened = pastWindow(undefined, after)
+  if (after.endsWith("-01")) assert.equal(opened.empty, true)
+  else assert.equal(opened.to, previousIso(after))
+  assert.equal(pastWindow(undefined, before).to < before, true)
+
+  const leap = pastWindow("2024-02", "2024-03-01")
+  assert.equal(leap.from, "2024-02-01")
+  assert.equal(leap.to, "2024-02-29")
+  assert.equal(leap.nextMonth, "2024-03")
+  assert.equal(pastWindow("2025-02", "2025-03-01").to, "2025-02-28")
+  assert.equal(pastWindow(undefined, "2026-03-31").to, "2026-03-30")
+
+  const december = pastWindow("2025-12", "2026-01-15")
+  assert.equal(december.from, "2025-12-01")
+  assert.equal(december.to, "2025-12-31")
+  assert.equal(december.previousMonth, "2025-11")
+  assert.equal(december.nextMonth, "2026-01")
+  assert.equal(pastWindow("2026-08", "2026-01-15").month, "2026-01")
+  assert.equal(pastWindow("2026-01", "2026-01-15").to, "2026-01-14")
+  assert.equal(pastWindow("2026-01", "2026-01-15").nextMonth, null)
+  assert.equal(staffView(undefined), "today")
+  assert.equal(staffView("desconocida"), "today")
+  assert.equal(staffView("today"), "today")
+  assert.equal(staffView("future"), "future")
+  assert.equal(staffView("past"), "past")
+
+  const repeated = Array.from({ length: 25 }, (_, index) => ({
+    id: `doc-${String(index).padStart(2, "0")}`,
+    date: "2026-11-18",
+    preferredTime: "20:30",
+  }))
+  const first = pageSchedule(repeated, "asc", undefined, 20)
+  const second = pageSchedule(repeated, "asc", first.nextCursor ?? undefined, 20)
+  assert.equal(first.items.length, 20)
+  assert.equal(second.items.length, 5)
+  assert.equal(second.nextCursor, null)
+  assert.equal(first.items[0].id, "doc-00")
+  assert.equal(second.items[0].id, "doc-20")
+  assert.equal(new Set([...first.items, ...second.items].map((row) => row.id)).size, 25)
+  assert.equal(pageSchedule(repeated, "desc", undefined, 20).items[0].id, "doc-24")
+
+  const mixed = [
+    { id: "b", date: "2026-11-19", preferredTime: "13:00" },
+    { id: "a", date: "2026-11-18", preferredTime: "21:00" },
+    { id: "c", date: "2026-11-18", preferredTime: "21:00" },
+    { id: "d", date: "2026-11-18", preferredTime: "19:00" },
+  ]
+  assert.deepEqual(pageSchedule(mixed, "asc", undefined, 20).items.map((row) => row.id), ["d", "a", "c", "b"])
+  assert.deepEqual(pageSchedule(mixed, "desc", undefined, 20).items.map((row) => row.id), ["b", "c", "a", "d"])
+
+  const service = readFileSync(new URL("../src/server/reservations/service.ts", import.meta.url), "utf8")
+  assert.match(service, /orderBy\("preferredTime", "asc"\)/)
+  assert.match(service, /orderBy\("preferredTime", direction\)/)
+  assert.match(service, /FieldPath\.documentId\(\)/)
+  assert.match(service, /where\("date", ">", today\)/)
+  assert.match(service, /where\("date", ">=", window\.from\)\.where\("date", "<=", window\.to\)/)
+  assert.match(service, /countOf\(base\.where\("status", "==", "pending"\)\)/)
+  assert.match(service, /where\("status", "==", "pending"\)\.orderBy\("createdAt", "desc"\)/)
+  const indexes = readFileSync(new URL("../firestore.indexes.json", import.meta.url), "utf8")
+  assert.match(indexes, /"fieldPath": "preferredTime", "order": "ASCENDING"/)
+  assert.match(indexes, /"fieldPath": "preferredTime", "order": "DESCENDING"/)
+  assert.match(indexes, /"fieldPath": "__name__", "order": "ASCENDING"/)
+  assert.match(indexes, /"fieldPath": "__name__", "order": "DESCENDING"/)
+  const scope = readFileSync(new URL("../src/components/features/admin/reservations/reservation-scope.tsx", import.meta.url), "utf8")
+  assert.doesNotMatch(scope, /cursor/)
+  const reservationsPage = readFileSync(new URL("../src/app/admin/(panel)/reservas/page.tsx", import.meta.url), "utf8")
+  assert.match(reservationsPage, /\/admin\/reservas\/historial/)
+  assert.match(reservationsPage, /status: "confirmed", date: today/)
+})
+
+test("el correo se normaliza y el contador no usa la dirección como id", () => {
+  assert.equal(normalizeReservationEmail("  Ana@Correo.CL ").email, "ana@correo.cl")
+  assert.equal("error" in normalizeReservationEmail("ana"), true)
+  assert.equal("error" in normalizeReservationEmail(`${"a".repeat(121)}@correo.cl`), true)
+  assert.equal(optionalReservationEmail("  ").email, null)
+  assert.equal(planReservationCreate(true, true, "ana@correo.cl", 4).action, "duplicate")
+  assert.equal(planReservationCreate(true, false, "ana@correo.cl", 4).action, "conflict")
+  assert.equal(planReservationCreate(false, true, null, 3).requestCount, null)
+  assert.equal(planReservationCreate(false, true, "ana@correo.cl", 0).requestCount, 1)
+  assert.equal(planReservationCreate(false, true, "ana@correo.cl", 1).requestCount, 2)
+  assert.equal(planReservationCreate(false, true, "ana@correo.cl", 4).requestCount, 5)
+  assert.equal(requestCountLabel(1), "1 solicitud realizada")
+  assert.equal(requestCountLabel(2), "2 solicitudes realizadas")
+  assert.equal(requestCountLabel(1).includes("visit"), false)
+
+  const secret = "clave-de-prueba-con-32-caracteres"
+  assert.ok(secret.length >= guestSecretMinLength)
+  const first = guestDocumentId("ana@correo.cl", secret)
+  const second = guestDocumentId("ana@correo.cl", secret)
+  assert.equal(first, second)
+  assert.equal(first.length, 64)
+  assert.equal(first.includes("ana@correo.cl"), false)
+  assert.notEqual(first, guestDocumentId("luis@correo.cl", secret))
+  assert.notEqual(first, guestDocumentId("ana@correo.cl", `${secret}-otra`))
+
+  const service = readFileSync(new URL("../src/server/reservations/service.ts", import.meta.url), "utf8")
+  const guest = readFileSync(new URL("../src/server/reservations/guest.ts", import.meta.url), "utf8")
+  assert.match(service, /tx\.set\(guestRef/)
+  assert.match(guest, /getAll\(/)
+  assert.doesNotMatch(service, /requestCount:\s*.*-/)
+  const transition = service.slice(service.indexOf("async function transitionReservation"), service.indexOf("type StaffReservationInput"))
+  assert.equal(transition.includes("reservationGuests"), false)
+  const rules = readFileSync(new URL("../firestore.rules", import.meta.url), "utf8")
+  assert.match(rules, /match \/reservationGuests\/\{guestId\} \{\s*allow read, write: if false;/s)
+  const hosting = readFileSync(new URL("../apphosting.yaml", import.meta.url), "utf8")
+  assert.doesNotMatch(hosting, /PIU_RESERVATION_GUEST_SECRET/)
+  const example = readFileSync(new URL("../.env.example", import.meta.url), "utf8")
+  assert.match(example, /PIU_RESERVATION_GUEST_SECRET/)
+  assert.doesNotMatch(example, /PIU_RESERVATION_GUEST_SECRET=/)
+  const contact = readFileSync(new URL("../src/components/features/reservations/reservation-contact-step.tsx", import.meta.url), "utf8")
+  assert.match(contact, /type="email"/)
+  assert.match(contact, /inputMode="email"/)
+  assert.match(contact, /autoComplete="email"/)
+  const patch = readFileSync(new URL("../src/app/api/admin/reservations/[id]/route.ts", import.meta.url), "utf8")
+  assert.doesNotMatch(patch, /customerEmail/)
+  const manual = readFileSync(new URL("../src/components/features/admin/reservations/manual-reservation-form.tsx", import.meta.url), "utf8")
+  assert.match(manual, /name="customerEmail"/)
+  assert.doesNotMatch(manual, /name="customerEmail"[^>]*required/)
+})
+
+test("la casilla de promociones nace marcada y la aceptación queda en la reserva", () => {
+  assert.equal(readPublicBody(JSON.stringify(body({ marketingOptIn: false })), now).marketingOptIn, false)
+  const form = readFileSync(new URL("../src/components/features/reservations/reservation-form.tsx", import.meta.url), "utf8")
+  assert.match(form, /marketingOptIn: true/)
+  assert.match(form, /Acepto recibir información, novedades y promociones de PIÙ Pizza & Dolce por correo electrónico/)
+  assert.match(form, /Si no la quieres, desmárcala/)
+  const service = readFileSync(new URL("../src/server/reservations/service.ts", import.meta.url), "utf8")
+  assert.match(service, /marketingConsent: true/)
+  assert.match(service, /marketingConsentAt: stamp/)
+  assert.match(service, /marketingConsentSource: "web_reservation"/)
+  assert.match(service, /marketingConsentVersion: "v1"/)
+  assert.match(service, /input\.marketingOptIn/)
+  assert.doesNotMatch(service, /marketingSubscribers|marketingTokens|confirmToken|createMarketingToken/)
+  const guest = readFileSync(new URL("../src/server/reservations/guest.ts", import.meta.url), "utf8")
+  assert.doesNotMatch(guest, /marketingConsent/)
+  const manual = readFileSync(new URL("../src/components/features/admin/reservations/manual-reservation-form.tsx", import.meta.url), "utf8")
+  assert.doesNotMatch(manual, /marketingOptIn|marketingConsent/)
+  const adminRoute = readFileSync(new URL("../src/app/api/admin/reservations/route.ts", import.meta.url), "utf8")
+  assert.doesNotMatch(adminRoute, /marketingOptIn|marketingConsent/)
+  const publicRoute = readFileSync(new URL("../src/app/api/reservations/route.ts", import.meta.url), "utf8")
+  assert.doesNotMatch(publicRoute, /confirmToken|marketingConfirmation|customerEmail/)
+  const status = readFileSync(new URL("../src/lib/reservations/tracking-link.ts", import.meta.url), "utf8")
+  assert.doesNotMatch(status, /customerEmail|marketingConsent/)
+  assert.equal(existsSync(new URL("../src/app/reservas/promociones/page.tsx", import.meta.url)), false)
+  assert.equal(existsSync(new URL("../src/app/api/reservations/marketing/route.ts", import.meta.url)), false)
+  const rules = readFileSync(new URL("../firestore.rules", import.meta.url), "utf8")
+  assert.match(rules, /match \/marketingSubscribers\/\{subscriberId\}/)
+  assert.match(rules, /match \/marketingTokens\/\{tokenId\}/)
 })

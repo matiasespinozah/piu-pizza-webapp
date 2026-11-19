@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { normalizeReservationEmail } from "@/lib/reservations/email"
 import { ReservationError } from "@/lib/reservations/errors"
 import { validateContact } from "@/lib/reservations/validation"
 import type { ReservationZone } from "@/lib/reservations/types"
@@ -13,6 +14,8 @@ const publicRequestSchema = z
     preferredZone: z.enum(["salon", "terrace"]),
     customerName: z.string(),
     customerPhone: z.string(),
+    customerEmail: z.string(),
+    marketingOptIn: z.boolean().optional(),
     notes: z.string().optional(),
   })
   .strict()
@@ -25,6 +28,8 @@ type PublicReservationInput = {
   preferredZone: ReservationZone
   customerName: string
   customerPhone: string
+  customerEmail: string
+  marketingOptIn: boolean
   notes: string
 }
 
@@ -54,11 +59,16 @@ function readPublicBody(raw: string, now = new Date(), rules?: Parameters<typeof
     preferredTime: parsed.data.preferredTime,
     customerName: parsed.data.customerName,
     customerPhone: parsed.data.customerPhone,
+    customerEmail: parsed.data.customerEmail,
+    marketingOptIn: parsed.data.marketingOptIn === true,
     notes: parsed.data.notes ?? "",
   }
   const errors = validateContact(draft, now, rules)
   const message = Object.values(errors)[0]
   if (message) throw new ReservationError(422, "invalid", message)
+
+  const email = normalizeReservationEmail(draft.customerEmail)
+  if ("error" in email) throw new ReservationError(422, "invalid", email.error)
 
   return {
     idempotencyKey: parsed.data.idempotencyKey,
@@ -68,6 +78,8 @@ function readPublicBody(raw: string, now = new Date(), rules?: Parameters<typeof
     preferredZone: parsed.data.preferredZone,
     customerName: draft.customerName.trim(),
     customerPhone: draft.customerPhone,
+    customerEmail: email.email,
+    marketingOptIn: draft.marketingOptIn,
     notes: draft.notes.trim(),
   }
 }

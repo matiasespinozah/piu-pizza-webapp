@@ -13,6 +13,7 @@ const createBody = z
   .object({
     customerName: z.string().trim().min(2).max(80),
     customerPhone: z.string().trim().min(8).max(20),
+    customerEmail: z.string().trim().max(200).optional(),
     date: z.string(),
     preferredTime: z.string(),
     partySize: z.number().int(),
@@ -50,6 +51,7 @@ export async function GET(request: Request) {
     status: one(url.searchParams.get("status")),
     zone: one(url.searchParams.get("zone")),
     view: one(url.searchParams.get("view")),
+    month: one(url.searchParams.get("month")),
     q: one(url.searchParams.get("q")),
     cursor: one(url.searchParams.get("cursor")),
   }

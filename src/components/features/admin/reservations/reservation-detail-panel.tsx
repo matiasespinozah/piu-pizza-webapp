@@ -12,6 +12,7 @@ import { zoneConfig } from "@/lib/reservations/configuration"
 import { formatVisitDate } from "@/lib/reservations/schedule"
 import type { ReservationDetail } from "@/lib/reservations/views"
 import { statusLabel } from "@/lib/reservations/views"
+import { requestCountLabel } from "@/lib/reservations/email"
 
 const actionLabel: Record<string, string> = {
   received: "Recibida",
@@ -69,6 +70,13 @@ function ReservationDetailPanel({ detail, backHref, className }: { detail: Reser
           </Button>
         </div>
         <p className="text-xs text-olive-muted">Abre el teléfono. No avisa al cliente.</p>
+        {detail.customerEmail ? (
+          <div className="rounded-xl bg-cream px-3 py-2.5">
+            <p className="truncate text-sm font-semibold text-olive">{detail.customerEmail}</p>
+            {detail.requestCount ? <p className="mt-1 text-xs text-olive-muted">{requestCountLabel(detail.requestCount)}</p> : null}
+          </div>
+        ) : null}
+        <p className="text-xs text-olive-muted">{detail.marketingConsent ? "Acepta promociones por correo" : "Sin autorización de promociones"}</p>
       </DetailSection>
 
       <DetailSection icon={MessageSquareText} title="Observaciones">

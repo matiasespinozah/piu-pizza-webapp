@@ -86,6 +86,22 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /reservationGuests/{guestId} {
+      allow read, write: if false;
+    }
+
+    match /marketingSubscribers/{subscriberId} {
+      allow read, write: if false;
+
+      match /events/{eventId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /marketingTokens/{tokenId} {
+      allow read, write: if false;
+    }
+
     // Proyección de la carta. La escribe solo el servidor. El navegador no la lee ni la publica.
     match /catalog/{docId} {
       allow read, write: if false;

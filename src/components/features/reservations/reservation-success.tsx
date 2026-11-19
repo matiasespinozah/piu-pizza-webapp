@@ -56,10 +56,12 @@ function ReservationSuccess({
   receipt,
   trackingToken,
   whatsappHref,
+  promotionsRequested = false,
 }: {
   receipt: PublicReceipt
   trackingToken: string | null
   whatsappHref: string
+  promotionsRequested?: boolean
 }) {
   return (
     <section
@@ -101,6 +103,11 @@ function ReservationSuccess({
         </div>
 
         <p className="text-center text-xs text-olive-muted">Tu mesa queda confirmada cuando PIÙ apruebe la solicitud.</p>
+        {promotionsRequested ? (
+          <p className="text-center text-sm text-olive-strong">
+            Quedó registrada tu aceptación para recibir información y promociones por correo.
+          </p>
+        ) : null}
       </div>
     </section>
   )
