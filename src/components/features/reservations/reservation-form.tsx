@@ -9,6 +9,7 @@ import { ReservationSummary } from "@/components/features/reservations/reservati
 import { ReservationTimeStep } from "@/components/features/reservations/reservation-time-step"
 import { ReservationSuccess } from "@/components/features/reservations/reservation-success"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { reservationWhatsappMessage } from "@/lib/reservations/configuration"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { normalizeChileMobile, validateContact, validateTime, validateVisit } from "@/lib/reservations/validation"
@@ -26,6 +27,8 @@ const initialDraft: ReservationDraft = {
   preferredTime: "",
   customerName: "",
   customerPhone: "",
+  customerEmail: "",
+  marketingOptIn: true,
   notes: "",
 }
 
@@ -140,6 +143,8 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
           preferredZone: draft.zone,
           customerName: draft.customerName,
           customerPhone: draft.customerPhone,
+          customerEmail: draft.customerEmail,
+          marketingOptIn: draft.marketingOptIn === true,
           notes: draft.notes,
         }),
       })
@@ -181,7 +186,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   }
 
   if (receipt) {
-    return <ReservationSuccess receipt={receipt} trackingToken={trackingToken} whatsappHref={whatsappHref} />
+    return <ReservationSuccess receipt={receipt} trackingToken={trackingToken} whatsappHref={whatsappHref} promotionsRequested={draft.marketingOptIn === true} />
   }
 
   return (
@@ -229,8 +234,20 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
             <ReservationSummary draft={draft} phone={phone} />
             <ReservationContactStep draft={draft} errors={errors} onChange={patch} />
             <p className="text-sm text-olive-muted">
-              Usamos tu nombre y celular solo para coordinar esta solicitud. La política de privacidad todavía no está
+              Usamos tu nombre, tu celular y tu correo para coordinar esta solicitud. La política de privacidad todavía no está
               publicada.
+            </p>
+            <label className="flex min-h-11 items-start gap-3 text-sm leading-5 text-olive">
+              <Checkbox
+                checked={draft.marketingOptIn === true}
+                onCheckedChange={(value) => patch({ marketingOptIn: value === true })}
+                className="mt-0.5"
+                aria-describedby="reservation-promotions-note"
+              />
+              <span>Acepto recibir información, novedades y promociones de PIÙ Pizza & Dolce por correo electrónico.</span>
+            </label>
+            <p id="reservation-promotions-note" className="text-sm text-olive-muted">
+              Viene marcada. Si no la quieres, desmárcala. Tu reserva se envía igual.
             </p>
           </div>
         ) : null}

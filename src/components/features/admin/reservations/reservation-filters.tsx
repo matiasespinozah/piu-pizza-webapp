@@ -12,13 +12,14 @@ type ReservationFiltersProps = {
   status?: string
   zone?: string
   view?: string
+  month?: string
   active: boolean
 }
 
 const fieldClass =
   "admin-control w-full min-w-0 max-w-full outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
 
-function ReservationFilters({ q, date, status, zone, view, active }: ReservationFiltersProps) {
+function ReservationFilters({ q, date, status, zone, view, month, active }: ReservationFiltersProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -76,6 +77,7 @@ function ReservationFilters({ q, date, status, zone, view, active }: Reservation
               </select>
             </label>
             {view ? <input type="hidden" name="view" value={view} /> : null}
+            {month ? <input type="hidden" name="month" value={month} /> : null}
             <Button type="submit" className="h-11">
               Aplicar
             </Button>

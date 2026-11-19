@@ -48,6 +48,24 @@ function ReservationContactStep({ draft, errors, onChange }: ReservationContactS
       </div>
 
       <div>
+        <FieldLabel htmlFor="reservation-email">Correo electrónico</FieldLabel>
+        <Input
+          id="reservation-email"
+          name="email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          maxLength={120}
+          value={draft.customerEmail}
+          className="mt-2 bg-cream"
+          aria-invalid={errors.customerEmail ? true : undefined}
+          aria-describedby={errors.customerEmail ? "reservation-email-error" : undefined}
+          onChange={(event) => onChange({ customerEmail: event.target.value })}
+        />
+        <FieldError id="reservation-email-error">{errors.customerEmail}</FieldError>
+      </div>
+
+      <div>
         <FieldLabel htmlFor="reservation-notes">
           Observaciones <span className="font-normal text-muted-foreground">(opcional)</span>
         </FieldLabel>

@@ -19,6 +19,7 @@ const collections = {
   reservationAccess: "reservationAccess",
   reservationStatusRate: "reservationStatusRate",
   reservationDays: "reservationDays",
+  reservationGuests: "reservationGuests",
   invitations: "invitations",
   catalog: "catalog",
   invitationRate: "invitationRate",
@@ -47,6 +48,7 @@ const reservationSchema = z.object({
   preferredZone: reservationZoneSchema,
   customerName: z.string().trim().min(2).max(80),
   customerPhone: z.string().trim().min(8).max(20),
+  customerEmail: z.string().max(120).optional(),
   notes: z.string().trim().max(280),
   status: reservationStatusSchema,
 })
