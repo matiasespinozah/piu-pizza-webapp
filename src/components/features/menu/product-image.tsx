@@ -26,6 +26,7 @@ type ProductImageProps = {
   ratio?: keyof typeof ratioClass
   className?: string
   priority?: boolean
+  quality?: number
   /** Miniatura: la ilustración predeterminada usa menos margen interior. */
   compact?: boolean
 }
@@ -41,6 +42,7 @@ function ProductImageFrame({
   ratio = "1/1",
   className,
   priority = false,
+  quality = 80,
   compact = false,
 }: ProductImageProps) {
   const resolved = resolveProductImageSrc(src)
@@ -66,6 +68,7 @@ function ProductImageFrame({
               fill
               sizes={sizes}
               priority={priority}
+              quality={quality}
               className={showPlaceholder ? "object-contain object-center mix-blend-multiply" : "object-cover object-center"}
               onError={() => setFailedSrc(displaySrc)}
             />

@@ -5,7 +5,9 @@ import { createHash } from "node:crypto"
 import sharp from "sharp"
 
 const maxUploadBytes = 8 * 1024 * 1024
-const maxOutputBytes = 150 * 1024
+const maxOutputBytes = 400 * 1024
+const edges = [1600, 1400, 1200]
+const qualities = [80, 76, 72]
 
 class CatalogImageError extends Error {
   constructor(message: string) {
@@ -14,37 +16,38 @@ class CatalogImageError extends Error {
   }
 }
 
-/** Deja la foto en WebP, a lo más 1200 px y 150 KB. No agranda una imagen chica. */
+/** Deja la foto en WebP, a lo más 1600 px y 400 KB, sin bajar de calidad 72. No agranda una imagen chica. */
 async function prepareProductImage(input: Buffer) {
   if (input.byteLength === 0 || input.byteLength > maxUploadBytes) {
     throw new CatalogImageError("La foto tiene que pesar menos de 8 MB.")
   }
 
-  let quality = 75
   let output = Buffer.alloc(0)
   try {
-    output = await render(input, quality)
-    while (output.byteLength > maxOutputBytes && quality > 40) {
-      quality -= 10
-      output = await render(input, quality)
+    for (const edge of edges) {
+      for (const quality of qualities) {
+        output = await render(input, edge, quality)
+        if (output.byteLength <= maxOutputBytes) break
+      }
+      if (output.byteLength <= maxOutputBytes) break
     }
   } catch {
     throw new CatalogImageError("Ese archivo no es una imagen que se pueda usar.")
   }
 
   if (output.byteLength > maxOutputBytes) {
-    throw new CatalogImageError("La foto sigue pesando más de 150 KB después de prepararla.")
+    throw new CatalogImageError("La foto sigue pesando más de 400 KB después de prepararla.")
   }
 
   const hash = createHash("sha256").update(output).digest("hex").slice(0, 16)
   return { bytes: output, hash }
 }
 
-function render(input: Buffer, quality: number) {
+function render(input: Buffer, edge: number, quality: number) {
   return sharp(input, { failOn: "error" })
     .rotate()
-    .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
-    .webp({ quality })
+    .resize({ width: edge, height: edge, fit: "inside", withoutEnlargement: true })
+    .webp({ quality, effort: 5 })
     .toBuffer()
 }
 
