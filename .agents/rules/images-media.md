@@ -6,7 +6,7 @@ Las fotos de pizza son lo que más pesa en el sitio y el ancho de banda es lo qu
 | Tipo | Ancho máximo del original | Peso máximo |
 |---|---|---|
 | Hero / portada | 1920 px | 300 KB |
-| Foto de producto | 1200 px | 150 KB |
+| Foto de producto | 1600 px | 400 KB |
 | Miniatura | 400 px | 40 KB |
 | Logo / íconos | SVG | 10 KB |
 | **Página completa (primera carga)** | — | **≤ 1,5 MB** |

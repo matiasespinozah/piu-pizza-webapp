@@ -135,18 +135,18 @@ test("solo una foto de Storage reemplaza la ilustración", () => {
   )
 })
 
-test("una foto grande queda en WebP de hasta 150 KB", async () => {
+test("una foto grande queda en WebP nítido de hasta 1600 px", async () => {
   const source = await sharp({
     create: { width: 2400, height: 1600, channels: 3, background: { r: 180, g: 40, b: 40 } },
   })
     .png()
     .toBuffer()
   const prepared = await prepareProductImage(source)
-  assert.ok(prepared.bytes.byteLength <= 150 * 1024)
+  assert.ok(prepared.bytes.byteLength <= 400 * 1024)
   const meta = await sharp(prepared.bytes).metadata()
   assert.equal(meta.format, "webp")
-  assert.ok((meta.width ?? 0) <= 1200)
-  assert.ok((meta.height ?? 0) <= 1200)
+  assert.equal(meta.width, 1600)
+  assert.ok((meta.height ?? 0) <= 1600)
 })
 
 test("una categoría nueva no pisa el identificador de una que ya existe", () => {

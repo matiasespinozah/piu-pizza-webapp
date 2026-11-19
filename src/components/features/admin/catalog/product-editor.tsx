@@ -274,7 +274,7 @@ function ProductEditor({ open, categories, product, defaultCategoryId, onOpenCha
                   accept="image/jpeg,image/png,image/webp,image/avif"
                   onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}
                 />
-                <FieldDescription>Se prepara al guardar: WebP, hasta 1200 px y 150 KB.</FieldDescription>
+                <FieldDescription>Se prepara al guardar: WebP, hasta 1600 px y 400 KB.</FieldDescription>
               </Field>
               {fieldError ? <FieldError>{fieldError}</FieldError> : null}
               {formError ? (
