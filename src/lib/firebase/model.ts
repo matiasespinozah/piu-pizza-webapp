@@ -103,7 +103,7 @@ const staffDirectorySchema = z.object({
   displayName: z.string().trim().max(80),
   /** pending no tiene claim. El rol del panel sigue viviendo solo en Authentication. */
   status: z.enum(["pending", "active", "rejected", "suspended"]),
-  intendedRole: z.enum(["admin", "superadmin"]).nullable(),
+  intendedRole: z.enum(["admin", "superadmin", "mesero"]).nullable(),
   invitedBy: z.string().trim().max(128).nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

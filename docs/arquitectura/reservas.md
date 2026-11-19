@@ -39,6 +39,10 @@ La consulta usa `PIU_RESERVATION_STATUS=on` y, además, el emulador o `PIU_FIREB
 
 Hay un tope aparte del de las solicitudes: 30 consultas por hora para un mismo enlace, y 40 intentos fallidos por hora para la dirección que la plataforma agrega al final de `X-Forwarded-For`. Un enlace válido no gasta el cupo de los demás. La dirección no se guarda.
 
+## Atención del mesero
+
+El rol `mesero` entra a `/admin/atencion`. Ve las reservas de hoy en estado confirmada, llegada o finalizada. No recibe correo, teléfono, promociones ni el historial. Marcar llegada y finalizar usan las mismas transiciones que el panel. Finalizar suelta el cupo de esa reserva. La mesa se elige entre las configuradas, de la zona y libres en ese horario; no hay etiqueta libre ni excepción. Si todavía no hay mesas, la llegada y el cierre siguen disponibles.
+
 ## Panel
 
 `/admin/reservas` abre en Hoy: la fecha civil de Chile, todos los estados, de la hora más temprana a la más tarde. El id del documento desempata. Futuras toma las fechas posteriores a hoy, en ese mismo orden. Pasadas recorre un mes: el mes actual hasta ayer, y cualquier mes anterior completo, de la visita más nueva a la más antigua. No se puede avanzar a un mes que todavía no llega. Cada lista pide 20 documentos y el cursor sigue ese orden; cambia la vista, el mes o el filtro y el cursor vuelve a empezar.

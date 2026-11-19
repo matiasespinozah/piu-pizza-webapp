@@ -1,6 +1,6 @@
 import type { StaffRole } from "@/lib/auth/roles"
 
-const adminSections = ["inicio", "reservas", "mesas", "carta", "configuracion", "personal"] as const
+const adminSections = ["inicio", "reservas", "mesas", "carta", "configuracion", "personal", "atencion"] as const
 
 type AdminSection = (typeof adminSections)[number]
 
@@ -11,6 +11,7 @@ const sectionRoles: Record<AdminSection, readonly StaffRole[]> = {
   carta: ["superadmin", "admin"],
   configuracion: ["superadmin"],
   personal: ["superadmin"],
+  atencion: ["mesero"],
 }
 
 const adminNav = [
@@ -26,8 +27,14 @@ function canViewSection(role: StaffRole, section: AdminSection) {
 }
 
 function roleLabel(role: StaffRole) {
-  return role === "superadmin" ? "Propietario" : "Administración"
+  if (role === "superadmin") return "Propietario"
+  if (role === "mesero") return "Mesero"
+  return "Administración"
 }
 
-export { adminNav, adminSections, canViewSection, roleLabel }
+function homeForRole(role: StaffRole) {
+  return role === "mesero" ? "/admin/atencion" : "/admin"
+}
+
+export { adminNav, adminSections, canViewSection, homeForRole, roleLabel }
 export type { AdminSection }

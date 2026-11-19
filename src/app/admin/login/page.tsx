@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 
 import { LoginForm } from "@/components/features/admin/login-form"
 import { Heading, Text } from "@/components/ui/typography"
+import { homeForRole } from "@/lib/auth/permissions"
 import { readStaffSession } from "@/server/auth/session"
 
 export const instant = false
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 
 export default async function AdminLoginPage() {
   const session = await readStaffSession()
-  if (session) redirect("/admin")
+  if (session) redirect(homeForRole(session.role))
 
   return (
     <main className="flex min-h-svh flex-col bg-background px-4 py-8">
