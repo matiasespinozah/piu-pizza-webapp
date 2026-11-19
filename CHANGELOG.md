@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- `/nosotros` cuenta la historia de Felipe y Camila. El enlace Nosotros del encabezado abre esa página. Faltan fotos de los inicios y de la familia; el local y la terraza usan las imágenes que ya tiene el sitio.
 - En el encabezado, «Mi reserva» abre una ventana con PIU- ya escrito. Los cuatro números llevan a `/reservas/estado`, que se actualiza solo cada 30 segundos mientras la página está abierta. Un código que no existe no revela si hay otra reserva. Cada consulta sigue limitada por hora.
 - En `/admin/reservas`, `admin` y `superadmin` pueden crear una reserva recibida en el local o por teléfono, reagendar, anotar una mesa opcional y guardar una nota interna. Si el grupo o el horario superan los cupos, el panel avisa y permite continuar solo con una excepción explícita. Queda registrado quién la autorizó, cuándo y por qué, sin cambiar la configuración del local ni las reglas del formulario público.
 - El panel muestra una campana con avisos persistidos: solicitud nueva, reserva próxima, pendiente que sigue esperando, cambio de horario, cancelación y cambios de otro integrante. Se actualizan solos, se pueden marcar como leídos y abren la reserva. El sonido es opcional. Esas lecturas usan el servidor y Firestore sigue cerrado al navegador.

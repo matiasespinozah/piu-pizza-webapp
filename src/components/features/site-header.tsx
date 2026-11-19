@@ -22,7 +22,7 @@ import { textLinkVariants } from "@/components/ui/text-link"
 const links = [
   { href: "/#inicio", id: "inicio", label: "Inicio" },
   { href: "/carta", id: "carta", label: "Carta" },
-  { href: "/#esencia", id: "esencia", label: "Nosotros" },
+  { href: "/nosotros", id: "nosotros", label: "Nosotros" },
   { href: "/reservas", id: "reservas", label: "Reservas" },
 ] as const
 
@@ -30,7 +30,7 @@ const sectionOrder = ["inicio", "esencia"] as const
 
 type SiteHeaderProps = {
   /** `home` sigue el scroll de las secciones; el resto usa la barra sólida. */
-  page?: "home" | "carta" | "reservas"
+  page?: "home" | "carta" | "reservas" | "nosotros"
 }
 
 function SiteHeader({ page = "home" }: SiteHeaderProps) {
