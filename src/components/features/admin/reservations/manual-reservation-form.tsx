@@ -31,6 +31,7 @@ function ManualReservationForm() {
         body: JSON.stringify({
           customerName: String(form.get("customerName") ?? ""),
           customerPhone: String(form.get("customerPhone") ?? ""),
+          customerEmail: String(form.get("customerEmail") ?? ""),
           date: String(form.get("date") ?? ""),
           preferredTime: String(form.get("preferredTime") ?? ""),
           partySize: Number(form.get("partySize") ?? 0),
@@ -71,6 +72,7 @@ function ManualReservationForm() {
         <form className="mt-4 flex flex-col gap-3" onSubmit={onSubmit}>
           <Input name="customerName" required minLength={2} maxLength={80} placeholder="Nombre" aria-label="Nombre" className="bg-cream" />
           <Input name="customerPhone" required inputMode="tel" placeholder="+56 9 2887 3619" aria-label="Celular" className="bg-cream" />
+          <Input name="customerEmail" type="email" inputMode="email" autoComplete="email" maxLength={120} placeholder="Correo, si lo entrega" aria-label="Correo electrónico, opcional" className="bg-cream" />
           <div className="grid grid-cols-2 gap-2">
             <Input name="date" type="date" required aria-label="Fecha" className="bg-cream" />
             <Input name="preferredTime" type="time" required aria-label="Hora" className="bg-cream" />

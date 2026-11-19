@@ -9,6 +9,8 @@ type ReservationListItem = {
   partySize: number
   preferredZone: ReservationZone
   customerName: string
+  customerEmail: string | null
+  requestCount: number | null
   createdAt: string
   revision: number
 }
@@ -29,7 +31,7 @@ type ReservationTrackingState =
 type ReservationDetail = ReservationListItem & {
   customerPhone: string
   notes: string
-    assignedTableIds: string[]
+  assignedTableIds: string[]
   proposedDate: string | null
   proposedTime: string | null
   proposedZone: ReservationZone | null
@@ -39,6 +41,7 @@ type ReservationDetail = ReservationListItem & {
   exceptionReason: string | null
   events: ReservationEvent[]
   tracking: ReservationTrackingState
+  marketingConsent: boolean
 }
 
 type ReservationSummary = {
