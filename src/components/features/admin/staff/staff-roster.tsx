@@ -114,9 +114,15 @@ function StaffRoster({ members }: { members: MemberCard[] }) {
                         <select
                           className="admin-control font-sans font-normal"
                           value={selected}
-                          onChange={(event) => setRoles((current) => ({ ...current, [member.uid]: event.target.value === "superadmin" ? "superadmin" : "admin" }))}
+                          onChange={(event) =>
+                            setRoles((current) => ({
+                              ...current,
+                              [member.uid]: event.target.value === "superadmin" || event.target.value === "mesero" ? event.target.value : "admin",
+                            }))
+                          }
                         >
                           <option value="admin">Administración</option>
+                          <option value="mesero">Mesero</option>
                           <option value="superadmin">Propietario</option>
                         </select>
                       </label>

@@ -3,6 +3,7 @@
 import { ReservationListCard } from "@/components/features/admin/reservations/reservation-admin-ui"
 import { ReservationDetailPanel } from "@/components/features/admin/reservations/reservation-detail-panel"
 import { ReservationStatusBadge } from "@/components/features/reservations/reservation-status-badge"
+import { ReservationCodeForm } from "@/components/features/reservations/reservation-code-form"
 import { ReservationStatusCard } from "@/components/features/reservations/reservation-status-card"
 import { ReservationSuccess } from "@/components/features/reservations/reservation-success"
 import type { ReservationStatus } from "@/lib/reservations/types"
@@ -109,6 +110,9 @@ function ReservationScreensPreview() {
             onRefresh={() => undefined}
           />
         ))}
+      </div>
+      <div className="max-w-sm">
+        <ReservationCodeForm onCode={() => undefined} />
       </div>
     </div>
   )

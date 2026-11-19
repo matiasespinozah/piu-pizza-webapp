@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { getClientAuth } from "@/lib/firebase/client-auth"
+import { homeForRole } from "@/lib/auth/permissions"
 import { adminRequestHeader, adminRequestValue } from "@/lib/auth/session-policy"
 
 type LoginMessage = {
@@ -86,9 +87,10 @@ function LoginForm() {
         return
       }
 
-      // La cookie httpOnly tiene que viajar en el próximo documento.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- recarga completa para leer la cookie
-      window.location.assign("/admin")
+      const body: unknown = await response.json().catch(() => null)
+      const role = typeof body === "object" && body !== null && "role" in body ? body.role : null
+      const next = role === "superadmin" || role === "admin" || role === "mesero" ? homeForRole(role) : "/admin"
+      window.location.assign(next)
     } catch (caught) {
       const code = typeof caught === "object" && caught && "code" in caught ? String(caught.code) : ""
       if (code === "auth/network-request-failed" || caught instanceof TypeError) {

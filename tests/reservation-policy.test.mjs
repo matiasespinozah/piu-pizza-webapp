@@ -10,6 +10,8 @@ import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
 import { confirmedClock, defaultWeek, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 import { pageSchedule, pastWindow, staffView } from "@/lib/reservations/staff-views"
+import { eligibleServiceTables } from "@/lib/reservations/service-tables"
+import { waiterMayReadNotice } from "@/lib/reservations/service-notices"
 import { canTransition } from "@/lib/reservations/transitions"
 import { clientAddress } from "@/lib/reservations/client-address"
 import { createTrackingSecret, hashTrackingSecret, trackingExpired, trackingExpiresOn, unwrapTrackingSecret, wrapTrackingSecret } from "@/lib/reservations/tracking"
@@ -600,4 +602,27 @@ test("la casilla de promociones nace marcada y la aceptación queda en la reserv
   const rules = readFileSync(new URL("../firestore.rules", import.meta.url), "utf8")
   assert.match(rules, /match \/marketingSubscribers\/\{subscriberId\}/)
   assert.match(rules, /match \/marketingTokens\/\{tokenId\}/)
+})
+
+test("el mesero solo ve mesas libres y avisos de atención", () => {
+  const tables = [
+    { id: "t1", label: "Mesa 1", zone: "salon", seats: 4, blocked: false, reservable: true },
+    { id: "t2", label: "Mesa 2", zone: "salon", seats: 2, blocked: false, reservable: true },
+    { id: "t3", label: "Mesa 3", zone: "terrace", seats: 4, blocked: false, reservable: true },
+    { id: "t4", label: "Mesa 4", zone: "salon", seats: 4, blocked: true, reservable: true },
+  ]
+  const bookings = { otra: { tableLabel: "Mesa 1", tableIds: ["t1"], startMin: 18 * 60, endMin: 19 * 60 + 30 } }
+  const free = eligibleServiceTables({ tables, zone: "salon", partySize: 4, startMin: 18 * 60, endMin: 19 * 60 + 30, bookings, reservationId: "propia" })
+  assert.deepEqual(free.map((table) => table.label), [])
+  const later = eligibleServiceTables({ tables, zone: "salon", partySize: 4, startMin: 21 * 60, endMin: 22 * 60, bookings, reservationId: "propia" })
+  assert.deepEqual(later.map((table) => table.id), ["t1"])
+  assert.equal(waiterMayReadNotice({ type: "created", title: "Nueva reserva" }), false)
+  assert.equal(waiterMayReadNotice({ type: "attention", title: "Sigue pendiente" }), false)
+  assert.equal(waiterMayReadNotice({ type: "changed", title: "Solicitud rechazada" }), false)
+  assert.equal(waiterMayReadNotice({ type: "confirmed", title: "Reserva confirmada" }), true)
+  assert.equal(waiterMayReadNotice({ type: "changed", title: "Mesa actualizada" }), true)
+  const service = readFileSync(new URL("../src/server/reservations/service.ts", import.meta.url), "utf8")
+  assert.match(service, /Esa acción no está disponible para el mesero/)
+  const desk = readFileSync(new URL("../src/server/reservations/service-desk.ts", import.meta.url), "utf8")
+  assert.doesNotMatch(desk, /customerEmail|marketingConsent|customerPhone/)
 })

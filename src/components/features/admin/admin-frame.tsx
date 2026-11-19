@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { BookOpenIcon, CalendarDaysIcon, CalendarRangeIcon, HomeIcon, SettingsIcon, UserRoundIcon, UtensilsCrossedIcon, type LucideIcon } from "lucide-react"
+import { BookOpenIcon, CalendarDaysIcon, CalendarRangeIcon, ClipboardListIcon, HomeIcon, SettingsIcon, UserRoundIcon, UtensilsCrossedIcon, type LucideIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -27,6 +27,7 @@ const sectionIcon: Record<AdminSection, LucideIcon> = {
   carta: BookOpenIcon,
   configuracion: SettingsIcon,
   personal: UserRoundIcon,
+  atencion: ClipboardListIcon,
 }
 
 type AdminFrameProps = {

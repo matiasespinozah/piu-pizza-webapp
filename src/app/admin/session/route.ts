@@ -34,8 +34,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return denied(400)
 
   try {
-    await createStaffSession(parsed.data.idToken)
-    return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } })
+    const session = await createStaffSession(parsed.data.idToken)
+    return NextResponse.json({ ok: true, role: session.role }, { headers: { "Cache-Control": "no-store" } })
   } catch (error) {
     if (error instanceof StaffAccessError && error.code === "pending") {
       return NextResponse.json(
