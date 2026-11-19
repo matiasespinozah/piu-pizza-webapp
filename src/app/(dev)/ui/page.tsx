@@ -14,7 +14,7 @@ import { ProductImage } from "@/components/features/menu/product-image"
 import { ProductList } from "@/components/features/menu/product-list"
 import { FloorEditor } from "@/components/features/admin/tables/floor-editor"
 import { RestaurantSettings } from "@/components/features/admin/tables/restaurant-settings"
-import { ReservationCodeForm } from "@/components/features/reservations/reservation-code-form"
+import { ServiceBoardView } from "@/components/features/service/service-board"
 import { ReservationScreensPreview } from "@/components/features/reservations/reservation-screens-preview"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
@@ -475,6 +475,38 @@ export default function UiShowcasePage() {
             />
           </Block>
 
+          <Block title="Atención del mesero">
+            <Text className="mb-4">Ejemplo visual. No lee reservas reales.</Text>
+            <div className="mx-auto max-w-[390px] rounded-[1.75rem] bg-cream p-3">
+              <ServiceBoardView
+                live={false}
+                initial={{
+                  ready: true,
+                  indexError: false,
+                  today: "2026-11-19",
+                  arriving: [
+                    {
+                      id: "muestra-atencion",
+                      referenceCode: "PIU-2044",
+                      status: "confirmed",
+                      date: "2026-11-19",
+                      preferredTime: "20:30",
+                      partySize: 4,
+                      preferredZone: "terrace",
+                      customerName: "Camila González",
+                      notes: "Vamos con un coche de bebé.",
+                      tableLabel: null,
+                      internalNotes: "Preparar una silla para niño.",
+                      revision: 1,
+                    },
+                  ],
+                  serving: [],
+                  finished: [],
+                }}
+              />
+            </div>
+          </Block>
+
           <Block title="Reservas móvil">
             <Text className="mb-4">Ejemplo visual. No es una solicitud del restaurante.</Text>
             <ReservationListCard
@@ -577,9 +609,6 @@ export default function UiShowcasePage() {
           <Block title="Reserva recibida y seguimiento">
             <Text className="mb-4">Ejemplo con datos ficticios. No consulta el servidor.</Text>
             <ReservationScreensPreview />
-            <div className="mt-6 max-w-sm">
-              <ReservationCodeForm onCode={() => undefined} />
-            </div>
           </Block>
 
           <Block title="Configuración del panel">

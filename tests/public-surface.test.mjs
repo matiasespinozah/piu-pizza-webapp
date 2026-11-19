@@ -33,7 +33,10 @@ test("el sitio público no importa Firebase ni el servidor", () => {
     const loginForm = path.endsWith("src/components/features/admin/login-form.tsx")
     const joinForm = path.endsWith("src/components/features/admin/staff/join-form.tsx")
     const adminPage = path.includes("src/app/admin/")
-    const reservationApi = path.includes("src/app/api/reservations/") || path.includes("src/app/api/admin/reservations/")
+    const reservationApi =
+      path.includes("src/app/api/reservations/") ||
+      path.includes("src/app/api/admin/reservations/") ||
+      path.includes("src/app/api/admin/service/")
     const catalogServer =
       path.endsWith("src/app/page.tsx") ||
       path.endsWith("src/app/carta/page.tsx") ||

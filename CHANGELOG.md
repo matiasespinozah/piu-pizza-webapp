@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- El rol `mesero` atiende en `/admin/atencion`: ve las reservas confirmadas de hoy, marca la llegada, elige una mesa ya configurada y finaliza la atención. No confirma, rechaza, cancela ni abre el resto del panel. Los avisos que recibe son los de la atención, no los de solicitudes pendientes ni de personal. El propietario lo asigna desde Personal.
 - `/nosotros` cuenta la historia de Felipe y Camila. El enlace Nosotros del encabezado abre esa página. Faltan fotos de los inicios y de la familia; el local y la terraza usan las imágenes que ya tiene el sitio.
 - En `/admin/reservas`, Hoy, Futuras y Pasadas ordenan por la visita y muestran 20 por página. Hoy es la vista inicial. Pasadas recorre el mes y, en el mes en curso, llega solo hasta ayer. «Todas las reservas» abre `/admin/reservas/historial`, fuera del menú y con la misma autorización de reservas. Los índices de `date` y `preferredTime` quedaron escritos en `firestore.indexes.json`; no se publicaron.
 - El formulario público pide el correo y lo guarda en minúsculas. La reserva manual puede quedar sin correo. El panel muestra «N solicitudes realizadas» para los correos de la página, con un contador cuyo identificador no es el correo. El seguimiento público no lo recibe. Hace falta `PIU_RESERVATION_GUEST_SECRET` en Secret Manager; sin esa clave no se guarda una reserva que traiga correo.
@@ -46,6 +47,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- Finalizar o cancelar una reserva suelta su cupo aunque el mismo horario tenga otras reservas. Antes el cupo de esa reserva podía quedar tomado.
+- El muestrario `/ui` vuelve a abrir. El formulario de código queda dentro del ejemplo de seguimiento, que sí puede recibir la acción.
 - Las fotos de producto se guardan hasta en 1600 px y calidad 72, con un tope de 400 KB. En el celular y en el computador la ficha usa esa misma nitidez.
 - Al abrir un producto de la carta, la foto queda cuadrada, como en la lista, y la pizza no se recorta.
 - Crear una categoría con un nombre que ya existe no reemplaza la anterior. Subir o bajar dos categorías se guarda en una sola operación.
