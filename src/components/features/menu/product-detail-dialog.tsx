@@ -24,7 +24,7 @@ function ProductDetailDialog({ product, onClose }: ProductDetailDialogProps) {
               <ProductImage
                 src={product.imageUrl}
                 name={product.name}
-                ratio="4/3"
+                ratio="1/1"
                 sizes="(max-width: 640px) 100vw, 512px"
                 priority
                 className={product.availability === "available" ? "w-full rounded-none rounded-t-2xl" : "w-full rounded-none rounded-t-2xl opacity-60"}
