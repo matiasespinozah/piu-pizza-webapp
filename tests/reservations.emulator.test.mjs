@@ -18,6 +18,7 @@ import { santiagoParts, todayIsoInSantiago, weekdayOf } from "@/lib/reservations
 assert.ok(process.env.FIRESTORE_EMULATOR_HOST, "Estas pruebas solo corren dentro del emulador.")
 assert.equal(process.env.GCLOUD_PROJECT, "demo-piu-pizza")
 assert.notEqual(process.env.GCLOUD_PROJECT, "piu-pizza-cl")
+process.env.PIU_RESERVATION_GUEST_SECRET ??= "clave-de-prueba-con-32-caracteres"
 
 const admin = { uid: "staff-admin", role: "admin", email: "ana@example.test", displayName: "Ana" }
 const owner = { uid: "staff-owner", role: "superadmin", email: "felipe@example.test", displayName: "Felipe" }
@@ -44,6 +45,7 @@ function payload(overrides = {}) {
     preferredZone: "salon",
     customerName: "Ana Soto",
     customerPhone: "+56 9 2887 3619",
+    customerEmail: "ana.soto@correo.cl",
     notes: "Sin cebolla",
     ...overrides,
   }

@@ -1,3 +1,4 @@
+import { normalizeReservationEmail } from "@/lib/reservations/email"
 import { admitRequest, visitException, type DayOverride } from "@/lib/reservations/day-policy"
 import { maxPartyFor, requiredLeadHours, reservationConfig } from "@/lib/reservations/configuration"
 import type { OperationRules } from "@/lib/reservations/operations"
@@ -135,9 +136,12 @@ function validateContact(
 
   if (!draft.customerPhone.trim()) {
     errors.customerPhone = "Escribe tu celular."
-  } else if (!normalizeChileMobile(draft.customerPhone)) {
+  } else   if (!normalizeChileMobile(draft.customerPhone)) {
     errors.customerPhone = "Ingresa un celular chileno, por ejemplo +56 9 2887 3619."
   }
+
+  const email = normalizeReservationEmail(draft.customerEmail)
+  if ("error" in email) errors.customerEmail = email.error
 
   if (draft.notes.trim().length > reservationConfig.notesMaxLength) {
     errors.notes = `Las observaciones pueden tener hasta ${reservationConfig.notesMaxLength} caracteres.`

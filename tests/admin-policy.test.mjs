@@ -110,6 +110,7 @@ test("las rutas del panel exigen sesión y la sección que corresponde", () => {
     "src/app/admin/(panel)/page.tsx": "inicio",
     "src/app/admin/(panel)/reservas/page.tsx": "reservas",
     "src/app/admin/(panel)/reservas/disponibilidad/page.tsx": "reservas",
+    "src/app/admin/(panel)/reservas/historial/page.tsx": "reservas",
     "src/app/admin/(panel)/mesas/page.tsx": "mesas",
     "src/app/admin/(panel)/carta/page.tsx": "carta",
     "src/app/admin/(panel)/configuracion/page.tsx": "configuracion",
@@ -118,6 +119,14 @@ test("las rutas del panel exigen sesión y la sección que corresponde", () => {
   for (const [path, section] of Object.entries(pages)) {
     assert.match(text(path), new RegExp(`requireSection\\("${section}"\\)`))
   }
+  const history = text("src/app/admin/(panel)/reservas/historial/page.tsx")
+  assert.match(history, /robots: \{ index: false, follow: false \}/)
+  assert.doesNotMatch(history, /customerEmail|mailto:/)
+  assert.doesNotMatch(text("src/lib/auth/permissions.ts"), /historial/)
+  assert.doesNotMatch(text("src/components/features/admin/admin-frame.tsx"), /historial/)
+  assert.equal(canViewSection("admin", "reservas"), true)
+  assert.equal(canViewSection("superadmin", "reservas"), true)
+  assert.equal(readStaffRole("invitado"), null)
 })
 
 test("el ingreso no guarda secretos ni ofrece crear cuenta", () => {
