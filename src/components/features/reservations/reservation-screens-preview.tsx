@@ -54,7 +54,6 @@ function ReservationScreensPreview() {
               preferredZone: index % 2 ? "terrace" : "salon",
               customerName: "Camila Rojas",
               customerEmail: index === 0 ? "camila@correo.cl" : null,
-              requestCount: index === 0 ? 2 : null,
               createdAt: "2026-11-08T21:10:00.000Z",
               revision: 1,
             }}
