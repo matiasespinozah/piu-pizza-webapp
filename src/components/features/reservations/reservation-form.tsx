@@ -9,7 +9,7 @@ import { ReservationSummary } from "@/components/features/reservations/reservati
 import { ReservationTimeStep } from "@/components/features/reservations/reservation-time-step"
 import { ReservationSuccess } from "@/components/features/reservations/reservation-success"
 import { Button } from "@/components/ui/button"
-import { reservationWhatsappMessage } from "@/lib/reservations/configuration"
+import { requiredLeadHours, reservationWhatsappMessage } from "@/lib/reservations/configuration"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { normalizeChileMobile, validateContact, validateTime, validateVisit } from "@/lib/reservations/validation"
 import type { PublicReceipt } from "@/lib/reservations/views"
@@ -207,7 +207,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
         <h2 id={titleId} ref={headingRef} tabIndex={-1} className="sr-only">
           {stepTitle[step]}
         </h2>
-        <p className="mb-4 text-sm text-olive-strong">Enviar no confirma la mesa. El equipo de PIÙ la revisa antes.</p>
+        <p className="mb-4 text-sm text-olive-strong">Al enviar, la solicitud queda pendiente de confirmación del restaurante. La mesa no queda reservada todavía.</p>
         {!admission.ok ? (
           <p role="status" className="mb-4 rounded-2xl border border-olive-line bg-cream px-4 py-3 text-base text-olive">
             {admission.message}
@@ -221,6 +221,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
             clock={rules.clock}
             week={rules.week}
             visit={visitException(day)}
+            leadHours={requiredLeadHours(rules.anticipation.weekdayLeadHours)}
             onChange={(preferredTime) => patch({ preferredTime })}
           />
         ) : null}

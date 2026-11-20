@@ -11,12 +11,15 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- En `/admin/reservas`, arriba a la izquierda, «Respaldo» abre la unidad de Drive donde queda el Excel de reservas.
 - En el encabezado, «Mi reserva» abre una ventana con PIU- ya escrito. Los cuatro números llevan a `/reservas/estado`, que se actualiza solo cada 30 segundos mientras la página está abierta. Un código que no existe no revela si hay otra reserva. Cada consulta sigue limitada por hora.
 - En `/admin/reservas`, `admin` y `superadmin` pueden crear una reserva recibida en el local o por teléfono, reagendar, anotar una mesa opcional y guardar una nota interna. Si el grupo o el horario superan los cupos, el panel avisa y permite continuar solo con una excepción explícita. Queda registrado quién la autorizó, cuándo y por qué, sin cambiar la configuración del local ni las reglas del formulario público.
 - El panel muestra una campana con avisos persistidos: solicitud nueva, reserva próxima, pendiente que sigue esperando, cambio de horario, cancelación y cambios de otro integrante. Se actualizan solos, se pueden marcar como leídos y abren la reserva. El sonido es opcional. Esas lecturas usan el servidor y Firestore sigue cerrado al navegador.
 
 ### Cambiado
 
+- El aviso y el tooltip ya no se cargan en todas las páginas. Quedan en el muestrario `/ui`, que en producción no se publica. Las fuentes de la marca siguen igual.
+- En `/reservas`, cualquier día y cualquier hora se piden con al menos 2 horas de anticipación. A las 18:00 todavía se puede pedir las 20:00. Al enviar, queda dicho que la solicitud sigue pendiente de confirmación del restaurante y que la mesa aún no está reservada.
 - En `/admin/carta`, Mostrar y Ocultar quedan bloqueados hasta que la lista confirma el cambio. Si el producto estaba en Ocultos, el aviso dice que salió de esa lista y sigue en Todos.
 - En `/admin/carta`, Agregar deja crear un producto o «Añadir nueva categoría». Borrar un producto o una categoría abre una ventana de confirmación. En Configuración, las categorías de la carta se reubican arrastrando el punto o con subir y bajar.
 - En el pie, «Acceso empleados» queda con marco crema para distinguirlo del texto legal.
@@ -42,6 +45,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- El muestrario `/ui` vuelve a abrir en desarrollo. El formulario de código se muestra dentro de la ventana de seguimiento, que sí es un componente de cliente.
 - Las fotos de producto se guardan hasta en 1600 px y calidad 72, con un tope de 400 KB. En el celular y en el computador la ficha usa esa misma nitidez.
 - Al abrir un producto de la carta, la foto queda cuadrada, como en la lista, y la pizza no se recorta.
 - Crear una categoría con un nombre que ya existe no reemplaza la anterior. Subir o bajar dos categorías se guarda en una sola operación.

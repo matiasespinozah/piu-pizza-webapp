@@ -75,9 +75,10 @@ function ReservationSuccess({
           </span>
           <div className="reservation-success-copy flex flex-col gap-1" aria-live="polite">
             <h2 id="reservation-success-title" className="font-heading text-[1.75rem] leading-tight font-extrabold text-olive">
-              ¡Solicitud recibida!
+              Solicitud recibida
             </h2>
-            <p className="text-base text-olive-strong">Estamos revisando tu reserva.</p>
+            <p className="text-base font-semibold text-olive-strong">Queda pendiente de confirmación del restaurante.</p>
+            <p className="text-sm text-olive">La mesa todavía no está reservada. PIÙ la confirma y ahí queda tomada.</p>
           </div>
         </div>
 
@@ -100,7 +101,6 @@ function ReservationSuccess({
           )}
         </div>
 
-        <p className="text-center text-xs text-olive-muted">Tu mesa queda confirmada cuando PIÙ apruebe la solicitud.</p>
       </div>
     </section>
   )

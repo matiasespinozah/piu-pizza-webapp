@@ -64,7 +64,15 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col items-start gap-2">
+          <a
+            href="https://drive.google.com/drive/folders/0AOGhjSyhqHexUk9PVA"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-11 items-center rounded-lg border-2 border-status-done-solid bg-status-good-solid px-3 text-sm font-semibold text-cream shadow-tactile"
+          >
+            Respaldo
+          </a>
           <Heading as="h1" size="h3">
             Reservas
           </Heading>

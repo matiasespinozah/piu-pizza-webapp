@@ -57,7 +57,7 @@ No se suman mesas para un grupo grande. Si ninguna mesa alcanza, la confirmació
 
 ## Horario
 
-`America/Santiago`. Lunes a jueves 17:00–22:00. Viernes y sábado 13:00–23:00. Domingo cerrado. Los horarios del formulario llegan hasta el intervalo anterior al cierre. La anticipación de 1 o 2 horas, y la del fin de semana, siguen sin una hora definida, así que el servidor no la inventa ni la exige.
+`America/Santiago`. Lunes a jueves 17:00–22:00. Viernes y sábado 13:00–23:00. Domingo cerrado. Los horarios del formulario llegan hasta el intervalo anterior al cierre. Cualquier día, una hora solo se puede pedir con al menos 2 horas de anticipación: a las 18:00 todavía entra la de las 20:00. La solicitud queda pendiente hasta que el restaurante la confirme.
 
 ## Qué no hace
 

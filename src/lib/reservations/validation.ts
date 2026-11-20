@@ -1,5 +1,5 @@
 import { admitRequest, visitException, type DayOverride } from "@/lib/reservations/day-policy"
-import { maxPartyFor, reservationConfig } from "@/lib/reservations/configuration"
+import { maxPartyFor, requiredLeadHours, reservationConfig } from "@/lib/reservations/configuration"
 import type { OperationRules } from "@/lib/reservations/operations"
 import { instantInSantiago, isClosedDay, isPastDate, preferenceSlots, previousIso, santiagoParts, toMinutes, weekdayOf, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
 import type { ReservationDraft, ReservationErrors } from "@/lib/reservations/types"
@@ -62,12 +62,13 @@ function validateTime(draft: ReservationDraft, now = new Date(), rules?: VisitRu
   const errors = validateVisit(draft, now, rules)
   if (errors.date) return errors
 
-  const slots = preferenceSlots(draft.date, now, rules?.clock, visitException(rules?.day ?? null), rules?.week)
-  if (slots.length === 0) {
+  const visit = visitException(rules?.day ?? null)
+  const open = preferenceSlots(draft.date, now, rules?.clock, visit, rules?.week, 0)
+  if (open.length === 0) {
     errors.preferredTime = "Hoy ya no quedan horarios de preferencia. Prueba con otro día."
   } else if (!draft.preferredTime) {
     errors.preferredTime = "Elige un horario de preferencia."
-  } else if (!slots.includes(draft.preferredTime)) {
+  } else if (!open.includes(draft.preferredTime)) {
     errors.preferredTime = "Ese horario no corresponde al día elegido."
   } else {
     const anticipation = anticipationError(draft, now, rules?.anticipation)
@@ -89,21 +90,19 @@ function anticipationError(
   now: Date,
   anticipation?: { weekdayLeadHours: number | null; weekendPreviousDayCutoff: string | null },
 ) {
-  if (!anticipation || !draft.preferredTime) return null
+  if (!draft.preferredTime) return null
   const day = weekdayOf(draft.date)
-  if ((day === "fri" || day === "sat") && anticipation.weekendPreviousDayCutoff) {
+  if ((day === "fri" || day === "sat") && anticipation?.weekendPreviousDayCutoff) {
     const previous = previousIso(draft.date)
     const current = santiagoParts(now)
     if (current.iso > previous || (current.iso === previous && current.minutes > toMinutes(anticipation.weekendPreviousDayCutoff))) {
       return "El viernes y el sábado hay que pedir la mesa el día anterior, antes del horario definido."
     }
   }
-  if (day !== "fri" && day !== "sat" && day !== "sun" && anticipation.weekdayLeadHours) {
-    const slot = instantInSantiago(draft.date, draft.preferredTime)
-    const leadMs = anticipation.weekdayLeadHours * 60 * 60 * 1000
-    if (slot.getTime() - now.getTime() < leadMs) {
-      return `De lunes a jueves hay que pedir con al menos ${anticipation.weekdayLeadHours} horas de anticipación.`
-    }
+  const hours = requiredLeadHours(anticipation?.weekdayLeadHours)
+  const slot = instantInSantiago(draft.date, draft.preferredTime)
+  if (slot.getTime() - now.getTime() < hours * 60 * 60 * 1000) {
+    return `Para reservar a las ${draft.preferredTime} hay que pedirlo al menos ${hours} horas antes.`
   }
   return null
 }
