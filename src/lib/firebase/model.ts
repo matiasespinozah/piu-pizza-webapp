@@ -19,7 +19,6 @@ const collections = {
   reservationAccess: "reservationAccess",
   reservationStatusRate: "reservationStatusRate",
   reservationDays: "reservationDays",
-  reservationGuests: "reservationGuests",
   invitations: "invitations",
   catalog: "catalog",
   invitationRate: "invitationRate",

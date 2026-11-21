@@ -464,7 +464,6 @@ export default function UiShowcasePage() {
                   preferredZone: "salon",
                   customerName: "María Torres",
                   customerEmail: null,
-                  requestCount: null,
                   createdAt: "2026-11-10T12:00:00.000Z",
                   revision: 1,
                 },
@@ -518,7 +517,8 @@ export default function UiShowcasePage() {
                 preferredTime: "20:30",
                 partySize: 4,
                 preferredZone: "salon",
-                customerName: "María Torres", customerEmail: null, requestCount: null,
+                customerName: "María Torres",
+                customerEmail: null,
                 createdAt: "2026-11-10T12:00:00.000Z",
                 revision: 1,
               }}
@@ -536,7 +536,6 @@ export default function UiShowcasePage() {
                     preferredZone: "salon",
                     customerName: "María Torres",
                     customerEmail: null,
-                    requestCount: null,
                     createdAt: "2026-11-10T12:00:00.000Z",
                     revision: 1,
                   }}

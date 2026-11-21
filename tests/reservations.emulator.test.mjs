@@ -19,8 +19,6 @@ import { santiagoParts, todayIsoInSantiago, weekdayOf } from "@/lib/reservations
 assert.ok(process.env.FIRESTORE_EMULATOR_HOST, "Estas pruebas solo corren dentro del emulador.")
 assert.equal(process.env.GCLOUD_PROJECT, "demo-piu-pizza")
 assert.notEqual(process.env.GCLOUD_PROJECT, "piu-pizza-cl")
-process.env.PIU_RESERVATION_GUEST_SECRET ??= "clave-de-prueba-con-32-caracteres"
-
 const admin = { uid: "staff-admin", role: "admin", email: "ana@example.test", displayName: "Ana" }
 const owner = { uid: "staff-owner", role: "superadmin", email: "felipe@example.test", displayName: "Felipe" }
 const now = new Date("2026-11-07T18:00:00Z")
@@ -637,4 +635,29 @@ test("el mesero marca llegada, asigna una mesa libre y finaliza", async () => {
   assert.equal(JSON.stringify(board).includes(pending.id), false)
   const notices = await listStaffNotices(waiter, now)
   assert.equal(notices.some((item) => item.type === "created"), false)
+})
+
+test("la ficha cuenta el mismo correo y guardar no usa el contador", async () => {
+  const email = "conteo.unico@correo.cl"
+  const first = await send(payload({ customerEmail: email, customerName: "Conteo Uno", customerPhone: "+56 9 1010 2020" }))
+  const second = await send(payload({ customerEmail: email, customerName: "Conteo Dos", customerPhone: "+56 9 3030 4040" }))
+  const detail = await getReservationForStaff(admin, first.id)
+  const again = await getReservationForStaff(admin, second.id)
+  assert.equal(detail.customerEmail, email)
+  assert.equal(detail.requestCount, 2)
+  assert.equal(again.requestCount, 2)
+  const listed = await listReservationsForStaff(admin, { q: detail.referenceCode })
+  assert.equal(listed.items.some((item) => "requestCount" in item), false)
+  const manual = await createStaffReservation(admin, {
+    customerName: "Sin Correo",
+    customerPhone: "+56 9 5050 6060",
+    date: monday,
+    preferredTime: "19:30",
+    partySize: 2,
+    preferredZone: "terrace",
+  }, now)
+  const plain = await getReservationForStaff(admin, manual.id)
+  assert.equal(plain.customerEmail, null)
+  assert.equal(plain.requestCount, null)
+  assert.equal((await getDb().collection("reservationGuests").limit(5).get()).size, 0)
 })
