@@ -62,6 +62,7 @@ export default async function AdminHomePage() {
       alerts={alerts}
       rows={rows}
       closed={Boolean(floor?.day.closed)}
+      measure={session.role === "superadmin"}
     />
   )
 }

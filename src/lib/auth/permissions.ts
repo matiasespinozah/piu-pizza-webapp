@@ -3,8 +3,9 @@ import type { StaffRole } from "@/lib/auth/roles"
 const adminSections = ["inicio", "reservas", "mesas", "carta", "configuracion", "personal", "atencion"] as const
 
 type AdminSection = (typeof adminSections)[number]
+type GateSection = AdminSection | "metricas"
 
-const sectionRoles: Record<AdminSection, readonly StaffRole[]> = {
+const sectionRoles: Record<GateSection, readonly StaffRole[]> = {
   inicio: ["superadmin", "admin"],
   reservas: ["superadmin", "admin"],
   mesas: ["superadmin", "admin"],
@@ -12,6 +13,7 @@ const sectionRoles: Record<AdminSection, readonly StaffRole[]> = {
   configuracion: ["superadmin"],
   personal: ["superadmin"],
   atencion: ["mesero"],
+  metricas: ["superadmin"],
 }
 
 const adminNav = [
@@ -22,7 +24,7 @@ const adminNav = [
   { href: "/admin/personal", section: "personal", label: "Personal", ready: true },
 ] as const
 
-function canViewSection(role: StaffRole, section: AdminSection) {
+function canViewSection(role: StaffRole, section: GateSection) {
   return sectionRoles[section].includes(role)
 }
 
@@ -37,4 +39,4 @@ function homeForRole(role: StaffRole) {
 }
 
 export { adminNav, adminSections, canViewSection, homeForRole, roleLabel }
-export type { AdminSection }
+export type { AdminSection, GateSection }
