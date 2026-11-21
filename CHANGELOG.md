@@ -22,6 +22,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En `/admin/carta`, cada categoría que ya existe tiene «Editar» para cambiar su nombre. Ese nombre es el de `/carta` y los productos siguen en la misma categoría.
+- El orden de Configuración es el de `/carta`. Una categoría sin productos ya no se corre al final. Arrastrar el punto, o subir y bajar, guarda ese orden.
 - El aviso y el tooltip ya no se cargan en todas las páginas. Quedan en el muestrario `/ui`, que en producción no se publica. Las fuentes de la marca siguen igual.
 - En `/reservas`, cualquier día y cualquier hora se piden con al menos 2 horas de anticipación. A las 18:00 todavía se puede pedir las 20:00. Al enviar, queda dicho que la solicitud sigue pendiente de confirmación del restaurante y que la mesa aún no está reservada.
 - En `/admin/carta`, Mostrar y Ocultar quedan bloqueados hasta que la lista confirma el cambio. Si el producto estaba en Ocultos, el aviso dice que salió de esa lista y sigue en Todos.

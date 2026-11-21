@@ -14,23 +14,26 @@ type CategoryOrderProps = {
   counts: Map<string, number>
   busyId: string | null
   locked: boolean
+  onEdit: (category: AdminCategory) => void
   onMove: (category: AdminCategory, direction: -1 | 1) => void
   onReorder: (categories: AdminCategory[]) => Promise<boolean>
 }
 
-function CategoryOrder({ categories, counts, busyId, locked, onMove, onReorder }: CategoryOrderProps) {
+function CategoryOrder({ categories, counts, busyId, locked, onEdit, onMove, onReorder }: CategoryOrderProps) {
   const visible = categories.filter((category) => category.isVisible)
   const hidden = categories.filter((category) => !category.isVisible)
   const listRef = useRef<HTMLOListElement>(null)
   const orderRef = useRef<string[]>(visible.map((category) => category.id))
   const dragRef = useRef<{ id: string; pointerId: number; startY: number; moved: boolean; lastY: number } | null>(null)
   const frameRef = useRef(0)
+  const stopDragRef = useRef<(() => void) | null>(null)
   const propIds = visible.map((category) => category.id).join("\0")
   const [trackedIds, setTrackedIds] = useState(propIds)
   const [order, setOrder] = useState<string[] | null>(null)
   if (trackedIds !== propIds) {
     setTrackedIds(propIds)
     setOrder(null)
+    orderRef.current = propIds.length === 0 ? [] : propIds.split("\0")
   }
   const [dragId, setDragId] = useState<string | null>(null)
   const shown = (order ?? visible.map((category) => category.id))
@@ -38,11 +41,10 @@ function CategoryOrder({ categories, counts, busyId, locked, onMove, onReorder }
     .filter((category): category is AdminCategory => category !== undefined)
 
   useEffect(() => {
-    orderRef.current = shown.map((category) => category.id)
-  }, [shown])
-
-  useEffect(() => {
-    return () => cancelAnimationFrame(frameRef.current)
+    return () => {
+      cancelAnimationFrame(frameRef.current)
+      stopDragRef.current?.()
+    }
   }, [])
 
   function scrollWhileDragging() {
@@ -89,22 +91,41 @@ function CategoryOrder({ categories, counts, busyId, locked, onMove, onReorder }
   function startDrag(event: PointerEvent<HTMLButtonElement>, category: AdminCategory) {
     if (locked || event.button !== 0) return
     event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    dragRef.current = { id: category.id, pointerId: event.pointerId, startY: event.clientY, moved: false, lastY: event.clientY }
-  }
+    stopDragRef.current?.()
+    const pointerId = event.pointerId
+    dragRef.current = { id: category.id, pointerId, startY: event.clientY, moved: false, lastY: event.clientY }
 
-  function dragMove(event: PointerEvent<HTMLButtonElement>) {
-    const current = dragRef.current
-    if (!current || event.pointerId !== current.pointerId) return
-    current.lastY = event.clientY
-    if (!current.moved && Math.abs(event.clientY - current.startY) < 8) return
-    if (!current.moved) {
-      current.moved = true
-      setDragId(current.id)
-      frameRef.current = requestAnimationFrame(scrollWhileDragging)
+    function dragMove(move: globalThis.PointerEvent) {
+      const current = dragRef.current
+      if (!current || move.pointerId !== current.pointerId) return
+      current.lastY = move.clientY
+      if (!current.moved && Math.abs(move.clientY - current.startY) < 8) return
+      if (!current.moved) {
+        current.moved = true
+        setDragId(current.id)
+        frameRef.current = requestAnimationFrame(scrollWhileDragging)
+      }
+      move.preventDefault()
+      placeAt(move.clientY)
     }
-    event.preventDefault()
-    placeAt(event.clientY)
+
+    function endDrag(end: globalThis.PointerEvent) {
+      if (end.pointerId !== pointerId) return
+      stop()
+      finishDrag()
+    }
+
+    function stop() {
+      window.removeEventListener("pointermove", dragMove)
+      window.removeEventListener("pointerup", endDrag)
+      window.removeEventListener("pointercancel", endDrag)
+      if (stopDragRef.current === stop) stopDragRef.current = null
+    }
+
+    stopDragRef.current = stop
+    window.addEventListener("pointermove", dragMove, { passive: false })
+    window.addEventListener("pointerup", endDrag)
+    window.addEventListener("pointercancel", endDrag)
   }
 
   return (
@@ -162,20 +183,27 @@ function CategoryOrder({ categories, counts, busyId, locked, onMove, onReorder }
                     aria-label={`Arrastrar ${category.name}`}
                     disabled={locked}
                     onPointerDown={(event) => startDrag(event, category)}
-                    onPointerMove={dragMove}
-                    onPointerUp={finishDrag}
-                    onPointerCancel={finishDrag}
                   >
                     <GripVerticalIcon aria-hidden className="size-5" />
                   </button>
                   <span className="flex size-8 shrink-0 items-center justify-center font-heading text-lg font-extrabold text-olive tabular-nums">
                     {index + 1}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-heading text-lg leading-tight font-bold">{category.name}</span>
+                  <span className="flex min-w-0 flex-1 flex-col items-start">
+                    <span className="block w-full truncate font-heading text-lg leading-tight font-bold">{category.name}</span>
                     <span className="font-label text-sm text-olive-muted">
                       {count} {count === 1 ? "producto" : "productos"}
                     </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-11 px-2"
+                      disabled={locked}
+                      onClick={() => onEdit(category)}
+                    >
+                      Editar
+                    </Button>
                   </span>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button

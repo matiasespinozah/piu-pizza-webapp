@@ -233,35 +233,12 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
 
   function moveWithin(list: AdminCategory[], category: AdminCategory, direction: -1 | 1) {
     const index = list.findIndex((item) => item.id === category.id)
-    const neighbor = list[index + direction]
-    if (!neighbor) return
-    const same = category.sortOrder === neighbor.sortOrder
-    const categoryOrder = same ? (direction < 0 ? category.sortOrder : Math.min(999, category.sortOrder + 1)) : neighbor.sortOrder
-    const neighborOrder = same ? (direction < 0 ? Math.min(999, neighbor.sortOrder + 1) : neighbor.sortOrder) : category.sortOrder
-    if (categoryOrder === category.sortOrder && neighborOrder === neighbor.sortOrder) return
-    if (orderLock.current) return
-    orderLock.current = true
-    void (async () => {
-      setBusyId(category.id)
-      setError("")
-      try {
-        const result = await postCatalog({
-          action: "reorder-categories",
-          moves: [
-            { id: category.id, sortOrder: categoryOrder },
-            { id: neighbor.id, sortOrder: neighborOrder },
-          ],
-        })
-        if (!result.ok) {
-          setError(result.message)
-          return
-        }
-        refresh("Orden de categorías guardado.")
-      } finally {
-        setBusyId(null)
-        orderLock.current = false
-      }
-    })()
+    const target = index + direction
+    if (index < 0 || target < 0 || target >= list.length) return
+    const next = [...list]
+    const [item] = next.splice(index, 1)
+    next.splice(target, 0, item)
+    void reorderVisible(next)
   }
 
   async function reorderVisible(next: AdminCategory[]) {
@@ -441,13 +418,13 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
                   <div className="flex shrink-0 items-center gap-1">
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
+                      variant="secondary"
+                      size="sm"
+                      className="h-11 px-3"
                       disabled={busy}
-                      aria-label={`Editar ${category.name}`}
                       onClick={() => setCategorySession({ key: category.id, category })}
                     >
-                      <PencilIcon aria-hidden />
+                      Editar
                     </Button>
                     <Button
                       type="button"
@@ -476,6 +453,7 @@ function CatalogEditor({ categories, products }: { categories: AdminCategory[]; 
           counts={counts.byCategory}
           busyId={busyId}
           locked={busyId !== null}
+          onEdit={(category) => setCategorySession({ key: category.id, category })}
           onMove={(category, direction) => moveWithin(visibleCategories, category, direction)}
           onReorder={reorderVisible}
         />

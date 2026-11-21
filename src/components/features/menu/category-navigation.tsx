@@ -14,11 +14,8 @@ type CategoryNavigationProps = {
   onSelect: (id: string) => void
 }
 
-/** Chips deslizables. Las secciones en preparación van después, más tenues. */
+/** Chips deslizables, en el mismo orden que guardó el admin. Una categoría vacía se ve más tenue, sin correrse al final. */
 function CategoryNavigation({ items, activeId, onSelect }: CategoryNavigationProps) {
-  const ready = items.filter((item) => item.hasProducts)
-  const pending = items.filter((item) => !item.hasProducts)
-
   function handleSelect(event: React.MouseEvent<HTMLButtonElement>, id: string) {
     onSelect(id)
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -55,11 +52,7 @@ function CategoryNavigation({ items, activeId, onSelect }: CategoryNavigationPro
   return (
     <nav aria-label="Categorías de la carta">
       <ul className="-mx-4 flex snap-x snap-proximity items-center gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden">
-        {ready.map(renderChip)}
-        {ready.length > 0 && pending.length > 0 ? (
-          <li aria-hidden className="mx-1 h-6 w-px shrink-0 bg-olive-line" />
-        ) : null}
-        {pending.map(renderChip)}
+        {items.map(renderChip)}
         <li aria-hidden className="w-2 shrink-0 lg:hidden" />
       </ul>
     </nav>

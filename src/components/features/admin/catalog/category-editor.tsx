@@ -118,7 +118,11 @@ function CategoryEditor({ open, category, existingIds, nextOrder, onOpenChange, 
         >
           <SheetHeader className="border-b border-olive-line pr-14">
             <SheetTitle>{category ? "Editar categoría" : "Nueva categoría"}</SheetTitle>
-            <SheetDescription>El nombre, la descripción, la visibilidad y el orden se publican al guardar.</SheetDescription>
+            <SheetDescription>
+              {category
+                ? "El nombre nuevo es el que ve el cliente. Los productos siguen en esta categoría."
+                : "El nombre, la descripción, la visibilidad y el orden se publican al guardar."}
+            </SheetDescription>
           </SheetHeader>
           <form
             className="flex min-h-0 flex-1 flex-col"
