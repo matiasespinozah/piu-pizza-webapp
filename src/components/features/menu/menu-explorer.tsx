@@ -27,7 +27,7 @@ function MenuExplorer({ categories, products }: MenuExplorerProps) {
     [categories, products]
   )
 
-  const defaultCategory = navItems.find((item) => item.hasProducts) ?? navItems[0]
+  const defaultCategory = navItems[0]
   const [activeId, setActiveId] = React.useState(defaultCategory?.id ?? null)
   const [query, setQuery] = React.useState("")
 

@@ -8,7 +8,7 @@ import { applyFloorSection, criticalFingerprint, declaredTables, defaultOperatio
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
-import { confirmedClock, defaultWeek, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, instantInSantiago, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 import { pageSchedule, pastWindow, staffView } from "@/lib/reservations/staff-views"
 import { eligibleServiceTables } from "@/lib/reservations/service-tables"
 import { waiterMayReadNotice } from "@/lib/reservations/service-notices"
@@ -95,6 +95,21 @@ test("la fecha se calcula en America/Santiago y el domingo está cerrado", () =>
   assert.equal(slots.includes("17:00"), true)
   assert.equal(slots.includes("16:30"), false)
   assert.equal(slots.at(-1) < "22:00", true)
+})
+
+test("cualquier día se reserva con al menos dos horas y a las 18:00 todavía se puede pedir las 20:00", () => {
+  for (const date of ["2026-11-09", "2026-11-13"]) {
+    const atSix = instantInSantiago(date, "18:00")
+    const slots = preferenceSlots(date, atSix)
+    assert.equal(slots.includes("20:00"), true)
+    assert.equal(slots.includes("19:30"), false)
+    readPublicBody(JSON.stringify(body({ date, preferredTime: "20:00" })), atSix)
+    assert.throws(
+      () => readPublicBody(JSON.stringify(body({ date, preferredTime: "19:30" })), atSix),
+      (error) => error instanceof ReservationError && error.status === 422 && error.message.includes("2 horas"),
+    )
+  }
+  assert.equal(reservationConfig.minimumLeadHours, 2)
 })
 
 test("lo que Felipe no confirmó sigue vacío y no se usa como capacidad", () => {

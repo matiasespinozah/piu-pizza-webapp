@@ -166,6 +166,7 @@ function preferenceSlots(
   clock: ReservationClock = confirmedClock,
   visit?: VisitHours | null,
   week?: WeekSchedule | null,
+  leadHours: number = reservationConfig.minimumLeadHours,
 ) {
   const window = openingWindow(isoDate, clock, visit, week)
   if (!window || isPastDate(isoDate, now)) return []
@@ -180,9 +181,9 @@ function preferenceSlots(
     slots.push(fromMinutes(minute))
   }
 
-  if (isoDate !== todayIsoInSantiago(now)) return slots
-  const current = santiagoParts(now).minutes
-  return slots.filter((slot) => toMinutes(slot) > current)
+  if (leadHours <= 0) return slots
+  const leadMs = leadHours * 60 * 60 * 1000
+  return slots.filter((slot) => instantInSantiago(isoDate, slot).getTime() - now.getTime() >= leadMs)
 }
 
 function formatVisitDate(isoDate: string) {

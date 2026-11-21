@@ -17,9 +17,14 @@ const reservationConfig = {
   /** Mínimo de personas por reserva. El máximo depende de la zona. */
   partySize: { min: 1 },
   /**
-   * Anticipación aún sin definir.
-   * Lun–jue: se habló de 1 o 2 horas. Vie–sáb: el día anterior, sin hora límite.
-   * Mientras los valores sean null, el formulario no las exige.
+   * Toda reserva pública se pide al menos con estas horas de anticipación,
+   * cualquier día y cualquier horario. A las 18:00 todavía se puede pedir las 20:00.
+   */
+  minimumLeadHours: 2,
+  /**
+   * Anticipación extra, todavía sin definir en la configuración del local.
+   * Si `weekdayLeadHours` es mayor que `minimumLeadHours`, el formulario exige esa cifra.
+   * El corte de viernes y sábado solo aplica cuando tiene una hora.
    */
   anticipation: {
     weekdayLeadHours: null as number | null,
@@ -79,6 +84,12 @@ function zoneConfig(id: ReservationZone): ZoneConfig {
   return zone
 }
 
+/** Horas mínimas para reservar. Una cifra mayor en la configuración del local reemplaza este piso. */
+function requiredLeadHours(configured?: number | null) {
+  if (typeof configured === "number" && configured > reservationConfig.minimumLeadHours) return configured
+  return reservationConfig.minimumLeadHours
+}
+
 /** Tope de personas: el de la zona elegida, o el mayor si todavía no hay zona. */
 function maxPartyFor(zone: ReservationZone | null) {
   if (zone) return zoneConfig(zone).maxPartySize
@@ -88,6 +99,7 @@ function maxPartyFor(zone: ReservationZone | null) {
 export {
   maxPartyFor,
   pendingOwnerDecisions,
+  requiredLeadHours,
   reservationConfig,
   reservationStatusWhatsappMessage,
   reservationWhatsappMessage,

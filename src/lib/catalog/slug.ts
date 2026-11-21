@@ -22,4 +22,4 @@ function newCategoryId(name: string, existingIds: readonly string[]): NewCategor
   return { ok: true, id }
 }
 
-export { catalogSlug, newCategoryId }
+export { catalogSlug, duplicateCategoryMessage, newCategoryId }

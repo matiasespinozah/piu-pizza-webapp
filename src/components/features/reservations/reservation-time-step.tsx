@@ -1,6 +1,7 @@
 import { cn } from "cn"
 
 import { FieldError } from "@/components/ui/field"
+import { requiredLeadHours } from "@/lib/reservations/configuration"
 import { formatVisitDate, openingWindow, preferenceSlots, type ReservationClock, type VisitHours, type WeekSchedule } from "@/lib/reservations/schedule"
 import type { ReservationDraft, ReservationErrors } from "@/lib/reservations/types"
 
@@ -10,12 +11,13 @@ type ReservationTimeStepProps = {
   clock: ReservationClock
   week?: WeekSchedule
   visit?: VisitHours | null
+  leadHours?: number
   onChange: (preferredTime: string) => void
 }
 
-function ReservationTimeStep({ draft, errors, clock, week, visit = null, onChange }: ReservationTimeStepProps) {
+function ReservationTimeStep({ draft, errors, clock, week, visit = null, leadHours = requiredLeadHours(), onChange }: ReservationTimeStepProps) {
   const closed = Boolean(draft.date) && openingWindow(draft.date, clock, visit, week) === null
-  const slots = draft.date ? preferenceSlots(draft.date, new Date(), clock, visit, week) : []
+  const slots = draft.date ? preferenceSlots(draft.date, new Date(), clock, visit, week, leadHours) : []
 
   return (
     <fieldset className="flex flex-col gap-4">
@@ -24,7 +26,10 @@ function ReservationTimeStep({ draft, errors, clock, week, visit = null, onChang
 
       {closed ? <p className="text-base text-olive">Ese día no hay horario de reservas. Elige otra fecha en Tu visita.</p> : null}
       {!closed && slots.length === 0 ? (
-        <p className="text-base text-olive">Hoy ya no quedan horarios. Prueba con otro día.</p>
+        <p className="text-base text-olive">Para reservar hay que hacerlo con al menos {leadHours} horas de anticipación. Elige otro día.</p>
+      ) : null}
+      {slots.length > 0 ? (
+        <p className="text-sm text-olive-strong">Cada horario se pide con al menos {leadHours} horas de anticipación.</p>
       ) : null}
 
       {slots.length > 0 ? (

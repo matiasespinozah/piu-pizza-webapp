@@ -7,7 +7,7 @@ import { getStorage } from "firebase-admin/storage"
 import { z } from "zod"
 
 import type { StaffSession } from "@/lib/auth/roles"
-import { newCategoryId } from "@/lib/catalog/slug"
+import { duplicateCategoryMessage, newCategoryId } from "@/lib/catalog/slug"
 import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
 import { categorySchema, collections, productSchema } from "@/lib/firebase/model"
 import { assertStaff } from "@/server/auth/authorization"
@@ -116,6 +116,11 @@ async function saveCategory(session: StaffSession | null, input: unknown) {
       if (!created.ok) throw new CatalogError(created.status, created.message)
       id = created.id
     }
+    const sameName = state.categories.some(
+      (category) =>
+        category.id !== id && category.name.localeCompare(data.name, "es", { sensitivity: "accent" }) === 0,
+    )
+    if (sameName) throw new CatalogError(409, duplicateCategoryMessage)
     const record = {
       slug: id,
       name: data.name,
