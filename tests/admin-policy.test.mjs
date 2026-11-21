@@ -78,6 +78,9 @@ test("el rol admin no ve personal ni configuración", () => {
   assert.equal(canViewSection("superadmin", "personal"), true)
   assert.equal(canViewSection("superadmin", "configuracion"), true)
   assert.equal(canViewSection("superadmin", "atencion"), false)
+  assert.equal(canViewSection("superadmin", "metricas"), true)
+  assert.equal(canViewSection("admin", "metricas"), false)
+  assert.equal(canViewSection("mesero", "metricas"), false)
   assert.equal(canViewSection("mesero", "atencion"), true)
   assert.equal(canViewSection("mesero", "inicio"), false)
   assert.equal(canViewSection("mesero", "reservas"), false)
@@ -124,6 +127,7 @@ test("las rutas del panel exigen sesión y la sección que corresponde", () => {
     "src/app/admin/(panel)/configuracion/page.tsx": "configuracion",
     "src/app/admin/(panel)/personal/page.tsx": "personal",
     "src/app/admin/(panel)/atencion/page.tsx": "atencion",
+    "src/app/admin/(panel)/metricas/page.tsx": "metricas",
   }
   for (const [path, section] of Object.entries(pages)) {
     assert.match(text(path), new RegExp(`requireSection\\("${section}"\\)`))
