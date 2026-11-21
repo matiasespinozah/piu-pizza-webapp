@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- En el dashboard, solo el propietario ve «Medicion de pruebas». Cuenta una visita de `/carta` cuando la página estuvo visible un segundo, y el tiempo en que la pestaña estuvo al frente. El día queda en un documento de Firestore: una escritura al abrir y otra al salir, y una lectura al consultar. No hay cookie. Si el conteo falla, la carta igual abre.
 - En `/admin/reservas`, arriba a la izquierda, «Respaldo» abre la unidad de Drive donde queda el Excel de reservas.
 - Un generador local arma `PIU_Respaldo_Reservas.xlsx` con las hojas Hoy, Mañana y Pendientes, con un máximo de 200 reservas de esos dos días, sin borrar nada de Firestore. Cada corrida lee hasta 250 documentos por día.
 - La función `reservationBackup` queda lista para publicarse, sin desplegarla: corre cada hora en `us-central1` con la cuenta `piu-respaldo-reservas` y actualiza ese Excel en la unidad compartida. Si la lectura o el archivo salen incompletos, conserva el respaldo anterior. Son como máximo 500 lecturas por hora y no mantiene instancias encendidas.

@@ -23,6 +23,7 @@ const collections = {
   catalog: "catalog",
   invitationRate: "invitationRate",
   staffNotifications: "staffNotifications",
+  metricsCarta: "metricsCarta",
 } as const
 
 const settingsDocId = "operations"

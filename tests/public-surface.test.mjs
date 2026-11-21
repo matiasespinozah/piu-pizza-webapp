@@ -43,9 +43,10 @@ test("el sitio público no importa Firebase ni el servidor", () => {
       path.includes("src/app/api/admin/catalog/") ||
       path.includes("src/app/api/admin/tables/")
     const staffApi = path.includes("src/app/api/admin/staff/") || path.includes("src/app/api/admin/join/")
+    const cartaVisitApi = path.endsWith("src/app/api/carta/visita/route.ts")
     if (/from ["']firebase-admin/.test(source)) offenders.push(path)
     if (/from ["'](firebase(?:\/[^"']*)?|@\/lib\/firebase)/.test(source) && !loginForm && !joinForm) offenders.push(path)
-    if (/from ["']@\/server\//.test(source) && !adminPage && !reservationApi && !catalogServer && !staffApi) offenders.push(path)
+    if (/from ["']@\/server\//.test(source) && !adminPage && !reservationApi && !catalogServer && !staffApi && !cartaVisitApi) offenders.push(path)
   }
   assert.deepEqual(offenders, [])
 })

@@ -1,5 +1,7 @@
 import Link from "next/link"
 import { AlertTriangle, ArrowRight, CalendarDays, LayoutGrid, ListChecks, Zap, type LucideIcon } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
 import { cn } from "cn"
 
 import { zoneConfig } from "@/lib/reservations/configuration"
@@ -46,6 +48,7 @@ function AdminDashboard({
   alerts,
   rows,
   closed,
+  measure = false,
 }: {
   today: string
   ready: boolean
@@ -54,9 +57,15 @@ function AdminDashboard({
   alerts: AlertItem[]
   rows: QuotaRow[] | null
   closed: boolean
+  measure?: boolean
 }) {
   return (
     <div className="mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-3.5 lg:gap-5">
+      {measure ? (
+        <Button asChild variant="secondary" size="sm" className="h-11 self-start">
+          <Link href="/admin/metricas">Medicion de pruebas</Link>
+        </Button>
+      ) : null}
       <header className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <h1 className="min-w-0 font-heading text-[1.7rem] leading-none font-extrabold tracking-tight text-olive">Dashboard</h1>

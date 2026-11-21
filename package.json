@@ -12,7 +12,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "changelog:check": "node scripts/check-changelog.mjs",
-    "test": "node --import ./tests/register-alias.mjs --test tests/public-surface.test.mjs tests/admin-policy.test.mjs tests/reservation-policy.test.mjs tests/reservation-backup.test.mjs tests/reservation-backup-drive.test.mjs tests/catalog-policy.test.mjs tests/staff-invite.test.mjs",
+    "test": "node --import ./tests/register-alias.mjs --test tests/public-surface.test.mjs tests/admin-policy.test.mjs tests/reservation-policy.test.mjs tests/reservation-backup.test.mjs tests/reservation-backup-drive.test.mjs tests/catalog-policy.test.mjs tests/carta-visit.test.mjs tests/staff-invite.test.mjs",
     "test:backup": "node scripts/test-backup.mjs",
     "test:catalog": "node scripts/test-catalog.mjs",
     "test:rules": "node scripts/test-rules.mjs",
