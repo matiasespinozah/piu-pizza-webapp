@@ -56,6 +56,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- Arrastrar una categoría en Configuración vuelve a pasar el chequeo del repositorio.
 - Finalizar o cancelar una reserva suelta su cupo aunque el mismo horario tenga otras reservas. Antes el cupo de esa reserva podía quedar tomado.
 - El muestrario `/ui` vuelve a abrir. El formulario de código queda dentro del ejemplo de seguimiento, que sí puede recibir la acción.
 - Las fotos de producto se guardan hasta en 1600 px y calidad 72, con un tope de 400 KB. En el celular y en el computador la ficha usa esa misma nitidez.

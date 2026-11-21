@@ -30,12 +30,15 @@ function CategoryOrder({ categories, counts, busyId, locked, onEdit, onMove, onR
   const propIds = visible.map((category) => category.id).join("\0")
   const [trackedIds, setTrackedIds] = useState(propIds)
   const [order, setOrder] = useState<string[] | null>(null)
+  const [dragId, setDragId] = useState<string | null>(null)
   if (trackedIds !== propIds) {
     setTrackedIds(propIds)
     setOrder(null)
-    orderRef.current = propIds.length === 0 ? [] : propIds.split("\0")
   }
-  const [dragId, setDragId] = useState<string | null>(null)
+
+  useEffect(() => {
+    orderRef.current = propIds.length === 0 ? [] : propIds.split("\0")
+  }, [propIds])
   const shown = (order ?? visible.map((category) => category.id))
     .map((id) => visible.find((category) => category.id === id))
     .filter((category): category is AdminCategory => category !== undefined)
