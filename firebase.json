@@ -8,6 +8,12 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs24",
+    "ignore": ["node_modules", "src", "*.mjs"],
+    "predeploy": ["pnpm run build"]
+  },
   "emulators": {
     "auth": {
       "port": 9099

@@ -11,6 +11,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Un generador local arma `PIU_Respaldo_Reservas.xlsx` con las hojas Hoy, Mañana y Pendientes, con un máximo de 200 reservas de esos dos días, sin borrar nada de Firestore. Cada corrida lee hasta 250 documentos por día.
+- La función `reservationBackup` queda lista para publicarse, sin desplegarla: corre cada hora en `us-central1` con la cuenta `piu-respaldo-reservas` y actualiza ese Excel en la unidad compartida. Si la lectura o el archivo salen incompletos, conserva el respaldo anterior. Son como máximo 500 lecturas por hora y no mantiene instancias encendidas.
 - El rol `mesero` atiende en `/admin/atencion`: ve las reservas confirmadas de hoy, marca la llegada, elige una mesa ya configurada y finaliza la atención. No confirma, rechaza, cancela ni abre el resto del panel. Los avisos que recibe son los de la atención, no los de solicitudes pendientes ni de personal. El propietario lo asigna desde Personal.
 - `/nosotros` cuenta la historia de Felipe y Camila. El enlace Nosotros del encabezado abre esa página. Faltan fotos de los inicios y de la familia; el local y la terraza usan las imágenes que ya tiene el sitio.
 - En `/admin/reservas`, Hoy, Futuras y Pasadas ordenan por la visita y muestran 20 por página. Hoy es la vista inicial. Pasadas recorre el mes y, en el mes en curso, llega solo hasta ayer. «Todas las reservas» abre `/admin/reservas/historial`, fuera del menú y con la misma autorización de reservas. Los índices de `date` y `preferredTime` quedaron escritos en `firestore.indexes.json`; no se publicaron.
@@ -23,6 +25,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Cambiado
 
 - En la ficha de una reserva, «N solicitudes realizadas» sale de un conteo del mismo correo. La lista no lo consulta. Guardar una reserva ya no depende de `PIU_RESERVATION_GUEST_SECRET` ni escribe en `reservationGuests`.
+- La actualización horaria del Excel ya no envía `If-Match` con el `version` de Drive. `reservationBackup` admite una sola instancia y una sola ejecución a la vez, y sigue copiando el archivo vigente antes de reemplazarlo.
 - En `/admin/carta`, Mostrar y Ocultar quedan bloqueados hasta que la lista confirma el cambio. Si el producto estaba en Ocultos, el aviso dice que salió de esa lista y sigue en Todos.
 - En `/admin/carta`, Agregar deja crear un producto o «Añadir nueva categoría». Borrar un producto o una categoría abre una ventana de confirmación. En Configuración, las categorías de la carta se reubican arrastrando el punto o con subir y bajar.
 - En el pie, «Acceso empleados» queda con marco crema para distinguirlo del texto legal.
