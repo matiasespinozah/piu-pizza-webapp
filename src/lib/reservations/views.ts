@@ -10,7 +10,6 @@ type ReservationListItem = {
   preferredZone: ReservationZone
   customerName: string
   customerEmail: string | null
-  requestCount: number | null
   createdAt: string
   revision: number
 }
@@ -29,6 +28,7 @@ type ReservationTrackingState =
   | { state: "active" | "revoked" | "expired"; expiresOn: string | null }
 
 type ReservationDetail = ReservationListItem & {
+  requestCount: number | null
   customerPhone: string
   notes: string
   assignedTableIds: string[]

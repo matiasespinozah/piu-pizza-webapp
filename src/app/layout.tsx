@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Anybody, Roboto_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const anybody = Anybody({
@@ -41,10 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={cn("h-full antialiased", anybody.variable, robotoMono.variable)}
     >
-      <body className="flex min-h-full flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster />
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

@@ -12,8 +12,6 @@ assert.ok(process.env.FIRESTORE_EMULATOR_HOST, "Estas pruebas solo corren dentro
 assert.equal(process.env.GCLOUD_PROJECT, "demo-piu-pizza")
 assert.equal(process.env.PIU_RESERVATION_STATUS, "on")
 assert.notEqual(process.env.GCLOUD_PROJECT, "piu-pizza-cl")
-process.env.PIU_RESERVATION_GUEST_SECRET ??= "clave-de-prueba-con-32-caracteres"
-
 const admin = { uid: "staff-admin", role: "admin", email: "ana@example.test", displayName: "Ana" }
 const now = new Date()
 let ipCount = 20

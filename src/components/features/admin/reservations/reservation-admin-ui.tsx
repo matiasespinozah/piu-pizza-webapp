@@ -8,7 +8,6 @@ import { ReservationStatusBadge } from "@/components/features/reservations/reser
 import "../admin-shell.css"
 import { zoneConfig } from "@/lib/reservations/configuration"
 import { statusTone, type StatusTone } from "@/lib/reservations/status-tone"
-import { requestCountLabel } from "@/lib/reservations/email"
 import type { ReservationEvent, ReservationListItem } from "@/lib/reservations/views"
 import { statusLabel } from "@/lib/reservations/views"
 
@@ -119,7 +118,6 @@ function ReservationListCard({
               {zoneConfig(item.preferredZone).label}
             </span>
             <span className="font-label text-xs text-olive-muted">{item.referenceCode}</span>
-            {item.requestCount ? <span className="text-xs text-olive-muted">{requestCountLabel(item.requestCount)}</span> : null}
           </span>
         </span>
         <ChevronRight aria-hidden className="size-4 shrink-0 self-center text-olive-soft" />

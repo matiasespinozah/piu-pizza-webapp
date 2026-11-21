@@ -8,7 +8,7 @@ import { applyFloorSection, criticalFingerprint, declaredTables, defaultOperatio
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
-import { confirmedClock, defaultWeek, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, instantInSantiago, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 import { pageSchedule, pastWindow, staffView } from "@/lib/reservations/staff-views"
 import { eligibleServiceTables } from "@/lib/reservations/service-tables"
 import { waiterMayReadNotice } from "@/lib/reservations/service-notices"
@@ -20,7 +20,6 @@ import { parseTrackingCredential, publicReservationStatus } from "@/lib/reservat
 import { reservationStatusEnabled, reservationWritesEnabled } from "@/lib/reservations/writes"
 import { requestIsTrusted } from "@/lib/auth/session-policy"
 import { normalizeReservationEmail, optionalReservationEmail, planReservationCreate, requestCountLabel } from "@/lib/reservations/email"
-import { guestDocumentId, guestSecretMinLength } from "@/lib/reservations/guest-id"
 
 const now = new Date("2026-11-07T18:00:00Z")
 
@@ -96,6 +95,21 @@ test("la fecha se calcula en America/Santiago y el domingo está cerrado", () =>
   assert.equal(slots.includes("17:00"), true)
   assert.equal(slots.includes("16:30"), false)
   assert.equal(slots.at(-1) < "22:00", true)
+})
+
+test("cualquier día se reserva con al menos dos horas y a las 18:00 todavía se puede pedir las 20:00", () => {
+  for (const date of ["2026-11-09", "2026-11-13"]) {
+    const atSix = instantInSantiago(date, "18:00")
+    const slots = preferenceSlots(date, atSix)
+    assert.equal(slots.includes("20:00"), true)
+    assert.equal(slots.includes("19:30"), false)
+    readPublicBody(JSON.stringify(body({ date, preferredTime: "20:00" })), atSix)
+    assert.throws(
+      () => readPublicBody(JSON.stringify(body({ date, preferredTime: "19:30" })), atSix),
+      (error) => error instanceof ReservationError && error.status === 422 && error.message.includes("2 horas"),
+    )
+  }
+  assert.equal(reservationConfig.minimumLeadHours, 2)
 })
 
 test("lo que Felipe no confirmó sigue vacío y no se usa como capacidad", () => {
@@ -524,45 +538,33 @@ test("hoy, futuras y pasadas usan el día de Chile, el mes y un desempate establ
   assert.match(reservationsPage, /status: "confirmed", date: today/)
 })
 
-test("el correo se normaliza y el contador no usa la dirección como id", () => {
+test("el correo se normaliza y el contador solo se pide al abrir la ficha", () => {
   assert.equal(normalizeReservationEmail("  Ana@Correo.CL ").email, "ana@correo.cl")
   assert.equal("error" in normalizeReservationEmail("ana"), true)
   assert.equal("error" in normalizeReservationEmail(`${"a".repeat(121)}@correo.cl`), true)
   assert.equal(optionalReservationEmail("  ").email, null)
-  assert.equal(planReservationCreate(true, true, "ana@correo.cl", 4).action, "duplicate")
-  assert.equal(planReservationCreate(true, false, "ana@correo.cl", 4).action, "conflict")
-  assert.equal(planReservationCreate(false, true, null, 3).requestCount, null)
-  assert.equal(planReservationCreate(false, true, "ana@correo.cl", 0).requestCount, 1)
-  assert.equal(planReservationCreate(false, true, "ana@correo.cl", 1).requestCount, 2)
-  assert.equal(planReservationCreate(false, true, "ana@correo.cl", 4).requestCount, 5)
+  assert.equal(planReservationCreate(true, true), "duplicate")
+  assert.equal(planReservationCreate(true, false), "conflict")
+  assert.equal(planReservationCreate(false, true), "create")
   assert.equal(requestCountLabel(1), "1 solicitud realizada")
   assert.equal(requestCountLabel(2), "2 solicitudes realizadas")
-  assert.equal(requestCountLabel(1).includes("visit"), false)
-
-  const secret = "clave-de-prueba-con-32-caracteres"
-  assert.ok(secret.length >= guestSecretMinLength)
-  const first = guestDocumentId("ana@correo.cl", secret)
-  const second = guestDocumentId("ana@correo.cl", secret)
-  assert.equal(first, second)
-  assert.equal(first.length, 64)
-  assert.equal(first.includes("ana@correo.cl"), false)
-  assert.notEqual(first, guestDocumentId("luis@correo.cl", secret))
-  assert.notEqual(first, guestDocumentId("ana@correo.cl", `${secret}-otra`))
 
   const service = readFileSync(new URL("../src/server/reservations/service.ts", import.meta.url), "utf8")
-  const guest = readFileSync(new URL("../src/server/reservations/guest.ts", import.meta.url), "utf8")
-  assert.match(service, /tx\.set\(guestRef/)
-  assert.match(guest, /getAll\(/)
-  assert.doesNotMatch(service, /requestCount:\s*.*-/)
-  const transition = service.slice(service.indexOf("async function transitionReservation"), service.indexOf("type StaffReservationInput"))
-  assert.equal(transition.includes("reservationGuests"), false)
+  assert.doesNotMatch(service, /reservationGuests|PIU_RESERVATION_GUEST_SECRET|guestDocumentId/)
+  const detail = service.slice(service.indexOf("async function getReservationForStaff"), service.indexOf("type TransitionInput"))
+  assert.match(detail, /where\("customerEmail", "==", item\.customerEmail\)/)
+  assert.match(detail, /countOf\(/)
+  assert.match(service, /query\.count\(\)\.get\(\)/)
+  const listing = service.slice(service.indexOf("async function listReservationsForStaff"), service.indexOf("async function getReservationForStaff"))
+  assert.doesNotMatch(listing, /customerEmail/)
+  assert.equal(existsSync(new URL("../src/server/reservations/guest.ts", import.meta.url)), false)
+  assert.equal(existsSync(new URL("../src/lib/reservations/guest-id.ts", import.meta.url)), false)
   const rules = readFileSync(new URL("../firestore.rules", import.meta.url), "utf8")
   assert.match(rules, /match \/reservationGuests\/\{guestId\} \{\s*allow read, write: if false;/s)
   const hosting = readFileSync(new URL("../apphosting.yaml", import.meta.url), "utf8")
   assert.doesNotMatch(hosting, /PIU_RESERVATION_GUEST_SECRET/)
   const example = readFileSync(new URL("../.env.example", import.meta.url), "utf8")
-  assert.match(example, /PIU_RESERVATION_GUEST_SECRET/)
-  assert.doesNotMatch(example, /PIU_RESERVATION_GUEST_SECRET=/)
+  assert.doesNotMatch(example, /PIU_RESERVATION_GUEST_SECRET/)
   const contact = readFileSync(new URL("../src/components/features/reservations/reservation-contact-step.tsx", import.meta.url), "utf8")
   assert.match(contact, /type="email"/)
   assert.match(contact, /inputMode="email"/)
@@ -587,8 +589,7 @@ test("la casilla de promociones nace marcada y la aceptación queda en la reserv
   assert.match(service, /marketingConsentVersion: "v1"/)
   assert.match(service, /input\.marketingOptIn/)
   assert.doesNotMatch(service, /marketingSubscribers|marketingTokens|confirmToken|createMarketingToken/)
-  const guest = readFileSync(new URL("../src/server/reservations/guest.ts", import.meta.url), "utf8")
-  assert.doesNotMatch(guest, /marketingConsent/)
+  assert.doesNotMatch(service, /reservationGuests/)
   const manual = readFileSync(new URL("../src/components/features/admin/reservations/manual-reservation-form.tsx", import.meta.url), "utf8")
   assert.doesNotMatch(manual, /marketingOptIn|marketingConsent/)
   const adminRoute = readFileSync(new URL("../src/app/api/admin/reservations/route.ts", import.meta.url), "utf8")

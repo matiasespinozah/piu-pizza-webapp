@@ -57,10 +57,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Toaster } from "@/components/ui/sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TextLink } from "@/components/ui/text-link"
 import { Textarea } from "@/components/ui/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Caption, Display, Eyebrow, Heading, Lead, Text } from "@/components/ui/typography"
 import { emptyDay } from "@/lib/reservations/day-policy"
 import { defaultOperationRules } from "@/lib/reservations/operations"
@@ -139,6 +140,7 @@ export default function UiShowcasePage() {
   })
 
   return (
+    <TooltipProvider>
     <main>
       <Section spacing="sm">
         <Container>
@@ -464,7 +466,6 @@ export default function UiShowcasePage() {
                   preferredZone: "salon",
                   customerName: "María Torres",
                   customerEmail: null,
-                  requestCount: null,
                   createdAt: "2026-11-10T12:00:00.000Z",
                   revision: 1,
                 },
@@ -518,7 +519,8 @@ export default function UiShowcasePage() {
                 preferredTime: "20:30",
                 partySize: 4,
                 preferredZone: "salon",
-                customerName: "María Torres", customerEmail: null, requestCount: null,
+                customerName: "María Torres",
+                customerEmail: null,
                 createdAt: "2026-11-10T12:00:00.000Z",
                 revision: 1,
               }}
@@ -536,7 +538,6 @@ export default function UiShowcasePage() {
                     preferredZone: "salon",
                     customerName: "María Torres",
                     customerEmail: null,
-                    requestCount: null,
                     createdAt: "2026-11-10T12:00:00.000Z",
                     revision: 1,
                   }}
@@ -637,5 +638,7 @@ export default function UiShowcasePage() {
         </Container>
       </Section>
     </main>
+    <Toaster />
+    </TooltipProvider>
   )
 }
