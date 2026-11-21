@@ -12,14 +12,13 @@ import {
   rateLimitPerHour,
   transitionReservation,
 } from "@/server/reservations/service"
+import { listServiceBoard } from "@/server/reservations/service-desk"
 import { listStaffNotices, markStaffNoticesRead, sweepNotices } from "@/server/reservations/notifications"
 import { santiagoParts, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 
 assert.ok(process.env.FIRESTORE_EMULATOR_HOST, "Estas pruebas solo corren dentro del emulador.")
 assert.equal(process.env.GCLOUD_PROJECT, "demo-piu-pizza")
 assert.notEqual(process.env.GCLOUD_PROJECT, "piu-pizza-cl")
-process.env.PIU_RESERVATION_GUEST_SECRET ??= "clave-de-prueba-con-32-caracteres"
-
 const admin = { uid: "staff-admin", role: "admin", email: "ana@example.test", displayName: "Ana" }
 const owner = { uid: "staff-owner", role: "superadmin", email: "felipe@example.test", displayName: "Felipe" }
 const now = new Date("2026-11-07T18:00:00Z")
@@ -167,10 +166,9 @@ test("confirmar, rechazar y cancelar respetan la transición y la revisión", as
   assert.equal(rejected.items.length, 1)
   assert.equal(noneCancelled.items.length, 0)
   assert.equal(JSON.stringify(rejected.items).includes("2887"), false)
-  await assert.rejects(
-    () => transitionReservation(owner, { id: created.id, action: "confirm", revision: 2 }, now),
-    (error) => error.status === 409
-  )
+  await transitionReservation(owner, { id: created.id, action: "confirm", revision: 2 }, now)
+  assert.equal((await getReservationForStaff(owner, created.id)).status, "confirmed")
+  await transitionReservation(owner, { id: created.id, action: "cancel", revision: 3, reason: "Prueba" }, now)
 
   const second = await send(payload())
   await transitionReservation(owner, { id: second.id, action: "confirm", revision: 1 }, now)
@@ -565,4 +563,101 @@ test("los avisos se guardan una sola vez y un rol sin acceso no los lee", async 
   const reread = await listStaffNotices(admin, now)
   assert.equal(reread.every((item) => item.unread === false), true)
   await assert.rejects(() => listStaffNotices(null, now), (error) => error instanceof StaffAccessError)
+})
+
+test("el mesero marca llegada, asigna una mesa libre y finaliza", async () => {
+  const waiter = { uid: "staff-waiter", role: "mesero", email: "mesa@example.test", displayName: "Mesa" }
+  const today = todayIsoInSantiago(now)
+  const created = await createStaffReservation(admin, {
+    customerName: "Camila González",
+    customerPhone: "+56 9 4545 6767",
+    date: today,
+    preferredTime: "20:30",
+    partySize: 2,
+    preferredZone: "salon",
+    notes: "Coche de bebé",
+    confirm: true,
+    exceptionConfirmed: true,
+    exceptionReason: "Entra antes del horario de la web",
+  }, now)
+  const pending = await send(payload({ customerName: "Pendiente Ada", customerPhone: "+56 9 1212 3434" }))
+  await assert.rejects(
+    () => transitionReservation(waiter, { id: pending.id, action: "confirm", revision: 1 }, now),
+    (error) => error.status === 403,
+  )
+  await transitionReservation(waiter, { id: created.id, action: "arrive", revision: created.revision }, now)
+  await assert.rejects(
+    () => transitionReservation(waiter, { id: created.id, action: "arrive", revision: created.revision }, now),
+    (error) => error.status === 409,
+  )
+  const arrived = await getReservationForStaff(admin, created.id)
+  assert.equal(arrived.status, "arrived")
+  await getDb().collection("restaurantSettings").doc("operations").set({
+    tables: [
+      { id: "fixture-salon-1", label: "Mesa 1", zone: "salon", seats: 4, blocked: false, reservable: true },
+      { id: "fixture-salon-2", label: "Mesa 2", zone: "salon", seats: 4, blocked: false, reservable: true },
+    ],
+  }, { merge: true })
+  await transitionReservation(waiter, { id: created.id, action: "assign", revision: arrived.revision, tableLabel: "Mesa 1" }, now)
+  const other = await createStaffReservation(admin, {
+    customerName: "Otra Mesa",
+    customerPhone: "+56 9 2323 4545",
+    date: today,
+    preferredTime: "20:30",
+    partySize: 2,
+    preferredZone: "salon",
+    confirm: true,
+    exceptionConfirmed: true,
+    exceptionReason: "Entra antes del horario de la web",
+  }, now)
+  await assert.rejects(
+    () => transitionReservation(waiter, { id: other.id, action: "assign", revision: other.revision, tableLabel: "Mesa 1", exceptionConfirmed: true, reason: "La forzamos igual" }, now),
+    (error) => error.status === 403,
+  )
+  await assert.rejects(
+    () => transitionReservation(waiter, { id: other.id, action: "assign", revision: other.revision, tableLabel: "Mesa 1" }, now),
+    (error) => error.status === 409,
+  )
+  const seated = await getReservationForStaff(admin, created.id)
+  assert.equal(seated.tableLabel, "Mesa 1")
+  await transitionReservation(waiter, { id: created.id, action: "complete", revision: seated.revision }, now)
+  await assert.rejects(
+    () => transitionReservation(waiter, { id: created.id, action: "complete", revision: seated.revision }, now),
+    (error) => error.status === 409,
+  )
+  const hold = (await getDb().collection("reservationHolds").doc(`${today}_salon`).get()).data()
+  assert.equal(hold?.bookings?.[created.id], undefined)
+  const seen = await getReservationForStaff(admin, created.id)
+  assert.equal(seen.status, "completed")
+  const board = await listServiceBoard(waiter, now)
+  assert.equal(board.finished.some((item) => item.id === created.id && item.notes === "Coche de bebé"), true)
+  assert.equal(JSON.stringify(board).includes("customerEmail"), false)
+  assert.equal(JSON.stringify(board).includes(pending.id), false)
+  const notices = await listStaffNotices(waiter, now)
+  assert.equal(notices.some((item) => item.type === "created"), false)
+})
+
+test("la ficha cuenta el mismo correo y guardar no usa el contador", async () => {
+  const email = "conteo.unico@correo.cl"
+  const first = await send(payload({ customerEmail: email, customerName: "Conteo Uno", customerPhone: "+56 9 1010 2020" }))
+  const second = await send(payload({ customerEmail: email, customerName: "Conteo Dos", customerPhone: "+56 9 3030 4040" }))
+  const detail = await getReservationForStaff(admin, first.id)
+  const again = await getReservationForStaff(admin, second.id)
+  assert.equal(detail.customerEmail, email)
+  assert.equal(detail.requestCount, 2)
+  assert.equal(again.requestCount, 2)
+  const listed = await listReservationsForStaff(admin, { q: detail.referenceCode })
+  assert.equal(listed.items.some((item) => "requestCount" in item), false)
+  const manual = await createStaffReservation(admin, {
+    customerName: "Sin Correo",
+    customerPhone: "+56 9 5050 6060",
+    date: monday,
+    preferredTime: "19:30",
+    partySize: 2,
+    preferredZone: "terrace",
+  }, now)
+  const plain = await getReservationForStaff(admin, manual.id)
+  assert.equal(plain.customerEmail, null)
+  assert.equal(plain.requestCount, null)
+  assert.equal((await getDb().collection("reservationGuests").limit(5).get()).size, 0)
 })

@@ -39,6 +39,10 @@ La consulta usa `PIU_RESERVATION_STATUS=on` y, además, el emulador o `PIU_FIREB
 
 Hay un tope aparte del de las solicitudes: 30 consultas por hora para un mismo enlace, y 40 intentos fallidos por hora para la dirección que la plataforma agrega al final de `X-Forwarded-For`. Un enlace válido no gasta el cupo de los demás. La dirección no se guarda.
 
+## Atención del mesero
+
+El rol `mesero` entra a `/admin/atencion`. Ve las reservas de hoy en estado confirmada, llegada o finalizada. No recibe correo, teléfono, promociones ni el historial. Marcar llegada y finalizar usan las mismas transiciones que el panel. Finalizar suelta el cupo de esa reserva. La mesa se elige entre las configuradas, de la zona y libres en ese horario; no hay etiqueta libre ni excepción. Si todavía no hay mesas, la llegada y el cierre siguen disponibles.
+
 ## Panel
 
 `/admin/reservas` abre en Hoy: la fecha civil de Chile, todos los estados, de la hora más temprana a la más tarde. El id del documento desempata. Futuras toma las fechas posteriores a hoy, en ese mismo orden. Pasadas recorre un mes: el mes actual hasta ayer, y cualquier mes anterior completo, de la visita más nueva a la más antigua. No se puede avanzar a un mes que todavía no llega. Cada lista pide 20 documentos y el cursor sigue ese orden; cambia la vista, el mes o el filtro y el cursor vuelve a empezar.
@@ -51,9 +55,7 @@ Esas vistas ordenadas por `date` y `preferredTime` usan dos índices compuestos 
 
 El correo de una reserva nueva se guarda en `customerEmail`, en minúsculas. El formulario público lo exige. La reserva manual puede omitirlo: si no hay correo, no se inventa uno y no hay contador. Las reservas anteriores, sin ese campo, siguen en las listas.
 
-El contador vive en `reservationGuests/{hmac}`. El id es HMAC-SHA256 del correo normalizado con `PIU_RESERVATION_GUEST_SECRET`, una clave de al menos 32 caracteres que solo existe en Secret Manager. No va en el repositorio, ni en `apphosting.yaml`, ni en el navegador. El documento guarda `requestCount` y `updatedAt`, no el correo. El alta y el incremento ocurren en la misma transacción. Un reintento con la misma clave de idempotencia no suma otra vez. Cancelar, rechazar o reagendar no resta. El correo no se puede corregir desde el panel; si más adelante se permite, hay que mover el conteo en una sola transacción, sin dejarlo bajo cero, y anotar quién lo cambió.
-
-La lista lee esos contadores de una sola vez, solo para los correos distintos de la página. El seguimiento público no recibe el correo. Las reglas niegan lectura y escritura de `reservationGuests` al navegador.
+Al abrir una ficha, el servidor cuenta con `count()` las reservas cuyo `customerEmail` es exactamente ese correo. No descarga los documentos y no consulta la lista. Una reserva sin correo no muestra contador. Un correo antiguo que no esté en minúsculas no entra en el conteo del correo normalizado. No hace falta un índice compuesto: Firestore ya indexa un solo campo con igualdad. Guardar la reserva no lee ni escribe ese conteo. Los documentos viejos de `reservationGuests` no se borran. Las reglas siguen cerrando esa colección al navegador. El seguimiento público no recibe el correo.
 
 ## Promociones
 
@@ -82,6 +84,16 @@ No se suman mesas para un grupo grande. Si ninguna mesa alcanza, la confirmació
 ## Horario
 
 `America/Santiago`. Lunes a jueves 17:00–22:00. Viernes y sábado 13:00–23:00. Domingo cerrado. Los horarios del formulario llegan hasta el intervalo anterior al cierre. Cualquier día, una hora solo se puede pedir con al menos 2 horas de anticipación: a las 18:00 todavía entra la de las 20:00. La solicitud queda pendiente hasta que el restaurante la confirme.
+
+## Respaldo Excel
+
+`src/lib/reservations/backup-workbook.ts` arma `PIU_Respaldo_Reservas.xlsx` fuera del sitio. Hoy y mañana salen de `reservations` con `date` y `preferredTime`, el índice que ya existe. Pendientes son solo `pending` y `reschedule_requested` de esos dos días. Rechazadas y canceladas no entran. No van el correo ni la aceptación de promociones.
+
+El archivo admite hasta 200 reservas distintas. Si hay más, o si un día trae 250 documentos y la lectura puede estar incompleta, no se reemplaza la copia anterior. Los días que ya pasaron desaparecen del Excel en la generación siguiente y siguen en Firestore.
+
+`functions/src/index.ts` define `reservationBackup` para Cloud Functions de segunda generación. Cada hora, en `America/Santiago` y `us-central1`, usa la cuenta `piu-respaldo-reservas@piu-pizza-cl.iam.gserviceaccount.com` y las credenciales automáticas del entorno. El archivo vive en la unidad compartida `0AOGhjSyhqHexUk9PVA`. La primera corrida lo crea; las siguientes actualizan ese mismo id y antes copian el contenido vigente a `PIU_Respaldo_Reservas.anterior.xlsx`. La función admite una sola instancia y una sola ejecución a la vez. No envía `If-Match`: Drive v3 no documenta `version` como ETag y esa cabecera podía rechazar una actualización válida. No está desplegada y no cambia App Hosting.
+
+Para probarla a mano después de publicarla: en Cloud Scheduler, región `us-central1`, el trabajo se llama `firebase-schedule-reservationBackup-us-central1`. «Forzar ejecución» dispara una corrida. La primera debe crear el Excel en la unidad compartida. Una segunda, minutos después, debe conservar el mismo archivo y dejar el contenido previo en `PIU_Respaldo_Reservas.anterior.xlsx`. El intento queda en estado correcto o fallido en ese trabajo. El registro de la función se consulta con `firebase functions:log --only reservationBackup --project piu-pizza-cl`; un fallo aparece como `reservation_backup_failed`.
 
 ## Qué no hace
 

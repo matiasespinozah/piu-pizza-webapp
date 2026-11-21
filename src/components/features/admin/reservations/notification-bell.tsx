@@ -71,7 +71,7 @@ function chime() {
   }
 }
 
-function NotificationBell() {
+function NotificationBell({ reservationPath = (id: string) => `/admin/reservas?id=${id}` }: { reservationPath?: (id: string) => string } = {}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notices, setNotices] = useState<Notice[]>([])
@@ -174,7 +174,7 @@ function NotificationBell() {
                   onClick={() => {
                     void mark([notice.id])
                     setOpen(false)
-                    if (notice.reservationId) router.push(`/admin/reservas?id=${notice.reservationId}`)
+                    if (notice.reservationId) router.push(reservationPath(notice.reservationId))
                   }}
                 >
                   <span className="font-heading text-sm font-bold break-words">{notice.title}</span>
@@ -200,7 +200,7 @@ function NotificationBell() {
             setBanner(null)
             void mark([banner.id])
             setOpen(false)
-            if (banner.reservationId) router.push(`/admin/reservas?id=${banner.reservationId}`)
+            if (banner.reservationId) router.push(reservationPath(banner.reservationId))
           }}
         >
           <span className="font-heading text-sm font-bold break-words">{banner.title}</span>

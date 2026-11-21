@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 /** Rol de personal. Vive en un custom claim, nunca en un campo que el navegador pueda editar. */
-const staffRoleSchema = z.enum(["superadmin", "admin"])
+const staffRoleSchema = z.enum(["superadmin", "admin", "mesero"])
 
 type StaffRole = z.infer<typeof staffRoleSchema>
 

@@ -12,9 +12,12 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Agregado
 
 - En `/admin/reservas`, arriba a la izquierda, «Respaldo» abre la unidad de Drive donde queda el Excel de reservas.
+- Un generador local arma `PIU_Respaldo_Reservas.xlsx` con las hojas Hoy, Mañana y Pendientes, con un máximo de 200 reservas de esos dos días, sin borrar nada de Firestore. Cada corrida lee hasta 250 documentos por día.
+- La función `reservationBackup` queda lista para publicarse, sin desplegarla: corre cada hora en `us-central1` con la cuenta `piu-respaldo-reservas` y actualiza ese Excel en la unidad compartida. Si la lectura o el archivo salen incompletos, conserva el respaldo anterior. Son como máximo 500 lecturas por hora y no mantiene instancias encendidas.
+- El rol `mesero` atiende en `/admin/atencion`: ve las reservas confirmadas de hoy, marca la llegada, elige una mesa ya configurada y finaliza la atención. No confirma, rechaza, cancela ni abre el resto del panel. Los avisos que recibe son los de la atención, no los de solicitudes pendientes ni de personal. El propietario lo asigna desde Personal.
 - `/nosotros` cuenta la historia de Felipe y Camila. El enlace Nosotros del encabezado abre esa página. Faltan fotos de los inicios y de la familia; el local y la terraza usan las imágenes que ya tiene el sitio.
 - En `/admin/reservas`, Hoy, Futuras y Pasadas ordenan por la visita y muestran 20 por página. Hoy es la vista inicial. Pasadas recorre el mes y, en el mes en curso, llega solo hasta ayer. «Todas las reservas» abre `/admin/reservas/historial`, fuera del menú y con la misma autorización de reservas. Los índices de `date` y `preferredTime` quedaron escritos en `firestore.indexes.json`; no se publicaron.
-- El formulario público pide el correo y lo guarda en minúsculas. La reserva manual puede quedar sin correo. El panel muestra «N solicitudes realizadas» para los correos de la página, con un contador cuyo identificador no es el correo. El seguimiento público no lo recibe. Hace falta `PIU_RESERVATION_GUEST_SECRET` en Secret Manager; sin esa clave no se guarda una reserva que traiga correo.
+- El formulario público pide el correo y lo guarda en minúsculas. La reserva manual puede quedar sin correo. El seguimiento público no lo recibe.
 - En `/reservas`, la casilla de promociones por correo nace marcada y se puede desmarcar. Si queda marcada, esa reserva guarda el correo y la aceptación. Si se desmarca, la reserva sigue y no borra una aceptación anterior. No hay correo de confirmación ni baja automática.
 - En el encabezado, «Mi reserva» abre una ventana con PIU- ya escrito. Los cuatro números llevan a `/reservas/estado`, que se actualiza solo cada 30 segundos mientras la página está abierta. Un código que no existe no revela si hay otra reserva. Cada consulta sigue limitada por hora.
 - En `/admin/reservas`, `admin` y `superadmin` pueden crear una reserva recibida en el local o por teléfono, reagendar, anotar una mesa opcional y guardar una nota interna. Si el grupo o el horario superan los cupos, el panel avisa y permite continuar solo con una excepción explícita. Queda registrado quién la autorizó, cuándo y por qué, sin cambiar la configuración del local ni las reglas del formulario público.
@@ -26,6 +29,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 - El orden de Configuración es el de `/carta`. Una categoría sin productos ya no se corre al final. Arrastrar el punto, o subir y bajar, guarda ese orden.
 - El aviso y el tooltip ya no se cargan en todas las páginas. Quedan en el muestrario `/ui`, que en producción no se publica. Las fuentes de la marca siguen igual.
 - En `/reservas`, cualquier día y cualquier hora se piden con al menos 2 horas de anticipación. A las 18:00 todavía se puede pedir las 20:00. Al enviar, queda dicho que la solicitud sigue pendiente de confirmación del restaurante y que la mesa aún no está reservada.
+- En la ficha de una reserva, «N solicitudes realizadas» sale de un conteo del mismo correo. La lista no lo consulta. Guardar una reserva ya no depende de `PIU_RESERVATION_GUEST_SECRET` ni escribe en `reservationGuests`.
+- La actualización horaria del Excel ya no envía `If-Match` con el `version` de Drive. `reservationBackup` admite una sola instancia y una sola ejecución a la vez, y sigue copiando el archivo vigente antes de reemplazarlo.
 - En `/admin/carta`, Mostrar y Ocultar quedan bloqueados hasta que la lista confirma el cambio. Si el producto estaba en Ocultos, el aviso dice que salió de esa lista y sigue en Todos.
 - En `/admin/carta`, Agregar deja crear un producto o «Añadir nueva categoría». Borrar un producto o una categoría abre una ventana de confirmación. En Configuración, las categorías de la carta se reubican arrastrando el punto o con subir y bajar.
 - En el pie, «Acceso empleados» queda con marco crema para distinguirlo del texto legal.
@@ -51,7 +56,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
-- El muestrario `/ui` vuelve a abrir en desarrollo. El formulario de código se muestra dentro de la ventana de seguimiento, que sí es un componente de cliente.
+- Finalizar o cancelar una reserva suelta su cupo aunque el mismo horario tenga otras reservas. Antes el cupo de esa reserva podía quedar tomado.
+- El muestrario `/ui` vuelve a abrir. El formulario de código queda dentro del ejemplo de seguimiento, que sí puede recibir la acción.
 - Las fotos de producto se guardan hasta en 1600 px y calidad 72, con un tope de 400 KB. En el celular y en el computador la ficha usa esa misma nitidez.
 - Al abrir un producto de la carta, la foto queda cuadrada, como en la lista, y la pizza no se recorta.
 - Crear una categoría con un nombre que ya existe no reemplaza la anterior. Subir o bajar dos categorías se guarda en una sola operación.

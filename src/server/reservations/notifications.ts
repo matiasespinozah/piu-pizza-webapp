@@ -6,6 +6,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore"
 import type { StaffSession } from "@/lib/auth/roles"
 import { collections } from "@/lib/firebase/model"
 import { santiagoParts, todayIsoInSantiago } from "@/lib/reservations/schedule"
+import { waiterMayReadNotice } from "@/lib/reservations/service-notices"
 import type { ReservationZone } from "@/lib/reservations/types"
 import { assertStaff } from "@/server/auth/authorization"
 import { getDb } from "@/server/firebase/firestore"
@@ -145,10 +146,10 @@ async function sweepNotices(now = new Date()) {
 }
 
 async function listStaffNotices(session: StaffSession | null, now = new Date()): Promise<StaffNotice[]> {
-  assertStaff(session, ["superadmin", "admin"])
+  const actor = assertStaff(session, ["superadmin", "admin", "mesero"])
   await sweepNotices(now).catch(() => undefined)
   const snap = await getDb().collection(collections.staffNotifications).orderBy("at", "desc").limit(30).get()
-  return snap.docs.map((doc) => {
+  const notices = snap.docs.map((doc) => {
     const data = doc.data()
     const at = data.at instanceof Timestamp ? data.at.toDate().toISOString() : ""
     const readBy = Array.isArray(data.readBy) ? data.readBy.filter((item) => typeof item === "string") : []
@@ -160,23 +161,26 @@ async function listStaffNotices(session: StaffSession | null, now = new Date()):
       title: typeof data.title === "string" ? data.title : "Aviso",
       body: typeof data.body === "string" ? data.body : "",
       at,
-      unread: session ? !readBy.includes(session.uid) : true,
+      unread: !readBy.includes(actor.uid),
     }
   })
+  return actor.role === "mesero" ? notices.filter((notice) => waiterMayReadNotice(notice)) : notices
 }
 
 async function markStaffNoticesRead(session: StaffSession | null, ids: string[]) {
-  const actor = assertStaff(session, ["superadmin", "admin"])
+  const actor = assertStaff(session, ["superadmin", "admin", "mesero"])
   const unique = [...new Set(ids)].filter((id) => /^[a-f0-9]{32}$/.test(id)).slice(0, 20)
   const db = getDb()
   await Promise.all(
-    unique.map((id) =>
-      db
-        .collection(collections.staffNotifications)
-        .doc(id)
-        .update({ readBy: FieldValue.arrayUnion(actor.uid) })
-        .catch(() => undefined),
-    ),
+    unique.map(async (id) => {
+      const ref = db.collection(collections.staffNotifications).doc(id)
+      if (actor.role === "mesero") {
+        const snap = await ref.get()
+        const data = snap.data()
+        if (!snap.exists || !data || !waiterMayReadNotice({ type: String(data.type ?? ""), title: String(data.title ?? "") })) return
+      }
+      await ref.update({ readBy: FieldValue.arrayUnion(actor.uid) }).catch(() => undefined)
+    }),
   )
 }
 

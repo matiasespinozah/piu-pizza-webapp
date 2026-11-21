@@ -1,7 +1,7 @@
 import "server-only"
 
 import { createHash, randomInt, randomUUID } from "node:crypto"
-import { FieldPath, Timestamp, type Firestore, type Query } from "firebase-admin/firestore"
+import { FieldPath, FieldValue, Timestamp, type DocumentReference, type Firestore, type Query, type Transaction } from "firebase-admin/firestore"
 
 import type { StaffSession } from "@/lib/auth/roles"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
@@ -12,9 +12,9 @@ import { ReservationError } from "@/lib/reservations/errors"
 import type { PublicReservationInput } from "@/lib/reservations/public-request"
 import { claimPublicReference } from "@/lib/reservations/reference"
 import { optionalReservationEmail, planReservationCreate, storedReservationEmail } from "@/lib/reservations/email"
-import { isPastDate, todayIsoInSantiago } from "@/lib/reservations/schedule"
+import { isPastDate, todayIsoInSantiago, toMinutes } from "@/lib/reservations/schedule"
+import { eligibleServiceTables, readServiceTables } from "@/lib/reservations/service-tables"
 import { pastWindow, staffView } from "@/lib/reservations/staff-views"
-import { guestDocumentId, requestCountFor, reservationGuestSecret, withRequestCounts } from "@/server/reservations/guest"
 import { canTransition, nextStatus, type StaffAction } from "@/lib/reservations/transitions"
 import type { ReservationStatus, ReservationZone } from "@/lib/reservations/types"
 import { createTrackingSecret, hashTrackingSecret, trackingExpiresOn, wrapTrackingSecret } from "@/lib/reservations/tracking"
@@ -101,6 +101,12 @@ function bookingsOf(data: ReservationData | undefined) {
   return raw as Record<string, HoldBooking>
 }
 
+function releaseHoldBooking(tx: Transaction, ref: DocumentReference, data: ReservationData | undefined, id: string) {
+  const previous = { ...bookingsOf(data) }
+  delete previous[id]
+  tx.set(ref, { bookings: { ...previous, [id]: FieldValue.delete() } }, { merge: true })
+}
+
 function receiptOf(data: ReservationData): PublicReceipt {
   const zone = asZone(data.preferredZone) ?? "salon"
   return {
@@ -127,7 +133,6 @@ function listItem(id: string, data: ReservationData): ReservationListItem | null
     preferredZone: zone,
     customerName: text(data.customerName),
     customerEmail: storedReservationEmail(data.customerEmail),
-    requestCount: null,
     createdAt: iso(data.createdAt),
     revision: data.revision,
   }
@@ -181,8 +186,6 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
   assertWritable()
   const phone = normalizeChileMobile(input.customerPhone)
   if (!phone) throw new ReservationError(422, "invalid", "Ingresa un celular chileno, por ejemplo +56 9 2887 3619.")
-  const secret = reservationGuestSecret()
-  if (!secret) throw new ReservationError(503, "disabled", "Falta la clave del contador de correos. La reserva no se guardó.")
 
   const db = getDb()
   const ref = db.collection(collections.reservations).doc(input.idempotencyKey)
@@ -201,8 +204,8 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
     const current = await tx.get(ref)
     if (current.exists) {
       const data = current.data() ?? {}
-      const plan = planReservationCreate(true, data.fingerprint === mark, input.customerEmail, 0)
-      if (plan.action === "conflict") {
+      const plan = planReservationCreate(true, data.fingerprint === mark)
+      if (plan === "conflict") {
         throw new ReservationError(409, "idempotency", "Esa solicitud ya se envió con otros datos.")
       }
       const trackingId = typeof data.trackingId === "string" ? data.trackingId : ""
@@ -237,10 +240,6 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
     if (!referenceCode) {
       throw new ReservationError(503, "reference", "No pudimos asignar una referencia. Inténtalo otra vez.")
     }
-
-    const guestRef = db.collection(collections.reservationGuests).doc(guestDocumentId(input.customerEmail, secret))
-    const guestSnap = await tx.get(guestRef)
-    const plan = planReservationCreate(false, true, input.customerEmail, guestSnap.get("requestCount"))
 
     const data = {
       referenceCode,
@@ -281,9 +280,6 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
         : {}),
     }
     tx.set(ref, data)
-    if (plan.action === "create" && plan.requestCount != null) {
-      tx.set(guestRef, { requestCount: plan.requestCount, updatedAt: stamp }, { merge: true })
-    }
     tx.set(db.collection(collections.reservationAccess).doc(freshId), {
       reservationId: input.idempotencyKey,
       expiresOn,
@@ -393,7 +389,7 @@ async function listReservationsForStaff(
       .filter((item): item is ReservationListItem => item != null)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, pageSize)
-    return { ready: true as const, items: await withRequestCounts(db, items), nextCursor: null, summary }
+    return { ready: true as const, items, nextCursor: null, summary }
   }
 
   const planned = listQuery(db, query)
@@ -412,7 +408,7 @@ async function listReservationsForStaff(
   const docs = snap.docs.slice(0, pageSize)
   const items = docs.map((item) => listItem(item.id, item.data())).filter((item): item is ReservationListItem => item != null)
   const nextCursor = snap.docs.length > pageSize ? docs.at(-1)?.id ?? null : null
-  return { ready: true as const, items: await withRequestCounts(db, items), nextCursor, summary }
+  return { ready: true as const, items, nextCursor, summary }
 }
 
 async function listReservationHistory(session: StaffSession | null, cursor?: string) {
@@ -430,7 +426,7 @@ async function listReservationHistory(session: StaffSession | null, cursor?: str
   const docs = page.docs.slice(0, pageSize)
   const items = docs.map((item) => listItem(item.id, item.data())).filter((item): item is ReservationListItem => item != null)
   const nextCursor = page.docs.length > pageSize ? docs.at(-1)?.id ?? null : null
-  return { ready: true as const, items: await withRequestCounts(db, items), nextCursor }
+  return { ready: true as const, items, nextCursor }
 }
 
 async function getReservationForStaff(session: StaffSession | null, id: string): Promise<ReservationDetail> {
@@ -447,7 +443,9 @@ async function getReservationForStaff(session: StaffSession | null, id: string):
   const data = snap.data() ?? {}
   const item = listItem(snap.id, data)
   if (!item) throw new ReservationError(404, "missing", "No encontramos esa solicitud.")
-  item.requestCount = await requestCountFor(db, item.customerEmail)
+  const requestCount = item.customerEmail
+    ? await countOf(db.collection(collections.reservations).where("customerEmail", "==", item.customerEmail))
+    : null
 
   const eventsSnap = await ref.collection("events").orderBy("at", "desc").limit(20).get()
   const events: ReservationEvent[] = eventsSnap.docs.map((event) => {
@@ -464,6 +462,7 @@ async function getReservationForStaff(session: StaffSession | null, id: string):
 
   return {
     ...item,
+    requestCount: requestCount != null && requestCount > 0 ? requestCount : null,
     customerPhone: text(data.customerPhone),
     notes: text(data.notes),
     assignedTableIds: Array.isArray(data.assignedTableIds) ? data.assignedTableIds.filter((id) => typeof id === "string") : [],
@@ -493,9 +492,17 @@ type TransitionInput = {
   exceptionConfirmed?: boolean
 }
 
+const waiterActions = new Set<StaffAction>(["arrive", "assign", "complete"])
+
 async function transitionReservation(session: StaffSession | null, input: TransitionInput, now = new Date()) {
   assertWritable()
-  const actor = assertStaff(session, ["superadmin", "admin"])
+  const actor =
+    session?.role === "mesero"
+      ? assertStaff(session, ["mesero"])
+      : assertStaff(session, ["superadmin", "admin"])
+  if (actor.role === "mesero" && (!waiterActions.has(input.action) || input.exceptionConfirmed === true)) {
+    throw new ReservationError(403, "forbidden", "Esa acción no está disponible para el mesero.")
+  }
   const reason = input.reason?.trim() ?? ""
   if (reason.length > 160) throw new ReservationError(422, "invalid", "El motivo es demasiado largo.")
 
@@ -514,6 +521,9 @@ async function transitionReservation(session: StaffSession | null, input: Transi
     }
     if (!canTransition(status, input.action)) {
       throw new ReservationError(409, "invalid_transition", "Esa solicitud ya no admite ese cambio.")
+    }
+    if (actor.role === "mesero" && input.action === "assign" && status !== "confirmed" && status !== "arrived") {
+      throw new ReservationError(403, "forbidden", "Solo puedes asignar mesa a una reserva confirmada o en atención.")
     }
 
     const keepsStatus = input.action === "note" || input.action === "assign"
@@ -678,9 +688,7 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       }
       const nextBookings = { ...bookingsOf(newSnap?.data()) }
       if (oldRef && newRef && oldRef.path !== newRef.path) {
-        const previous = { ...bookingsOf(oldSnap?.data()) }
-        delete previous[input.id]
-        tx.set(oldRef, { bookings: previous }, { merge: true })
+        releaseHoldBooking(tx, oldRef, oldSnap?.data(), input.id)
       }
       nextBookings[input.id] = {
         tableIds: assignment.tableIds,
@@ -703,20 +711,14 @@ async function transitionReservation(session: StaffSession | null, input: Transi
     }
 
     if (releases && oldRef) {
-      const previous = { ...bookingsOf(oldSnap?.data()) }
-      delete previous[input.id]
-      tx.set(oldRef, { bookings: previous }, { merge: true })
+      releaseHoldBooking(tx, oldRef, oldSnap?.data(), input.id)
       patch.assignedTableIds = []
       patch.holdDate = null
       patch.holdZone = null
     }
 
     if (movesVisit && targetZone) {
-      if (oldRef) {
-        const previous = { ...bookingsOf(oldSnap?.data()) }
-        delete previous[input.id]
-        tx.set(oldRef, { bookings: previous }, { merge: true })
-      }
+      if (oldRef) releaseHoldBooking(tx, oldRef, oldSnap?.data(), input.id)
       patch.assignedTableIds = []
       patch.holdDate = null
       patch.holdZone = null
@@ -729,6 +731,28 @@ async function transitionReservation(session: StaffSession | null, input: Transi
 
     if ((confirms || movesVisit) && accessRef && accessSnap?.exists) {
       tx.update(accessRef, { expiresOn: trackingExpiresOn(targetDate) })
+    }
+
+    if (input.action === "assign" && actor.role === "mesero") {
+      if (!label) throw new ReservationError(422, "invalid", "Elige una mesa.")
+      const settingsSnap = await tx.get(settingsRef)
+      const tables = readServiceTables(settingsSnap.data())
+      if (tables.length === 0) throw new ReservationError(422, "invalid", "Todavía no hay mesas configuradas.")
+      const zone = asZone(data.preferredZone)
+      const visitDate = text(data.date)
+      const holdRef = oldRef ?? (zone ? db.collection(collections.reservationHolds).doc(`${visitDate}_${zone}`) : null)
+      const holdSnap = holdRef && oldRef && holdRef.path === oldRef.path ? assignSnap : holdRef ? await tx.get(holdRef) : null
+      const bookings = bookingsOf(holdSnap?.data())
+      const current = bookings[input.id]
+      const startMin = current?.startMin ?? toMinutes(text(data.preferredTime))
+      const endMin = current?.endMin ?? startMin + 90
+      const partySize = Number(data.partySize) || 0
+      const choices = zone
+        ? eligibleServiceTables({ tables, zone, partySize, startMin, endMin, bookings, reservationId: input.id })
+        : []
+      if (!choices.some((table) => table.label.toLocaleLowerCase("es-CL") === label.toLocaleLowerCase("es-CL"))) {
+        throw new ReservationError(409, "capacity_table", "Esa mesa no está disponible para esta reserva.")
+      }
     }
 
     if (input.action === "assign" && oldRef && assignSnap) {
@@ -825,8 +849,6 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
   const emailResult = optionalReservationEmail(input.customerEmail ?? "")
   if ("error" in emailResult) throw new ReservationError(422, "invalid", emailResult.error)
   const email = emailResult.email
-  const secret = email ? reservationGuestSecret() : null
-  if (email && !secret) throw new ReservationError(503, "disabled", "Falta la clave del contador de correos. La reserva no se guardó.")
   const exceptionReason = (input.exceptionReason ?? "").trim()
   if (!input.exceptionConfirmed) {
     const errors = validateTime(
@@ -866,9 +888,6 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
 
   const ref = db.collection(collections.reservations).doc(id)
   await db.runTransaction(async (tx) => {
-    const guestRef = email && secret ? db.collection(collections.reservationGuests).doc(guestDocumentId(email, secret)) : null
-    const guestSnap = guestRef ? await tx.get(guestRef) : null
-    const plan = planReservationCreate(false, true, email, guestSnap?.get("requestCount"))
     tx.set(ref, {
       referenceCode,
       status: "pending",
@@ -900,9 +919,6 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
       cancelledAt: null,
       trackingId: "",
     })
-    if (guestRef && plan.action === "create" && plan.requestCount != null) {
-      tx.set(guestRef, { requestCount: plan.requestCount, updatedAt: stamp }, { merge: true })
-    }
     tx.set(ref.collection("events").doc(), {
       action: "received",
       fromStatus: null,

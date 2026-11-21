@@ -74,8 +74,16 @@ test("el rol admin no ve personal ni configuración", () => {
   assert.equal(canViewSection("admin", "reservas"), true)
   assert.equal(canViewSection("admin", "personal"), false)
   assert.equal(canViewSection("admin", "configuracion"), false)
+  assert.equal(canViewSection("admin", "atencion"), false)
   assert.equal(canViewSection("superadmin", "personal"), true)
   assert.equal(canViewSection("superadmin", "configuracion"), true)
+  assert.equal(canViewSection("superadmin", "atencion"), false)
+  assert.equal(canViewSection("mesero", "atencion"), true)
+  assert.equal(canViewSection("mesero", "inicio"), false)
+  assert.equal(canViewSection("mesero", "reservas"), false)
+  assert.equal(canViewSection("mesero", "carta"), false)
+  assert.equal(canViewSection("mesero", "personal"), false)
+  assert.equal(canViewSection("mesero", "configuracion"), false)
 })
 
 test("la cookie solo se crea si el pedido viene del propio sitio", () => {
@@ -115,6 +123,7 @@ test("las rutas del panel exigen sesión y la sección que corresponde", () => {
     "src/app/admin/(panel)/carta/page.tsx": "carta",
     "src/app/admin/(panel)/configuracion/page.tsx": "configuracion",
     "src/app/admin/(panel)/personal/page.tsx": "personal",
+    "src/app/admin/(panel)/atencion/page.tsx": "atencion",
   }
   for (const [path, section] of Object.entries(pages)) {
     assert.match(text(path), new RegExp(`requireSection\\("${section}"\\)`))
