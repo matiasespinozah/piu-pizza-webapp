@@ -235,27 +235,26 @@ test("la configuración inicial no inventa mesas y deja los cupos de salón y te
   assert.equal(slots.includes("21:30"), false)
 })
 
-test("los cupos simultáneos respetan la duración y un grupo grande ocupa un cupo", () => {
+test("los cupos de personas respetan la duración y un grupo ocupa a sus personas", () => {
   const document = operationsDocument({
     ...defaultOperationRules(),
     sectors: {
-      salon: { total: 19, web: 2 },
-      terrace: { total: 15, web: 1 },
+      salon: { total: 19, web: 20 },
+      terrace: { total: 15, web: 20 },
     },
   })
   const config = readCapacity(document, { allowFixture: false })
-  assert.equal(config?.sectors?.salon, 2)
-  const first = planAssignment({ config, bookings: {}, zone: "salon", partySize: 4, startMin: 17 * 60 })
+  assert.equal(config?.sectors?.salon, 20)
+  const first = planAssignment({ config, bookings: {}, zone: "salon", partySize: 15, startMin: 17 * 60 })
   assert.equal(first.ok, true)
   assert.deepEqual(first.ok && first.tableIds, [])
+  assert.equal(first.ok && first.slots, 15)
   assert.equal(first.ok && first.endMin, 18 * 60 + 30)
   const busy = {
-    one: { tableIds: [], slots: 1, startMin: 17 * 60, endMin: 18 * 60 + 30, zone: "salon" },
-    two: { tableIds: ["vieja"], startMin: 17 * 60 + 30, endMin: 19 * 60, zone: "salon" },
+    one: { tableIds: [], slots: 15, startMin: 17 * 60, endMin: 18 * 60 + 30, zone: "salon" },
   }
-  assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 2, startMin: 18 * 60 }).reason, "overlap")
-  assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 2, startMin: 19 * 60 }).ok, true)
-  assert.equal(planAssignment({ config, bookings: {}, zone: "salon", partySize: 8, startMin: 17 * 60 }).ok, true)
+  assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 6, startMin: 17 * 60 + 30 }).reason, "overlap")
+  assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 6, startMin: 19 * 60 }).ok, true)
   const kept = readOperationRules({
     clock: { weekday: { opensAt: "18:00", closesAt: "22:00" }, weekend: { opensAt: "12:00", closesAt: "23:00" }, lastSeatingTime: null },
     tables: [{ id: "mesa-1", label: "Mesa 1", zone: "salon", seats: 4, seatsMax: null, blocked: false, reservable: true, combinable: false, smoker: false }],

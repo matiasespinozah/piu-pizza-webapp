@@ -61,7 +61,7 @@ La solicitud queda cancelada y, si tenía mesa, esa asignación se suelta en la 
 
 El cupo se toma al confirmar, no al recibir la solicitud. Dos personas no pueden confirmar a la vez la misma mesa: la segunda recibe un error y la solicitud no cambia.
 
-Cada reserva confirmada ocupa un cupo del sector mientras dura. Dos confirmaciones a la misma hora no pueden pasar del número de mesas web de ese sector. Una reserva ya guardada con mesas concretas sigue ocupando esas mesas. No se borran al cambiar la configuración.
+Cada reserva confirmada ocupa a sus personas en el sector mientras dura. Quince personas en un sector de veinte dejan cinco lugares. Las mesas no se asignan al confirmar: se acomodan en el local. Una reserva ya guardada sigue ocupando a su grupo. No se borra al cambiar la configuración.
 
 ## Mesas
 
@@ -71,7 +71,7 @@ Guardar no enciende la página pública. Una pausa o un día completo rechaza so
 
 ## La cantidad de personas
 
-Confirmar no mira si el grupo cabe en una mesa. Cada reserva, chica o grande, ocupa un cupo del sector si ese horario todavía tiene lugar. El máximo del formulario público sigue siendo el de «Personas por reserva». El personal confirma sin anotar un motivo por el tamaño del grupo.
+Confirmar no elige una mesa. Cada reserva ocupa a sus personas dentro de las personas configuradas para ese sector. El máximo del formulario público sigue siendo el de «Personas por reserva». El personal confirma sin anotar un motivo por el tamaño del grupo.
 
 ## Probar con emuladores
 

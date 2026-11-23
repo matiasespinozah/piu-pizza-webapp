@@ -149,7 +149,7 @@ function AdminDashboard({
             <ArrowRight aria-hidden className="size-3.5" />
           </Link>
         </div>
-        {rows && rows.length > 0 ? <DashboardQuotaChart rows={rows} /> : <p className="py-6 text-sm text-olive-muted">{closed ? "Hoy no hay horario de reservas." : "Todavía no hay cupos web para graficar este día."}</p>}
+        {rows && rows.length > 0 ? <DashboardQuotaChart rows={rows} /> : <p className="py-6 text-sm text-olive-muted">{closed ? "Hoy no hay horario de reservas." : "Todavía no hay personas configuradas para graficar este día."}</p>}
         <p className="mt-2 text-[0.6875rem] leading-snug text-olive-muted">Cupos web de salón y terraza. No mide mesas físicas ocupadas.</p>
       </section>
 
@@ -194,7 +194,7 @@ function StatCard({ metric, ready }: { metric: Metric; ready: boolean }) {
 function DashboardQuotaChart({ rows }: { rows: QuotaRow[] }) {
   const marks = [100, 80, 60, 40, 20, 0]
   return (
-    <div className="flex gap-2" role="img" aria-label="Porcentaje de cupos web ocupados en cada franja">
+    <div className="flex gap-2" role="img" aria-label="Porcentaje de personas reservadas en cada franja">
       <div className="flex h-36 flex-col justify-between text-[0.625rem] text-olive-muted lg:h-52">
         {marks.map((mark) => (
           <span key={mark}>{mark}%</span>
@@ -211,7 +211,7 @@ function DashboardQuotaChart({ rows }: { rows: QuotaRow[] }) {
                 <div
                   className="w-full rounded-t-sm bg-status-good-solid"
                   style={{ height: `${Math.max(ratio === 0 ? 0 : 6, Math.round(ratio * 100))}%` }}
-                  title={`${row.time}: ${used} de ${web} cupos web`}
+                  title={`${row.time}: ${used} de ${web} personas`}
                 />
               </div>
             )

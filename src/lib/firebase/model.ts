@@ -101,7 +101,7 @@ const restaurantSettingsSchema = z.object({
 const staffDirectorySchema = z.object({
   email: z.string().trim().max(120),
   displayName: z.string().trim().max(80),
-  /** pending no tiene claim. El rol del panel sigue viviendo solo en Authentication. */
+  /** El rol del panel vive en Authentication. pending es una solicitud anterior, sin claim. */
   status: z.enum(["pending", "active", "rejected", "suspended"]),
   intendedRole: z.enum(["admin", "superadmin", "mesero"]).nullable(),
   invitedBy: z.string().trim().max(128).nullable(),
@@ -114,6 +114,8 @@ const invitationSchema = z.object({
   expiresAt: z.string().datetime(),
   createdAt: z.string().datetime(),
   createdBy: z.string().trim().min(1).max(128),
+  /** Las invitaciones viejas, sin este campo, siguen siendo de administración. */
+  role: z.enum(["admin", "superadmin", "mesero"]).default("admin"),
   status: z.enum(["open", "used", "revoked"]),
   usedAt: z.string().datetime().nullable(),
   usedBy: z.string().trim().max(128).nullable(),

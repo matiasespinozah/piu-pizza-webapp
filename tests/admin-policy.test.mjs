@@ -186,13 +186,16 @@ test("el inicio no inventa métricas ni lee Firestore", () => {
   assert.doesNotMatch(page + view, /\b\d+\s+reservas\b/i)
 })
 
-test("el alta por invitación no asigna rol ni publica el secreto", () => {
+test("el alta por invitación activa el rol guardado y no publica el secreto", () => {
   const service = text("src/server/staff/invitations.ts")
   const join = text("src/components/features/admin/staff/join-form.tsx")
-  assert.match(service, /status: "pending"/)
-  assert.doesNotMatch(service, /setCustomUserClaims/)
+  const route = text("src/app/api/admin/join/route.ts")
+  assert.match(service, /status: "active"/)
+  assert.match(service, /setCustomUserClaims/)
+  assert.match(service, /parsed\.data\.role/)
   assert.doesNotMatch(service, /updateUser/)
-  assert.match(join, /Tu cuenta está pendiente de aprobación/)
+  assert.doesNotMatch(route, /role:/)
+  assert.match(join, /Ya puedes entrar/)
   assert.doesNotMatch(join, /setCustomUserClaims|intendedRole/)
   assert.match(text("src/components/features/admin/login-form.tsx"), /Tu cuenta está pendiente de aprobación/)
   assert.match(text("src/app/admin/session/route.ts"), /pending: true/)

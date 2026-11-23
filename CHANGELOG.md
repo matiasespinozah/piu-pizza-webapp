@@ -26,7 +26,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
-- Si las reservas en línea están en pausa, `/reservas` muestra solo el mensaje elegido en el panel y ofrece consultar por WhatsApp. El formulario no aparece. El servidor sigue rechazando una solicitud nueva.
+- En Personal, el propietario elige el rol al crear la invitación. Cuando la persona crea su cuenta, entra con ese rol. No hace falta aprobarla otra vez. Una invitación de propietario pide confirmación en ese momento. Las solicitudes que ya estaban pendientes se aprueban como antes.
+- En Disponibilidad y al confirmar, el cupo de un sector son personas, no reservas ni mesas. Una reserva de 15 personas ocupa 15 de las 20. Queda amarillo si quedan menos de 5 personas y rojo si no queda ninguna. Las mesas se siguen acomodando en el local.
 - En `/nosotros`, la historia se lee por capítulos. El campeonato de 2023 queda solo arriba. El horno de la foto es el segundo y llega en el bloque de 2026, junto al segundo lugar en Italia. Junto a Camila va la cocina, y junto a «Lo que nos mueve» el interior. Las fotos entran completas, en WebP, sin recortar a las personas.
 - La foto principal del inicio es la cocina de PIÙ. En escritorio se recorta anclada abajo, con el logo blanco dentro. En el celular entra la foto vertical completa. `/nosotros` sigue con la foto anterior.
 - En el inicio, «Un lugar para compartir» muestra Terraza e Interior juntas. Al elegir un lado, esa foto ocupa el cuadro y la otra queda en una franja. En el celular la foto elegida se ve completa, sin el bloque de texto encima.
@@ -75,7 +76,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Agregado
 
 - Un `superadmin` aprueba o rechaza cuentas pendientes en `/admin/personal`, asigna `admin` o `superadmin`, cambia el rol, suspende, reactiva o revoca el acceso. El servidor actualiza el claim y revoca la sesión anterior. No se puede quitar al último propietario, y un `admin` no puede hacerlo.
-- Un `superadmin` puede crear, copiar y revocar invitaciones de personal en `/admin/personal`. El enlace es de un solo uso, vence a las 48 horas y el secreto solo se guarda como hash. `/admin/unirse` crea la cuenta sin rol y queda pendiente de aprobación. El ingreso, con la contraseña correcta, dice que sigue pendiente y no abre el panel.
+- Un `superadmin` puede crear, copiar y revocar invitaciones de personal en `/admin/personal`. El enlace es de un solo uso, vence a las 48 horas y el secreto solo se guarda como hash. `/admin/unirse` crea la cuenta con el rol de la invitación y abre el panel al volver a entrar. Una solicitud que ya estaba pendiente sigue sin entrar hasta que el propietario la apruebe.
 - `/admin/mesas` permite a `admin` y `superadmin` crear y editar mesas, pausar la recepción, cerrar o completar un día, y guardar horario, duración, topes y avisos. La duración inicial es 90 minutos. Un `superadmin` puede habilitar la confirmación cuando no falten datos; eso no enciende la recepción pública. No se crean las mesas que la distribución informada no detalla.
 - Una pausa, un día cerrado o un día completo rechaza solicitudes nuevas en el servidor. Al confirmar se respetan el tope diario, el tope por horario y las mesas, sin cancelar reservas ya confirmadas.
 - El inicio del panel cuenta los productos de Firestore cuando el acceso a datos está encendido. Las cifras de reservas siguen en «Recepción desactivada» mientras `PIU_RESERVATIONS_WRITES` no esté en `on`.
@@ -181,6 +182,10 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 - En `/carta`, al tocar un producto se abre una ficha ampliada con imagen grande, nombre, precio y descripción (`ProductDetailDialog`). `ProductImage` admite la proporción `4/3`.
 - «Ver la carta», «Explorar carta completa» y el enlace Carta del header y del footer llevan a `/carta`. El header tiene una variante sólida para páginas internas.
 - `src/lib/menu.ts` ya no duplica productos: «Sugerencias del chef» lee del catálogo local.
+
+### Seguridad
+
+- El rol de una cuenta nueva sale solo de la invitación guardada por el propietario. El formulario de registro no puede pedirlo. Si no se puede escribir el permiso, la invitación vuelve a quedar abierta.
 
 ## [0.2.0] - 2026-11-03
 
