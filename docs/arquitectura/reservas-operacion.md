@@ -39,7 +39,7 @@ El enlace deja de servir dos días después de la visita. Eso no borra la solici
 
 Abre la solicitud en `/admin/reservas` y pulsa Confirmar. El sistema vuelve a pedir confirmación.
 
-Al confirmar, el sistema aparta un cupo del salón o de la terraza durante la duración guardada (al inicio, 90 minutos). No elige una mesa física: si ese sector no tiene mesas individuales, la reserva igual puede confirmarse y queda anotada en el sector, sin inventar un identificador. Si el horario ya está lleno, el grupo no cabe, la mesa escrita choca con otra o faltan los cupos, la confirmación normal sigue pendiente y muestra el motivo. El personal autenticado puede autorizar esa excepción con un motivo de al menos 8 caracteres. Queda en la reserva y en la auditoría quién, cuándo y por qué, sin cambiar los cupos ni las mesas configuradas. El formulario público no puede saltarse las reglas.
+Al confirmar, el sistema aparta un cupo del salón o de la terraza durante la duración guardada (al inicio, 90 minutos). No elige una mesa física: si ese sector no tiene mesas individuales, la reserva igual puede confirmarse y queda anotada en el sector, sin inventar un identificador. La cantidad de personas no pide un motivo: un grupo grande ocupa el mismo cupo que uno chico. Si el horario ya está lleno, la mesa escrita choca con otra o faltan los cupos, la confirmación normal sigue pendiente y muestra el motivo. El personal autenticado puede autorizar esa excepción con un motivo de al menos 8 caracteres. Queda en la reserva y en la auditoría quién, cuándo y por qué, sin cambiar los cupos ni las mesas configuradas. El formulario público no puede saltarse las reglas.
 
 Los avisos de «reserva próxima» (30 minutos) y «sigue pendiente» (20 minutos) los escribe un barrido del servidor, no el navegador. Cloud Scheduler llama `POST /api/admin/reservations/sweep` cada 10 minutos, con `Authorization: Bearer` y el secreto `PIU_NOTICES_CRON_SECRET` (Secret Manager, no va en el código). El trabajo entra en los 3 trabajos gratis de Cloud Scheduler; cada llamada es un arranque de la app ya desplegada (`minInstances: 0`) y lee como máximo 60 reservas. El mismo aviso no se duplica. Al abrir el panel, la campana igual consulta cada 25 segundos y, si el trabajo no alcanzó a correr, completa el barrido.
 
@@ -69,9 +69,9 @@ La configuración permanente (cantidad de mesas, cupos web, duración y horario)
 
 Guardar no enciende la página pública. Una pausa o un día completo rechaza solicitudes nuevas en el servidor. Las ya guardadas siguen en el panel. En Zonas y cupos, «Personas por reserva» es el máximo que puede pedir el cliente en esa zona. Al guardarlo, el formulario público usa ese número. La reserva que anota el personal no tiene ese tope: si lo supera, el panel avisa que es una excepción de administración. Los cupos web siguen siendo cuántas reservas en línea pueden coincidir, no cuántas personas entran en una.
 
-## Si el grupo no cabe en una mesa conocida
+## La cantidad de personas
 
-No se inventan puestos. La confirmación normal la deja pendiente. El personal puede autorizarla como excepción, con motivo, sin cambiar los cupos. Rechazar, proponer y cancelar siguen disponibles cuando la recepción de datos está encendida.
+Confirmar no mira si el grupo cabe en una mesa. Cada reserva, chica o grande, ocupa un cupo del sector si ese horario todavía tiene lugar. El máximo del formulario público sigue siendo el de «Personas por reserva». El personal confirma sin anotar un motivo por el tamaño del grupo.
 
 ## Probar con emuladores
 
@@ -124,7 +124,7 @@ Antes de recibir clientes por la web falta, por escrito:
 - Qué se hace si la persona llega tarde o no llega.
 - El texto de la política de privacidad y cuánto tiempo se guardan nombre y celular.
 
-Hasta publicar esa política, la recepción pública sigue apagada. Los cupos se confirman con lo guardado en `restaurantSettings/operations`, sin crear mesas de ensayo. Un grupo de más de 4 personas no se confirma solo.
+Hasta publicar esa política, la recepción pública sigue apagada. Los cupos se confirman con lo guardado en `restaurantSettings/operations`, sin crear mesas de ensayo. El tamaño del grupo no deja la confirmación pendiente.
 
 Los índices de `firestore.indexes.json` hay que publicarlos antes de usar los filtros en producción. No se publicaron en este paso.
 

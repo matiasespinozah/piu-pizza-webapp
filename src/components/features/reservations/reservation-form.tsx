@@ -19,6 +19,7 @@ import { defaultOperationRules, publicRules } from "@/lib/reservations/operation
 import type { ReservationDraft, ReservationErrors, ReservationStep } from "@/lib/reservations/types"
 
 const whatsappHref = `https://wa.me/56928873619?text=${encodeURIComponent(reservationWhatsappMessage)}`
+const consultHref = `https://wa.me/56928873619?text=${encodeURIComponent("Hola, quiero consultar por una reserva en PIÙ.")}`
 
 const initialDraft: ReservationDraft = {
   date: "",
@@ -38,8 +39,30 @@ const stepTitle = {
   3: "Tus datos",
 } as const
 
+function ReservationClosed({ message }: { message: string }) {
+  return (
+    <section
+      data-reservation-form=""
+      data-reservation-paused="on"
+      className="mx-auto w-full max-w-xl rounded-3xl border border-olive-line bg-surface-raised px-5 py-8 shadow-lift"
+    >
+      <p className="font-label text-xs font-semibold tracking-[0.14em] text-terracotta uppercase">Reservas en línea</p>
+      <h2 className="mt-3 font-heading text-xl leading-snug font-extrabold tracking-[-0.02em] text-olive sm:text-2xl">
+        {message}
+      </h2>
+      <p className="mt-4 text-base leading-relaxed text-olive-strong">Si quieres consultar, escríbenos por WhatsApp.</p>
+      <Button asChild variant="accent" size="lg" className="mt-6 h-12 w-full">
+        <a href={consultHref} target="_blank" rel="noopener noreferrer">
+          Escribir por WhatsApp
+        </a>
+      </Button>
+    </section>
+  )
+}
+
 function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   const [rules, setRules] = useState(publicRules(defaultOperationRules()))
+  const [rulesReady, setRulesReady] = useState(false)
   const [day, setDay] = useState<DayOverride | null>(null)
   const [step, setStep] = useState<ReservationStep>(1)
   const [draft, setDraft] = useState<ReservationDraft>(initialDraft)
@@ -65,6 +88,9 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
         if (active && payload.rules?.clock) setRules(payload.rules)
       })
       .catch(() => undefined)
+      .finally(() => {
+        if (active) setRulesReady(true)
+      })
     return () => {
       active = false
     }
@@ -162,6 +188,19 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
     }
   }
 
+  if (rulesReady && rules.receptionPaused) {
+    const notice = admitRequest(rules, null, "2099-01-05")
+    return <ReservationClosed message={notice.ok ? "Por ahora no estamos tomando reservas en línea." : notice.message} />
+  }
+
+  if (receptionEnabled && !rulesReady) {
+    return (
+      <section data-reservation-form="" data-reservation-enabled="on" aria-busy="true" className="min-h-48 rounded-3xl border border-olive-line bg-surface-raised px-5 py-8 shadow-lift">
+        <p className="text-base text-olive-muted">Revisando si podemos tomar tu reserva…</p>
+      </section>
+    )
+  }
+
   if (!receptionEnabled) {
     return (
       <section
@@ -174,7 +213,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
           Las reservas en línea aún no están disponibles
         </h2>
         <p className="mt-3 text-base text-olive-strong">
-          Por ahora no puedes enviar una solicitud por aquí. Escríbenos por WhatsApp y te ayudamos a pedir una mesa.
+          Por ahora no puedes enviar una solicitud por aquí. Escríbenos por WhatsApp y te ayudamos a reservar.
         </p>
         <Button asChild variant="accent" size="lg" className="mt-5 h-12 w-full">
           <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
@@ -212,7 +251,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
         <h2 id={titleId} ref={headingRef} tabIndex={-1} className="sr-only">
           {stepTitle[step]}
         </h2>
-        <p className="mb-4 text-sm text-olive-strong">Al enviar, la solicitud queda pendiente de confirmación del restaurante. La mesa no queda reservada todavía.</p>
+        <p className="mb-4 text-sm text-olive-strong">Al enviar, la solicitud queda pendiente de confirmación del restaurante. La reserva no queda tomada todavía.</p>
         {!admission.ok ? (
           <p role="status" className="mb-4 rounded-2xl border border-olive-line bg-cream px-4 py-3 text-base text-olive">
             {admission.message}
