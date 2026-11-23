@@ -11,6 +11,7 @@ import type { InvitationPhase } from "@/lib/staff/invitation"
 type InvitationCard = {
   id: string
   email: string
+  roleLabel: string
   phase: InvitationPhase
   when: string
 }
@@ -22,7 +23,7 @@ const groups: { phase: InvitationPhase; title: string; empty: string }[] = [
 ]
 
 function phaseDetail(invite: InvitationCard) {
-  if (invite.phase === "pending") return `Vence el ${invite.when}`
+  if (invite.phase === "pending") return `${invite.roleLabel} · Vence el ${invite.when}`
   if (invite.phase === "used") return `Usada el ${invite.when}`
   if (invite.phase === "revoked") return "Revocada"
   return `Venció el ${invite.when}`

@@ -144,7 +144,7 @@ function readWebSectors(value: unknown): Record<ReservationZone, number> | null 
     const item = record[zone]
     if (!item || typeof item !== "object") return null
     const web = (item as Record<string, unknown>).web
-    if (typeof web !== "number" || !Number.isInteger(web) || web < 0 || web > 40) return null
+    if (typeof web !== "number" || !Number.isInteger(web) || web < 0 || web > 200) return null
     return web
   }
   const salon = side("salon")
@@ -168,14 +168,14 @@ function occupiedSlots(bookings: Record<string, HoldBooking>, startMin: number, 
 }
 
 /**
- * Una reserva ocupa un cupo del sector durante la duración. No elige una mesa física.
- * La cantidad de personas no frena la confirmación: el cupo es la reserva, no el grupo.
+ * Una reserva confirmada ocupa a sus personas durante la duración. No elige una mesa.
  */
 function planSector(input: {
   config: CapacityConfig
   bookings: Record<string, HoldBooking>
   ignoreReservationId?: string
   zone: ReservationZone
+  partySize: number
   startMin: number
 }): Assignment {
   const web = input.config.sectors?.[input.zone]
@@ -183,8 +183,9 @@ function planSector(input: {
   if (web <= 0) return { ok: false, reason: "unreservable" }
   const endMin = input.startMin + input.config.serviceMinutes
   const used = occupiedSlots(input.bookings, input.startMin, endMin, input.ignoreReservationId)
-  if (used >= web) return { ok: false, reason: "overlap" }
-  return { ok: true, tableIds: [], endMin, slots: 1 }
+  const people = Number.isInteger(input.partySize) && input.partySize > 0 ? input.partySize : 1
+  if (used + people > web) return { ok: false, reason: "overlap" }
+  return { ok: true, tableIds: [], endMin, slots: people }
 }
 
 function bestCombination(tables: SeatTable[], partySize: number, maxTables: number) {

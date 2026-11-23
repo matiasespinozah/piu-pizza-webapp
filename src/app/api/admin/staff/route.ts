@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { requestIsTrusted } from "@/lib/auth/session-policy"
+import { readStaffRole } from "@/lib/auth/roles"
 import { InviteError, inviteFailureMessage, normalizeStaffEmail, staffEmailIsValid } from "@/lib/staff/invitation"
 import { StaffAccessError } from "@/server/auth/authorization"
 import { readStaffGate } from "@/server/auth/session"
@@ -42,14 +43,18 @@ export async function POST(request: Request) {
   const gate = await readStaffGate()
   if (gate.status !== 200) return NextResponse.json({ ok: false, message: "Tu sesión venció. Vuelve a entrar." }, { status: gate.status, headers: noStore })
 
-  const body = (await request.json().catch(() => null)) as { email?: unknown } | null
+  const body = (await request.json().catch(() => null)) as { email?: unknown; role?: unknown; confirmOwner?: unknown } | null
   const email = normalizeStaffEmail(typeof body?.email === "string" ? body.email : "")
+  const role = readStaffRole(body?.role)
   if (!staffEmailIsValid(email)) {
     return NextResponse.json({ ok: false, message: "Ingresa un correo válido." }, { status: 400, headers: noStore })
   }
+  if (!role) {
+    return NextResponse.json({ ok: false, message: "Elige el rol de esta persona." }, { status: 400, headers: noStore })
+  }
 
   try {
-    const created = await createStaffInvitation(gate.session, email)
+    const created = await createStaffInvitation(gate.session, email, role, body?.confirmOwner === true)
     return NextResponse.json(
       { ok: true, link: inviteLink(request, created.token), email: created.email, expiresAt: created.expiresAt },
       { headers: noStore }

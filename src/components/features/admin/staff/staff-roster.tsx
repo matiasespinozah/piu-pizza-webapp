@@ -100,8 +100,8 @@ function StaffRoster({ members }: { members: MemberCard[] }) {
                     <p className="text-sm text-olive">
                       Rol: <span className="font-semibold">{member.roleLabel}</span>
                     </p>
-                    {member.emailVerified === false && member.status !== "rejected" ? (
-                      <p className="text-sm text-terracotta">Debe verificar su correo antes de recibir acceso.</p>
+                    {member.emailVerified === false && member.status === "pending" ? (
+                      <p className="text-sm text-terracotta">Debe verificar su correo antes de aprobar esta solicitud.</p>
                     ) : null}
                     {member.status === "pending" && member.role ? (
                       <p className="text-sm text-terracotta">

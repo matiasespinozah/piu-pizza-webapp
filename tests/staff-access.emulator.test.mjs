@@ -10,7 +10,6 @@ import { liveStaffSession } from "@/server/auth/live-session"
 import { getAdminApp } from "@/server/firebase/admin"
 import { getDb } from "@/server/firebase/firestore"
 import { StaffControlError, approveStaff, changeStaffRole, rejectStaff, revokeStaffAccess, suspendStaff, reactivateStaff } from "@/server/staff/access"
-import { createStaffInvitation, redeemStaffInvitation } from "@/server/staff/invitations"
 
 assert.ok(process.env.FIRESTORE_EMULATOR_HOST, "Firestore tiene que ser el emulador.")
 assert.ok(process.env.FIREBASE_AUTH_EMULATOR_HOST, "Auth tiene que ser el emulador.")
@@ -58,10 +57,17 @@ async function ownerSession() {
 
 async function pendingWorker(owner, name, verified = true) {
   const account = email(name)
-  const created = await createStaffInvitation(owner, account)
-  await redeemStaffInvitation({ token: created.token, name: "Nora Soto", email: account, password, address: name })
-  const user = await auth.getUserByEmail(account)
-  if (verified) await auth.updateUser(user.uid, { emailVerified: true })
+  const user = await auth.createUser({ email: account, password, displayName: "Nora Soto", emailVerified: verified })
+  const now = new Date().toISOString()
+  await getDb().collection(collections.staff).doc(user.uid).set({
+    email: account,
+    displayName: "Nora Soto",
+    status: "pending",
+    intendedRole: "admin",
+    invitedBy: owner.uid,
+    createdAt: now,
+    updatedAt: now,
+  })
   return { account, uid: user.uid }
 }
 

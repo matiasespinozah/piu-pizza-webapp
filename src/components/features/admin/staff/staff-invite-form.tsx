@@ -14,7 +14,11 @@ async function createInvitation(_current: InviteFormState, formData: FormData): 
   const response = await fetch("/api/admin/staff", {
     method: "POST",
     headers: { "content-type": "application/json", [adminRequestHeader]: adminRequestValue },
-    body: JSON.stringify({ email: formData.get("email") }),
+    body: JSON.stringify({
+      email: formData.get("email"),
+      role: formData.get("role"),
+      confirmOwner: formData.get("confirmOwner") === "on",
+    }),
   })
   const body: unknown = await response.json().catch(() => null)
   if (typeof body === "object" && body && "ok" in body && body.ok === true && "link" in body && "email" in body && "expiresAt" in body) {
@@ -27,6 +31,7 @@ async function createInvitation(_current: InviteFormState, formData: FormData): 
 function StaffInviteForm() {
   const [state, action, pending] = useActionState(createInvitation, null)
   const [copied, setCopied] = useState(false)
+  const [role, setRole] = useState("admin")
 
   async function copy() {
     if (!state?.ok) return
@@ -43,7 +48,7 @@ function StaffInviteForm() {
       <div>
         <h2 className="font-heading text-lg font-bold text-olive">Nueva invitación</h2>
         <Text tone="muted" className="mt-1">
-          El enlace es de un solo uso, vence en 48 horas y se muestra una sola vez. Envíalo tú por WhatsApp.
+          El enlace es de un solo uso, vence en 48 horas y se muestra una sola vez. Cuando la persona cree su cuenta, entra con el rol que elijas.
         </Text>
       </div>
       <form action={action} className="flex flex-col gap-4" onSubmit={() => setCopied(false)}>
@@ -60,6 +65,26 @@ function StaffInviteForm() {
             className="admin-control mt-2"
           />
         </div>
+        <div>
+          <FieldLabel htmlFor="staff-invite-role">Rol</FieldLabel>
+          <select
+            id="staff-invite-role"
+            name="role"
+            value={role}
+            className="admin-control mt-2 font-sans font-normal"
+            onChange={(event) => setRole(event.target.value)}
+          >
+            <option value="admin">Administración</option>
+            <option value="mesero">Mesero</option>
+            <option value="superadmin">Propietario</option>
+          </select>
+        </div>
+        {role === "superadmin" ? (
+          <label className="flex min-h-11 items-center gap-3 text-sm text-olive">
+            <input type="checkbox" name="confirmOwner" className="size-5 accent-olive" />
+            Confirmo que esta persona también será propietaria.
+          </label>
+        ) : null}
         <FieldError>{state && !state.ok ? state.message : null}</FieldError>
         <Button type="submit" className="w-full sm:w-auto" loading={pending}>
           {pending ? "Generando" : "Generar invitación"}

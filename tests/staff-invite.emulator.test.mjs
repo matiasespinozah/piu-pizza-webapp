@@ -45,7 +45,7 @@ async function redeem(token, account, name = "Ana Pérez") {
   return redeemStaffInvitation({ token, name, email: account, password, address: `test-${account}` })
 }
 
-test("el registro queda pendiente, sin rol, y el secreto no se guarda", async () => {
+test("el registro activa el rol de la invitación y el secreto no se guarda", async () => {
   const account = email("alta")
   const created = await createStaffInvitation(owner, account)
   const preview = await previewStaffInvitation(created.token, "preview-alta")
@@ -55,18 +55,19 @@ test("el registro queda pendiente, sin rol, y el secreto no se guarda", async ()
   assert.equal(result.emailVerified, false)
 
   const user = await auth.getUserByEmail(account)
-  assert.equal(user.customClaims?.role, undefined)
-  assert.equal(await staffAccountIsPending(user.uid), true)
+  assert.equal(user.customClaims?.role, "admin")
+  assert.equal(await staffAccountIsPending(user.uid), false)
   const signed = await signIn(account)
   assert.equal(signed.ok, true)
   const decision = decideStaffSession(await auth.verifyIdToken(signed.body.idToken, true))
-  assert.deepEqual(decision, { ok: false, reason: "forbidden" })
+  assert.equal(decision.ok && decision.session.role, "admin")
 
   const stored = await getDb().collection(collections.invitations).doc(hashInviteToken(created.token)).get()
   assert.equal(stored.get("status"), "used")
   assert.equal(JSON.stringify(stored.data()).includes(created.token), false)
   const staff = await getDb().collection(collections.staff).doc(user.uid).get()
-  assert.equal(staff.get("status"), "pending")
+  assert.equal(staff.get("status"), "active")
+  assert.equal(staff.get("intendedRole"), "admin")
   const logs = await getDb().collection(collections.auditLogs).where("targetPath", "==", `staff/${user.uid}`).limit(5).get()
   assert.equal(logs.docs.some((doc) => String(doc.get("summary")).includes(created.token)), false)
 })
@@ -124,12 +125,12 @@ test("un correo que ya existe conserva su contraseña y solo el titular vincula 
   assert.equal(linked.emailVerified, true)
   const user = await auth.getUserByEmail(orphan)
   assert.equal(user.displayName, "Viejo")
-  assert.equal(user.customClaims?.role, undefined)
-  assert.equal((await getDb().collection(collections.staff).doc(user.uid).get()).get("status"), "pending")
+  assert.equal(user.customClaims?.role, "admin")
+  assert.equal((await getDb().collection(collections.staff).doc(user.uid).get()).get("status"), "active")
   assert.equal((await signIn(orphan, "OldPassword-1")).ok, true)
   await assert.rejects(
     () => linkStaffInvitation({ token: created.token, idToken: ownerSign.body.idToken, name: "Nora", address: "otra" }),
-    (error) => error.code === "used"
+    (error) => error.code === "exists"
   )
 
   const ownerAccount = email("propietario")
@@ -137,6 +138,19 @@ test("un correo que ya existe conserva su contraseña y solo el titular vincula 
   await auth.setCustomUserClaims(existing.uid, { role: "superadmin" })
   await assert.rejects(() => createStaffInvitation(owner, ownerAccount), (error) => error.code === "exists")
   assert.equal((await auth.getUser(existing.uid)).customClaims.role, "superadmin")
+})
+
+test("un mesero entra con ese rol y un propietario pide confirmación", async () => {
+  const waiter = email("mesero")
+  const invited = await createStaffInvitation(owner, waiter, "mesero")
+  await redeem(invited.token, waiter, "Luis Mesa")
+  assert.equal((await auth.getUserByEmail(waiter)).customClaims?.role, "mesero")
+
+  const another = email("dueno")
+  await assert.rejects(() => createStaffInvitation(owner, another, "superadmin"), (error) => error.code === "confirm")
+  const ownerInvite = await createStaffInvitation(owner, another, "superadmin", true)
+  await redeem(ownerInvite.token, another, "Otra Dueña")
+  assert.equal((await auth.getUserByEmail(another)).customClaims?.role, "superadmin")
 })
 
 test("revocar una invitación abierta impide el registro", async () => {

@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto"
 import { getAuth, type UserRecord } from "firebase-admin/auth"
 import type { DocumentReference } from "firebase-admin/firestore"
 
-import type { StaffSession } from "@/lib/auth/roles"
+import type { StaffRole, StaffSession } from "@/lib/auth/roles"
 import { readStaffRole } from "@/lib/auth/roles"
 import { authTimeIsFresh } from "@/lib/auth/session-policy"
 import { auditLogSchema, collections, invitationSchema, staffDirectorySchema } from "@/lib/firebase/model"
@@ -33,6 +33,7 @@ const lockMs = 30_000
 type InvitationView = {
   id: string
   email: string
+  role: StaffRole
   phase: InvitationPhase
   expiresAt: string
   createdAt: string
@@ -94,9 +95,16 @@ function assertCanJoin(user: UserRecord | null) {
   if (readStaffRole(user.customClaims?.role)) throw new InviteError("exists")
 }
 
-async function createStaffInvitation(actor: StaffSession, email: string, now = Date.now()): Promise<CreatedInvitation> {
+async function createStaffInvitation(
+  actor: StaffSession,
+  email: string,
+  role: StaffRole = "admin",
+  confirmOwner = false,
+  now = Date.now()
+): Promise<CreatedInvitation> {
   assertFirebaseDataEnabled()
   assertStaff(actor, ["superadmin"])
+  if (role === "superadmin" && !confirmOwner) throw new InviteError("confirm")
   const existing = await userByEmail(email)
   assertCanJoin(existing)
 
@@ -109,6 +117,7 @@ async function createStaffInvitation(actor: StaffSession, email: string, now = D
     expiresAt,
     createdAt,
     createdBy: actor.uid,
+    role,
     status: "open",
     usedAt: null,
     usedBy: null,
@@ -139,6 +148,7 @@ async function listStaffInvitations(actor: StaffSession, now = Date.now()): Prom
     views.push({
       id: doc.id,
       email: parsed.data.email,
+      role: parsed.data.role,
       phase: invitationPhase(parsed.data.status, parsed.data.expiresAt, now),
       expiresAt: parsed.data.expiresAt,
       createdAt: parsed.data.createdAt,
@@ -223,10 +233,11 @@ async function lockOpenInvite(token: string, email: string, now: number) {
   return { id, lockId, ref }
 }
 
-async function commitPending(ref: DocumentReference, lockId: string, uid: string, email: string, name: string, now: number) {
+async function commitActive(ref: DocumentReference, lockId: string, uid: string, email: string, name: string, now: number) {
   const nowIso = new Date(now).toISOString()
   const accountRef = getDb().collection(collections.staff).doc(uid)
   let invitedBy = ""
+  let role: StaffRole = "admin"
   await getDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref)
     const parsed = invitationSchema.safeParse(snap.data())
@@ -235,14 +246,15 @@ async function commitPending(ref: DocumentReference, lockId: string, uid: string
     const previousStatus = previous.get("status")
     if (previousStatus === "active" || previousStatus === "suspended") throw new InviteError("exists")
     invitedBy = parsed.data.createdBy
+    role = parsed.data.role
     const createdAt = typeof previous.get("createdAt") === "string" ? previous.get("createdAt") : nowIso
     tx.set(
       accountRef,
       staffDirectorySchema.parse({
         email,
         displayName: name,
-        status: "pending",
-        intendedRole: "admin",
+        status: "active",
+        intendedRole: role,
         invitedBy,
         createdAt,
         updatedAt: nowIso,
@@ -255,10 +267,46 @@ async function commitPending(ref: DocumentReference, lockId: string, uid: string
       actorUid: invitedBy,
       action: "staff.invite.redeem",
       targetPath: `${collections.staff}/${uid}`,
-      summary: "Una invitación de personal quedó pendiente de aprobación.",
+      summary: "La invitación dejó el acceso activo.",
       at: nowIso,
     })
   )
+  return role
+}
+
+/** El rol sale de la invitación que creó el propietario, no del formulario de registro. */
+async function grantInvitedRole(uid: string, role: StaffRole) {
+  const user = await auth().getUser(uid)
+  await auth().setCustomUserClaims(uid, { ...user.customClaims, role })
+}
+
+async function clearInvitedRole(uid: string) {
+  const user = await auth().getUser(uid)
+  const claims = { ...user.customClaims }
+  delete claims.role
+  await auth().setCustomUserClaims(uid, claims)
+}
+
+async function undoActivation(ref: DocumentReference, uid: string) {
+  const accountRef = getDb().collection(collections.staff).doc(uid)
+  await getDb().runTransaction(async (tx) => {
+    const snap = await tx.get(ref)
+    if (snap.get("usedBy") !== uid || snap.get("status") !== "used") return
+    tx.update(ref, { status: "open", usedAt: null, usedBy: null, lockId: null, lockUntil: null })
+    const account = await tx.get(accountRef)
+    if (account.get("status") === "active") tx.delete(accountRef)
+  })
+}
+
+async function finishActivation(ref: DocumentReference, lockId: string, uid: string, email: string, name: string, now: number) {
+  const role = await commitActive(ref, lockId, uid, email, name, now)
+  try {
+    await grantInvitedRole(uid, role)
+  } catch {
+    await clearInvitedRole(uid).catch(() => undefined)
+    await undoActivation(ref, uid).catch(() => undefined)
+    throw new InviteError("unavailable")
+  }
 }
 
 async function releaseLock(id: string, lockId: string) {
@@ -296,7 +344,7 @@ async function redeemStaffInvitation(input: RedeemInput): Promise<RedeemedInvita
       if (code === "auth/email-already-exists") throw new InviteError("sign-in")
       throw new InviteError("unavailable")
     }
-    await commitPending(locked.ref, locked.lockId, uid, input.email, input.name, now)
+    await finishActivation(locked.ref, locked.lockId, uid, input.email, input.name, now)
     return { emailVerified: false }
   } catch (error) {
     await releaseLock(locked.id, locked.lockId).catch(() => undefined)
@@ -330,7 +378,7 @@ async function linkStaffInvitation(input: { token: string; idToken: string; name
 
   const locked = await lockOpenInvite(input.token, email, now)
   try {
-    await commitPending(locked.ref, locked.lockId, user.uid, email, input.name, now)
+    await finishActivation(locked.ref, locked.lockId, user.uid, email, input.name, now)
     return { emailVerified: user.emailVerified === true }
   } catch (error) {
     await releaseLock(locked.id, locked.lockId).catch(() => undefined)

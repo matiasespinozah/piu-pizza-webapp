@@ -43,7 +43,7 @@ const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/
 const sectorInput = z
   .object({
     total: z.number().int().min(0).max(40),
-    web: z.number().int().min(0).max(40),
+    web: z.number().int().min(0).max(200),
   })
   .strict()
 
@@ -135,6 +135,17 @@ async function readFloor(session: StaffSession | null, date: string) {
     ...bookingsOf(salon.data() as Record<string, unknown> | undefined, "salon"),
     ...bookingsOf(terrace.data() as Record<string, unknown> | undefined, "terrace"),
   ]
+  const peopleByReservation = new Map<string, number>()
+  for (const doc of pending.docs) {
+    const status = doc.get("status")
+    if (status !== "confirmed" && status !== "arrived") continue
+    const partySize = doc.get("partySize")
+    if (typeof partySize === "number" && Number.isInteger(partySize) && partySize > 0) peopleByReservation.set(doc.id, partySize)
+  }
+  for (const booking of bookings) {
+    const people = peopleByReservation.get(booking.id)
+    if (people) booking.slots = people
+  }
   const pendingCount = pending.docs.filter((item) => item.get("status") === "pending").length
   const confirmedCount = pending.docs.filter((item) => item.get("status") === "confirmed").length
   return { rules, bookings, pendingCount, confirmedCount, pendingTruncated: pending.size === 50, day }
@@ -174,13 +185,6 @@ async function saveFloor(session: StaffSession | null, input: unknown, sectionIn
   const section: FloorSection | null = sectionParsed?.success ? sectionParsed.data : null
   for (const day of Object.values(parsed.data.week)) {
     if (day.opensAt >= day.closesAt) throw new FloorError(400, "La apertura tiene que ser anterior al cierre.")
-  }
-  for (const [zone, label] of [
-    ["salon", "el salón"],
-    ["terrace", "la terraza"],
-  ] as const) {
-    const side = parsed.data.sectors[zone]
-    if (side.web > side.total) throw new FloorError(400, `En ${label} hay más mesas para la web que mesas en total.`)
   }
   const db = getDb()
   const ref = db.collection(collections.restaurantSettings).doc(settingsDocId)

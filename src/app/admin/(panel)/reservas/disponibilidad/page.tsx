@@ -54,7 +54,7 @@ export default async function DisponibilidadPage({
             Disponibilidad de reservas
           </Heading>
           <p className="text-sm text-olive-muted">
-            Cada media hora: cupos que siguen libres y personas que llegan a esa hora. Se actualiza sola mientras esta página está abierta. El cupo baja al confirmar; las personas también cuentan las solicitudes pendientes.
+            Cada media hora: cuántas personas siguen libres y cuántas llegan. Una reserva confirmada ocupa a su grupo durante la duración. Las pendientes se ven en las que llegan y ocupan lugar al confirmar. Se actualiza sola mientras esta página está abierta.
           </p>
         </div>
         <Link href="/admin/reservas" className="inline-flex h-11 items-center self-start text-sm font-semibold text-terracotta sm:shrink-0">
@@ -81,7 +81,7 @@ export default async function DisponibilidadPage({
       </form>
 
       {!floor ? (
-        <p className="admin-card p-4 text-sm text-olive-strong">La configuración de mesas no está conectada en este entorno.</p>
+        <p className="admin-card p-4 text-sm text-olive-strong">La configuración del local no está conectada en este entorno.</p>
       ) : floor.day.closed || rows === null ? (
         <p className="admin-card px-4 py-8 text-center text-sm text-olive-muted">
           {floor.day.closed ? "Ese día está cerrado para reservas en línea." : "Falta el horario o la duración de una reserva para armar la grilla."}
@@ -94,12 +94,12 @@ export default async function DisponibilidadPage({
             <p className="rounded-2xl bg-cream px-3 py-2">
               <span className="block text-xs text-olive-muted">Salón</span>
               <span className="font-heading text-xl font-extrabold text-olive">{floor.rules.sectors.salon.web}</span>
-              <span className="block text-xs text-olive-muted">cupos web</span>
+              <span className="block text-xs text-olive-muted">personas</span>
             </p>
             <p className="rounded-2xl bg-cream px-3 py-2">
               <span className="block text-xs text-olive-muted">Terraza</span>
               <span className="font-heading text-xl font-extrabold text-olive">{floor.rules.sectors.terrace.web}</span>
-              <span className="block text-xs text-olive-muted">cupos web</span>
+              <span className="block text-xs text-olive-muted">personas</span>
             </p>
           </div>
           {floor.day.full ? <p className="mb-3 text-sm font-semibold text-status-waiting">Día marcado completo. No entran solicitudes nuevas.</p> : null}
