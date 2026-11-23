@@ -15,7 +15,7 @@ import type { WeekSchedule, Weekday } from "@/lib/reservations/schedule"
 
 import "../admin-shell.css"
 import { Status } from "./floor-editor"
-import { dayLabels, partyCount, sectorProblem, useTablesDraft, whole } from "./tables-draft"
+import { dayLabels, partyCount, peopleCapacity, sectorProblem, useTablesDraft, whole } from "./tables-draft"
 
 type SectionId = "hours" | "rules" | "zones" | "messages"
 
@@ -111,8 +111,8 @@ function RestaurantSettings({
       </ConfigCard>
 
       <ConfigCard
-        title="Zonas y cupos"
-        summary={`Salón ${draft.sectors.salon.web} de ${draft.sectors.salon.total}, hasta ${draft.maxParty.salon} pers. · Terraza ${draft.sectors.terrace.web} de ${draft.sectors.terrace.total}, hasta ${draft.maxParty.terrace} pers.`}
+        title="Zonas y personas"
+        summary={`Salón ${draft.sectors.salon.web} personas, hasta ${draft.maxParty.salon} por reserva · Terraza ${draft.sectors.terrace.web} personas, hasta ${draft.maxParty.terrace} por reserva`}
         open={open === "zones"}
         onToggle={() => setOpen(open === "zones" ? null : "zones")}
         pending={form.pending}
@@ -232,7 +232,6 @@ function SectorFields({
   onChange: (value: SectorTables) => void
   onParty: (value: number) => void
 }) {
-  const walkIn = Math.max(0, value.total - value.web)
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-cream p-3">
       <span className="font-heading font-bold">{title}</span>
@@ -246,10 +245,10 @@ function SectorFields({
         <Input id={`${title}-total`} inputMode="numeric" className="h-11 bg-surface-raised" value={String(value.total)} onChange={(event) => onChange({ ...value, total: whole(event.target.value, value.total) })} />
       </Field>
       <Field>
-        <FieldLabel htmlFor={`${title}-web`}>Cupos web</FieldLabel>
-        <Input id={`${title}-web`} inputMode="numeric" className="h-11 bg-surface-raised" value={String(value.web)} onChange={(event) => onChange({ ...value, web: whole(event.target.value, value.web) })} />
+        <FieldLabel htmlFor={`${title}-web`}>Personas</FieldLabel>
+        <Input id={`${title}-web`} inputMode="numeric" className="h-11 bg-surface-raised" value={String(value.web)} onChange={(event) => onChange({ ...value, web: peopleCapacity(event.target.value, value.web) })} />
       </Field>
-      <p className="text-xs text-olive-muted">{walkIn} por orden de llegada. Un cupo es una reserva, no la cantidad de personas.</p>
+      <p className="text-xs text-olive-muted">Cuántas personas pueden estar reservadas a la vez. Las mesas se acomodan en el local.</p>
     </div>
   )
 }

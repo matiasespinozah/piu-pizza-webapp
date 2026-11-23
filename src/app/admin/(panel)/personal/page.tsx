@@ -4,6 +4,7 @@ import { StaffInviteForm } from "@/components/features/admin/staff/staff-invite-
 import { StaffInviteList, type InvitationCard } from "@/components/features/admin/staff/staff-invite-list"
 import { StaffRoster, type MemberCard } from "@/components/features/admin/staff/staff-roster"
 import { Heading, Text } from "@/components/ui/typography"
+import { roleLabel } from "@/lib/auth/permissions"
 import { requireSection } from "@/server/auth/access"
 import { listStaffMembers } from "@/server/staff/access"
 import { listStaffInvitations } from "@/server/staff/invitations"
@@ -50,6 +51,7 @@ export default async function AdminPersonalPage() {
   const cards: InvitationCard[] = invites.map((invite) => ({
     id: invite.id,
     email: invite.email,
+    roleLabel: roleLabel(invite.role),
     phase: invite.phase,
     when: whenLabel(invite.phase === "used" && invite.usedAt ? invite.usedAt : invite.expiresAt),
   }))
@@ -60,7 +62,7 @@ export default async function AdminPersonalPage() {
         <Heading as="h1" size="h3">
           Personal
         </Heading>
-        <Text tone="muted">Invita a un trabajador y aprueba su acceso. La cuenta no entra al panel hasta que le asignes un rol.</Text>
+        <Text tone="muted">Invita a un trabajador y elige su rol. Al crear la cuenta entra al panel. Las solicitudes anteriores siguen en la lista de pendientes.</Text>
       </div>
       <StaffInviteForm />
       <div className="flex flex-col gap-3">

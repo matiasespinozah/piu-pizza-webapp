@@ -142,7 +142,7 @@ function capacityMessage(reason: string) {
   if (reason === "insufficient") return "No hay mesas suficientes para ese grupo en la zona."
   if (reason === "blocked") return "Las mesas de esa zona están bloqueadas."
   if (reason === "unreservable") return "Las mesas de esa zona no están habilitadas para reservas. La solicitud sigue pendiente."
-  if (reason === "overlap") return "Ese horario ya no tiene cupos libres."
+  if (reason === "overlap") return "Ese horario ya no tiene lugar para esas personas."
   if (reason === "zone") return "No hay mesas configuradas para esa zona."
   if (reason === "manual") return "El grupo es más grande que una mesa conocida. Queda pendiente para asignarlo a mano."
   if (reason === "daily") return "Ese día ya alcanzó el tope de reservas confirmadas. La solicitud sigue pendiente."
@@ -628,13 +628,20 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       const config = readCapacity(settingsSnap?.data(), { allowFixture: Boolean(process.env.FIRESTORE_EMULATOR_HOST) })
       const bookings = { ...bookingsOf(newSnap?.data()) }
       if (oldRef && newRef && oldRef.path === newRef.path) delete bookings[input.id]
+      for (const heldId of Object.keys(bookings)) {
+        const held = await tx.get(db.collection(collections.reservations).doc(heldId))
+        const party = held.get("partySize")
+        const booking = bookings[heldId]
+        if (booking && typeof party === "number" && Number.isInteger(party) && party > 0) booking.slots = party
+      }
       const [hours, minutes] = targetTime.split(":").map(Number)
       const startMin = hours * 60 + minutes
+      const people = Number.isInteger(Number(data.partySize)) && Number(data.partySize) > 0 ? Number(data.partySize) : 1
       let plan = planAssignment({
         config,
         bookings,
         zone: targetZone,
-        partySize: Number(data.partySize),
+        partySize: people,
         startMin,
       })
       const day = readDayOverride(daySnap?.exists ? daySnap.data() : null, targetDate)
@@ -643,7 +650,7 @@ async function transitionReservation(session: StaffSession | null, input: Transi
       }
       const tablesInZone = config?.tables.filter((table) => table.zone === targetZone) ?? []
       if (!plan.ok && plan.reason === "zone" && config && tablesInZone.length === 0) {
-        plan = { ok: true, tableIds: [], endMin: startMin + config.serviceMinutes, slots: 1 }
+        plan = { ok: true, tableIds: [], endMin: startMin + config.serviceMinutes, slots: people }
       }
       const limits = limitsStored(settingsSnap?.data(), day)
       const counted = [
@@ -675,8 +682,8 @@ async function transitionReservation(session: StaffSession | null, input: Transi
         throw new ReservationError(409, `capacity_${reasonCode}`, message)
       }
       const assignment = plan.ok
-        ? { tableIds: plan.tableIds, endMin: plan.endMin, slots: plan.slots ?? Math.max(1, plan.tableIds.length) }
-        : { tableIds: [] as string[], endMin: startMin + (config?.serviceMinutes ?? 90), slots: 1 }
+        ? { tableIds: plan.tableIds, endMin: plan.endMin, slots: plan.slots ?? people }
+        : { tableIds: [] as string[], endMin: startMin + (config?.serviceMinutes ?? 90), slots: people }
       if (problems.length > 0) {
         patch.exception = { by: actor.uid, at: stamp, reason, kinds: problems }
         tx.set(db.collection(collections.auditLogs).doc(), {

@@ -11,7 +11,7 @@ const informedGroups = {
   terrace: { of4: 5, of2: 4 },
 } as const
 
-/** La mesa más grande que se detalló es de 4. No limita la confirmación: ahí manda el cupo del sector. */
+/** La mesa más grande que se detalló es de 4. No limita la reserva: el cupo del sector son personas. */
 const knownSingleTableSeats = 4
 
 type SectorTables = {
@@ -223,7 +223,7 @@ function readSectorSide(value: unknown): SectorTables | null {
   if (!value || typeof value !== "object") return null
   const side = value as Record<string, unknown>
   if (typeof side.total !== "number" || !Number.isInteger(side.total) || side.total < 0 || side.total > 40) return null
-  if (typeof side.web !== "number" || !Number.isInteger(side.web) || side.web < 0 || side.web > side.total) return null
+  if (typeof side.web !== "number" || !Number.isInteger(side.web) || side.web < 0 || side.web > 200) return null
   return { total: side.total, web: side.web }
 }
 
@@ -377,13 +377,6 @@ function tableUse(tables: DiningTable[]) {
 function readinessIssues(rules: OperationRules) {
   const issues: string[] = []
   if (rules.serviceMinutes === null) issues.push("Falta la duración de una reserva.")
-  for (const [zone, label] of [
-    ["salon", "salón"],
-    ["terrace", "terraza"],
-  ] as const) {
-    const side = rules.sectors[zone]
-    if (side.web > side.total) issues.push(`En ${label} hay más mesas para la web que mesas en total.`)
-  }
   return issues
 }
 

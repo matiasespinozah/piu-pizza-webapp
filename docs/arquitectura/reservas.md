@@ -79,7 +79,7 @@ Hoy no se confirma en producción: no hay puestos por mesa, ni duración, ni mes
 
 Mientras tanto, el personal puede recibir, rechazar, proponer y cancelar. Confirmar responde que falta la configuración y la solicitud sigue pendiente.
 
-Con cupos por sector, un grupo grande se confirma igual que uno chico: ocupa un cupo, no una mesa. El motor de mesas físicas, si no hay cupos de sector, sigue sin juntar mesas: si ninguna alcanza, esa confirmación no se hace.
+Con el número de personas por sector, una reserva ocupa a todo su grupo. Quince personas en un sector de veinte dejan cinco. El motor de mesas físicas, si no hay ese número, sigue sin juntar mesas: si ninguna alcanza, esa confirmación no se hace.
 
 ## Horario
 

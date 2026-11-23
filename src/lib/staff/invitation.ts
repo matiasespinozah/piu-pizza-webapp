@@ -18,6 +18,7 @@ type InviteFailure =
   | "identity"
   | "disabled"
   | "busy"
+  | "confirm"
   | "rate"
   | "unavailable"
 
@@ -59,6 +60,7 @@ function inviteFailureMessage(code: InviteFailure) {
   if (code === "identity") return "No pudimos confirmar que esta cuenta sea tuya."
   if (code === "disabled") return "Esa cuenta está deshabilitada."
   if (code === "busy") return "Esta invitación se está usando. Espera un momento."
+  if (code === "confirm") return "Confirma que esta persona también será propietaria."
   if (code === "rate") return "Demasiados intentos. Espera un momento y vuelve a intentar."
   if (code === "unavailable") return "No pudimos completar el registro. Inténtalo de nuevo."
   return "Esta invitación no está disponible."

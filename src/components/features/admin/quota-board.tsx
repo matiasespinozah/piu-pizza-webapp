@@ -14,21 +14,21 @@ function freeSeats(cell: QuotaCell) {
 
 function seatLine(time: string, label: string, cell: QuotaCell, people: number) {
   const who = people === 1 ? "llega 1 persona" : `llegan ${people} personas`
-  if (cell.web <= 0) return `${time} — ${label}: sin cupos · ${who}`
-  return `${time} — ${label}: ${freeSeats(cell)} de ${cell.web} cupos disponibles · ${who}`
+  if (cell.web <= 0) return `${time} — ${label}: sin lugar · ${who}`
+  return `${time} — ${label}: quedan ${freeSeats(cell)} de ${cell.web} personas · ${who}`
 }
 
 function QuotaLegend() {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-olive-strong">
       <li className="inline-flex min-h-11 items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-status-good-solid" /> Cupos disponibles
+        <span className="size-2.5 rounded-full bg-status-good-solid" /> Hay lugar
       </li>
       <li className="inline-flex min-h-11 items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-status-waiting-solid" /> Menos de 5 cupos
+        <span className="size-2.5 rounded-full bg-status-waiting-solid" /> Menos de 5 personas
       </li>
       <li className="inline-flex min-h-11 items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-status-closed" /> Sin cupos
+        <span className="size-2.5 rounded-full bg-status-closed" /> Sin lugar
       </li>
     </ul>
   )
@@ -75,7 +75,7 @@ function QuotaChart({ rows }: { rows: QuotaRow[] }) {
             <div
               className={cn("w-full rounded-t-md", tone === "none" ? "bg-status-closed" : tone === "partial" || tone === "high" ? "bg-status-waiting-solid" : "bg-status-good-solid")}
               style={{ height: `${Math.max(8, Math.round(ratio * 100))}%` }}
-              title={`${row.time}: ${used} de ${web} cupos web`}
+              title={`${row.time}: ${used} de ${web} personas`}
             />
             <span className="truncate text-center text-[0.625rem] text-olive-muted">{row.time.slice(0, 2)}</span>
           </div>

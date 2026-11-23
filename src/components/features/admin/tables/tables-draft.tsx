@@ -34,8 +34,7 @@ function rulesPayload(next: OperationRules) {
 }
 
 function sectorProblem(sectors: OperationRules["sectors"]) {
-  if (sectors.salon.web > sectors.salon.total) return "En el salón hay más mesas para la web que mesas en total."
-  if (sectors.terrace.web > sectors.terrace.total) return "En la terraza hay más mesas para la web que mesas en total."
+  if (sectors.salon.web > 200 || sectors.terrace.web > 200) return "Las personas de un sector no pueden pasar de 200."
   return ""
 }
 
@@ -43,6 +42,12 @@ function whole(value: string, fallback: number) {
   if (value.trim() === "") return 0
   const number = Number(value)
   return Number.isInteger(number) && number >= 0 && number <= 40 ? number : fallback
+}
+
+function peopleCapacity(value: string, fallback: number) {
+  if (value.trim() === "") return 0
+  const number = Number(value)
+  return Number.isInteger(number) && number >= 0 && number <= 200 ? number : fallback
 }
 
 function partyCount(value: string, fallback: number) {
@@ -135,4 +140,4 @@ function useTablesDraft(rules: OperationRules, confirmedCount: number, preview: 
   return { draft, setDraft, message, error, pending, confirmCritical, save, saveDay }
 }
 
-export { dayLabels, partyCount, sectorProblem, useTablesDraft, whole }
+export { dayLabels, partyCount, peopleCapacity, sectorProblem, useTablesDraft, whole }

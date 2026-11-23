@@ -108,12 +108,12 @@ function JoinForm() {
     return (
       <div className="flex flex-col gap-4">
         <Heading as="h2" size="h4">
-          Tu cuenta está pendiente de aprobación
+          Ya puedes entrar
         </Heading>
         <Text>
           {verifiedNote
-            ? "Confirma el correo que te enviamos. El propietario no puede darte acceso hasta que esté verificado. Después la cuenta sigue pendiente de aprobación."
-            : "Cuando el propietario la autorice, entra con este correo desde el acceso de empleados."}
+            ? "Tu acceso ya está activo. Te enviamos un correo para confirmar la dirección; puedes entrar ahora con este correo."
+            : "Tu acceso ya está activo. Entra con este correo desde el acceso de empleados."}
         </Text>
         <Button asChild className="w-full">
           <Link href="/admin/login">Ir al ingreso</Link>
