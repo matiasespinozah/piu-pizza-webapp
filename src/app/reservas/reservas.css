@@ -1,3 +1,11 @@
+.reservation-layout:has([data-reservation-paused="on"]) {
+  display: block;
+}
+
+.reservation-layout:has([data-reservation-paused="on"]) > header {
+  display: none;
+}
+
 .reservation-confetti-piece {
   opacity: 0;
 }

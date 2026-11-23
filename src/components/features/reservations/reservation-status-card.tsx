@@ -15,10 +15,10 @@ import { directionsUrl } from "@/lib/site"
 const presentation: Record<ReservationStatus, { label: string; message: string }> = {
   pending: { label: "Pendiente", message: "Estamos revisando tu solicitud. Te avisamos pronto." },
   reschedule_requested: { label: "Cambio propuesto", message: "Te proponemos otro horario. Escríbenos para coordinarlo." },
-  confirmed: { label: "Confirmada", message: "¡Tu mesa te espera! Nos vemos pronto." },
+  confirmed: { label: "Confirmada", message: "¡Los esperamos! Nos vemos pronto." },
   arrived: { label: "En PIÙ", message: "Ya estás con nosotros. ¡Buen provecho!" },
   completed: { label: "Finalizada", message: "Gracias por visitarnos. Vuelve cuando quieras." },
-  rejected: { label: "No confirmada", message: "Esta vez no pudimos darte mesa. Prueba con otro horario." },
+  rejected: { label: "No confirmada", message: "Esta vez no pudimos confirmar la reserva. Prueba con otro horario." },
   cancelled: { label: "Cancelada", message: "Esta reserva ya no está vigente." },
 }
 

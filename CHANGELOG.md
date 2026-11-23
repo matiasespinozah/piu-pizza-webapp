@@ -26,6 +26,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- Si las reservas en línea están en pausa, `/reservas` muestra solo el mensaje elegido en el panel y ofrece consultar por WhatsApp. El formulario no aparece. El servidor sigue rechazando una solicitud nueva.
+- En `/nosotros`, la historia se lee por capítulos. El campeonato de 2023 queda solo arriba. El horno de la foto es el segundo y llega en el bloque de 2026, junto al segundo lugar en Italia. Junto a Camila va la cocina, y junto a «Lo que nos mueve» el interior. Las fotos entran completas, en WebP, sin recortar a las personas.
 - La foto principal del inicio es la cocina de PIÙ. En escritorio se recorta anclada abajo, con el logo blanco dentro. En el celular entra la foto vertical completa. `/nosotros` sigue con la foto anterior.
 - En el inicio, «Un lugar para compartir» muestra Terraza e Interior juntas. Al elegir un lado, esa foto ocupa el cuadro y la otra queda en una franja. En el celular la foto elegida se ve completa, sin el bloque de texto encima.
 - En Disponibilidad, cada franja es de 30 minutos e incluye las 17:30. Muestra cupos libres y cuántas personas llegan a esa hora. Queda amarilla si quedan menos de 5 cupos y roja si no queda ninguno. Mientras la página está abierta se vuelve a leer cada 20 segundos: hasta 200 reservas de ese día y los dos documentos de cupos.
@@ -60,7 +62,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
-- El muestrario del dashboard vuelve a compilar. Sus franjas de ejemplo incluyen cuántas personas llegan, igual que Disponibilidad.
+- Confirmar una reserva ya no pide un motivo porque el grupo sea más grande que una mesa. Cada reserva ocupa un cupo del sector, sea de 2 o de más personas. En `/reservas` el texto habla de la reserva y de las personas.
 - Arrastrar una categoría en Configuración vuelve a pasar el chequeo del repositorio.
 - Finalizar o cancelar una reserva suelta su cupo aunque el mismo horario tenga otras reservas. Antes el cupo de esa reserva podía quedar tomado.
 - El muestrario `/ui` vuelve a abrir. El formulario de código queda dentro del ejemplo de seguimiento, que sí puede recibir la acción.

@@ -8,10 +8,10 @@ function ReservationHeader() {
     <header className="lg:sticky lg:top-24">
       <Eyebrow className="text-terracotta">Reservas en PIÙ</Eyebrow>
       <Heading as="h1" size="h3" className="mt-2">
-        Tu mesa te espera.
+        Tu reserva te espera.
       </Heading>
       <p className="mt-2 max-w-sm text-sm leading-relaxed text-olive-strong">
-        Confirmamos cada solicitud antes de reservar la mesa.
+        Confirmamos cada solicitud. El pedido es por cantidad de personas.
       </p>
       <Image
         src={reserva}

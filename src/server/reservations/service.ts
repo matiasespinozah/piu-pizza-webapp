@@ -142,7 +142,7 @@ function capacityMessage(reason: string) {
   if (reason === "insufficient") return "No hay mesas suficientes para ese grupo en la zona."
   if (reason === "blocked") return "Las mesas de esa zona están bloqueadas."
   if (reason === "unreservable") return "Las mesas de esa zona no están habilitadas para reservas. La solicitud sigue pendiente."
-  if (reason === "overlap") return "Ese horario ya tiene las mesas ocupadas."
+  if (reason === "overlap") return "Ese horario ya no tiene cupos libres."
   if (reason === "zone") return "No hay mesas configuradas para esa zona."
   if (reason === "manual") return "El grupo es más grande que una mesa conocida. Queda pendiente para asignarlo a mano."
   if (reason === "daily") return "Ese día ya alcanzó el tope de reservas confirmadas. La solicitud sigue pendiente."
