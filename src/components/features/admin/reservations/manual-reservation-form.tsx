@@ -8,16 +8,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { adminRequestHeader, adminRequestValue } from "@/lib/auth/session-policy"
+import { staffPartyException } from "@/lib/reservations/validation"
 
 const fieldClass = "h-11 w-full min-w-0 rounded-xl border border-input bg-cream px-3 text-base"
 
-function ManualReservationForm() {
+function ManualReservationForm({ maxParty }: { maxParty: { salon: number; terrace: number } }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState("")
   const [exception, setException] = useState(false)
   const [reason, setReason] = useState("")
+  const [partySize, setPartySize] = useState("2")
+  const [zone, setZone] = useState<"salon" | "terrace">("salon")
+  const partyNotice = staffPartyException(zone, Number(partySize), maxParty)
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -34,8 +38,8 @@ function ManualReservationForm() {
           customerEmail: String(form.get("customerEmail") ?? ""),
           date: String(form.get("date") ?? ""),
           preferredTime: String(form.get("preferredTime") ?? ""),
-          partySize: Number(form.get("partySize") ?? 0),
-          preferredZone: form.get("preferredZone") === "terrace" ? "terrace" : "salon",
+          partySize: Number(partySize),
+          preferredZone: zone,
           notes: String(form.get("notes") ?? ""),
           tableLabel: String(form.get("tableLabel") ?? ""),
           confirm: true,
@@ -78,12 +82,13 @@ function ManualReservationForm() {
             <Input name="preferredTime" type="time" required aria-label="Hora" className="bg-cream" />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Input name="partySize" type="number" required min={1} max={40} defaultValue={2} aria-label="Personas" className="bg-cream" />
-            <select name="preferredZone" aria-label="Zona" className={fieldClass} defaultValue="salon">
+            <Input name="partySize" type="number" required min={1} max={40} value={partySize} onChange={(event) => setPartySize(event.target.value)} aria-label="Personas" className="bg-cream" />
+            <select name="preferredZone" aria-label="Zona" className={fieldClass} value={zone} onChange={(event) => setZone(event.target.value === "terrace" ? "terrace" : "salon")}>
               <option value="salon">Salón</option>
               <option value="terrace">Terraza</option>
             </select>
           </div>
+          {partyNotice ? <p className="text-sm font-semibold text-olive" role="status">{partyNotice}</p> : null}
           <Input name="tableLabel" maxLength={40} placeholder="Mesa, opcional" aria-label="Mesa" className="bg-cream" />
           <Input name="notes" maxLength={280} placeholder="Observación del cliente" aria-label="Observación" className="bg-cream" />
           <label className="flex min-h-11 items-center gap-3 text-sm text-olive">

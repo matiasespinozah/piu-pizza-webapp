@@ -26,7 +26,10 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
-- En `/admin/carta`, cada categoría que ya existe tiene «Editar» para cambiar su nombre. Ese nombre es el de `/carta` y los productos siguen en la misma categoría.
+- La foto principal del inicio es la cocina de PIÙ. En escritorio se recorta anclada abajo, con el logo blanco dentro. En el celular entra la foto vertical completa. `/nosotros` sigue con la foto anterior.
+- En el inicio, «Un lugar para compartir» muestra Terraza e Interior juntas. Al elegir un lado, esa foto ocupa el cuadro y la otra queda en una franja. En el celular la foto elegida se ve completa, sin el bloque de texto encima.
+- En Disponibilidad, cada franja es de 30 minutos e incluye las 17:30. Muestra cupos libres y cuántas personas llegan a esa hora. Queda amarilla si quedan menos de 5 cupos y roja si no queda ninguno. Mientras la página está abierta se vuelve a leer cada 20 segundos: hasta 200 reservas de ese día y los dos documentos de cupos.
+- En Configuración, Zonas y cupos, «Personas por reserva» define cuántas personas puede pedir el cliente en salón y en terraza. Al guardar, `/reservas` usa ese número. La reserva nueva del panel no tiene ese tope y, si lo pasa, avisa que es una excepción de administración.
 - El orden de Configuración es el de `/carta`. Una categoría sin productos ya no se corre al final. Arrastrar el punto, o subir y bajar, guarda ese orden.
 - El aviso y el tooltip ya no se cargan en todas las páginas. Quedan en el muestrario `/ui`, que en producción no se publica. Las fuentes de la marca siguen igual.
 - En `/reservas`, cualquier día y cualquier hora se piden con al menos 2 horas de anticipación. A las 18:00 todavía se puede pedir las 20:00. Al enviar, queda dicho que la solicitud sigue pendiente de confirmación del restaurante y que la mesa aún no está reservada.
@@ -57,6 +60,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- El muestrario del dashboard vuelve a compilar. Sus franjas de ejemplo incluyen cuántas personas llegan, igual que Disponibilidad.
 - Arrastrar una categoría en Configuración vuelve a pasar el chequeo del repositorio.
 - Finalizar o cancelar una reserva suelta su cupo aunque el mismo horario tenga otras reservas. Antes el cupo de esa reserva podía quedar tomado.
 - El muestrario `/ui` vuelve a abrir. El formulario de código queda dentro del ejemplo de seguimiento, que sí puede recibir la acción.

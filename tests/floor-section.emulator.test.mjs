@@ -21,6 +21,7 @@ function payload(rules) {
     closedDayNotice: rules.notices.closedDay.text,
     venueClosedNotice: rules.notices.venueClosed.text,
     sectors: rules.sectors,
+    maxParty: rules.maxParty,
     week: rules.week,
   }
 }
@@ -36,11 +37,14 @@ test("guardar zonas no pisa el horario que guardó otra sesión", async () => {
 
   const stale = defaultOperationRules()
   stale.sectors = { ...stale.sectors, salon: { total: stale.sectors.salon.total, web: 3 } }
+  stale.maxParty = { salon: 20, terrace: 20 }
   await saveFloor(owner, payload(stale), "zones")
 
   const stored = readOperationRules((await db.collection(collections.restaurantSettings).doc(settingsDocId).get()).data())
   assert.ok(stored)
   assert.equal(stored.week.mon.opensAt, "12:00")
   assert.equal(stored.sectors.salon.web, 3)
+  assert.equal(stored.maxParty.salon, 20)
+  assert.equal(stored.maxParty.terrace, 20)
   assert.equal(stored.serviceMinutes, base.serviceMinutes)
 })

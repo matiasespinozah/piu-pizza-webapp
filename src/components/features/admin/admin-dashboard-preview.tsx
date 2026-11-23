@@ -14,6 +14,7 @@ const rows: QuotaRow[] = ["12:00", "13:00", "14:00", "15:00", "16:00", "17:00", 
     time,
     salon: { used: Math.ceil(used / 2), web: 8 },
     terrace: { used: Math.floor(used / 2), web: 6 },
+    people: { salon: 0, terrace: 0 },
   }
 })
 

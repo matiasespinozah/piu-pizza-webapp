@@ -28,6 +28,7 @@ function rulesPayload(next: OperationRules) {
     closedDayNotice: next.notices.closedDay.text.trim(),
     venueClosedNotice: next.notices.venueClosed.text.trim(),
     sectors: next.sectors,
+    maxParty: next.maxParty,
     week: next.week,
   }
 }
@@ -42,6 +43,12 @@ function whole(value: string, fallback: number) {
   if (value.trim() === "") return 0
   const number = Number(value)
   return Number.isInteger(number) && number >= 0 && number <= 40 ? number : fallback
+}
+
+function partyCount(value: string, fallback: number) {
+  if (value.trim() === "") return fallback
+  const number = Number(value)
+  return Number.isInteger(number) && number >= 1 && number <= 40 ? number : fallback
 }
 
 function useTablesDraft(rules: OperationRules, confirmedCount: number, preview: boolean) {
@@ -68,6 +75,11 @@ function useTablesDraft(rules: OperationRules, confirmedCount: number, preview: 
 
   async function save(next: OperationRules, section: FloorSection, force = false) {
     const problem = sectorProblem(next.sectors)
+    const partyOk = [next.maxParty.salon, next.maxParty.terrace].every((count) => Number.isInteger(count) && count >= 1 && count <= 40)
+    if (!partyOk) {
+      setError("Las personas por reserva tienen que estar entre 1 y 40.")
+      return
+    }
     if (problem || next.serviceMinutes === null || next.serviceMinutes < 30 || next.serviceMinutes > 300) {
       setError(problem || "La duración tiene que estar entre 30 y 300 minutos.")
       return
@@ -123,4 +135,4 @@ function useTablesDraft(rules: OperationRules, confirmedCount: number, preview: 
   return { draft, setDraft, message, error, pending, confirmCritical, save, saveDay }
 }
 
-export { dayLabels, sectorProblem, useTablesDraft, whole }
+export { dayLabels, partyCount, sectorProblem, useTablesDraft, whole }

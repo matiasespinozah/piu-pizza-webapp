@@ -307,8 +307,8 @@ function readOperationRules(value: unknown): OperationRules | null {
   const party = record.maxParty as Record<string, unknown> | undefined
   const salonParty = party?.salon === undefined ? 15 : party.salon
   const terraceParty = party?.terrace === undefined ? 20 : party.terrace
-  if (typeof salonParty !== "number" || !Number.isInteger(salonParty) || salonParty < 1 || salonParty > 30) return null
-  if (typeof terraceParty !== "number" || !Number.isInteger(terraceParty) || terraceParty < 1 || terraceParty > 30) return null
+  if (typeof salonParty !== "number" || !Number.isInteger(salonParty) || salonParty < 1 || salonParty > 40) return null
+  if (typeof terraceParty !== "number" || !Number.isInteger(terraceParty) || terraceParty < 1 || terraceParty > 40) return null
   const notices = readNotices(record.notices)
   if (!notices) return null
   if (!Array.isArray(record.tables)) return null
@@ -448,7 +448,7 @@ type FloorSection = "hours" | "rules" | "zones" | "messages" | "reception"
 function applyFloorSection(stored: OperationRules, incoming: OperationRules, section: FloorSection): OperationRules {
   if (section === "hours") return { ...stored, week: incoming.week }
   if (section === "rules") return { ...stored, serviceMinutes: incoming.serviceMinutes }
-  if (section === "zones") return { ...stored, sectors: incoming.sectors }
+  if (section === "zones") return { ...stored, sectors: incoming.sectors, maxParty: incoming.maxParty }
   if (section === "messages") return { ...stored, notices: incoming.notices }
   return { ...stored, receptionPaused: incoming.receptionPaused, receptionNotice: incoming.receptionNotice }
 }
