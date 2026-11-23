@@ -11,6 +11,7 @@ import { ReservationQuickActions } from "@/components/features/admin/reservation
 import { ReservationReception } from "@/components/features/admin/reservations/reservation-reception"
 import { Heading } from "@/components/ui/typography"
 import { cn } from "cn"
+import { defaultOperationRules } from "@/lib/reservations/operations"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { pastWindow, staffView } from "@/lib/reservations/staff-views"
 import { requireSection } from "@/server/auth/access"
@@ -96,7 +97,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps) {
           <Link href="/admin/reservas/disponibilidad" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta lg:hidden">
             Cupos
           </Link>
-          {result.ready ? <ManualReservationForm /> : null}
+          {result.ready ? <ManualReservationForm maxParty={floor?.rules.maxParty ?? defaultOperationRules().maxParty} /> : null}
         </div>
       </header>
 

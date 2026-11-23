@@ -15,7 +15,7 @@ import type { WeekSchedule, Weekday } from "@/lib/reservations/schedule"
 
 import "../admin-shell.css"
 import { Status } from "./floor-editor"
-import { dayLabels, sectorProblem, useTablesDraft, whole } from "./tables-draft"
+import { dayLabels, partyCount, sectorProblem, useTablesDraft, whole } from "./tables-draft"
 
 type SectionId = "hours" | "rules" | "zones" | "messages"
 
@@ -112,7 +112,7 @@ function RestaurantSettings({
 
       <ConfigCard
         title="Zonas y cupos"
-        summary={`Salón ${draft.sectors.salon.web} de ${draft.sectors.salon.total} · Terraza ${draft.sectors.terrace.web} de ${draft.sectors.terrace.total}`}
+        summary={`Salón ${draft.sectors.salon.web} de ${draft.sectors.salon.total}, hasta ${draft.maxParty.salon} pers. · Terraza ${draft.sectors.terrace.web} de ${draft.sectors.terrace.total}, hasta ${draft.maxParty.terrace} pers.`}
         open={open === "zones"}
         onToggle={() => setOpen(open === "zones" ? null : "zones")}
         pending={form.pending}
@@ -120,8 +120,20 @@ function RestaurantSettings({
         onSave={() => save("zones")}
       >
         <div className="grid gap-3 sm:grid-cols-2">
-          <SectorFields title="Salón" value={draft.sectors.salon} onChange={(salon) => setDraft({ ...draft, sectors: { ...draft.sectors, salon } })} />
-          <SectorFields title="Terraza" value={draft.sectors.terrace} onChange={(terrace) => setDraft({ ...draft, sectors: { ...draft.sectors, terrace } })} />
+          <SectorFields
+            title="Salón"
+            value={draft.sectors.salon}
+            party={draft.maxParty.salon}
+            onChange={(salon) => setDraft((current) => ({ ...current, sectors: { ...current.sectors, salon } }))}
+            onParty={(salon) => setDraft((current) => ({ ...current, maxParty: { ...current.maxParty, salon } }))}
+          />
+          <SectorFields
+            title="Terraza"
+            value={draft.sectors.terrace}
+            party={draft.maxParty.terrace}
+            onChange={(terrace) => setDraft((current) => ({ ...current, sectors: { ...current.sectors, terrace } }))}
+            onParty={(terrace) => setDraft((current) => ({ ...current, maxParty: { ...current.maxParty, terrace } }))}
+          />
         </div>
         {problem ? <FieldError>{problem}</FieldError> : null}
         <Link href="/admin/reservas" className="inline-flex h-11 items-center text-sm font-semibold text-terracotta">
@@ -207,11 +219,28 @@ function weekSummary(week: OperationRules["week"]) {
   return same ? `${names} · ${first.opensAt}–${first.closesAt}` : `${openDays.length} días con horario propio`
 }
 
-function SectorFields({ title, value, onChange }: { title: string; value: SectorTables; onChange: (value: SectorTables) => void }) {
+function SectorFields({
+  title,
+  value,
+  party,
+  onChange,
+  onParty,
+}: {
+  title: string
+  value: SectorTables
+  party: number
+  onChange: (value: SectorTables) => void
+  onParty: (value: number) => void
+}) {
   const walkIn = Math.max(0, value.total - value.web)
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-cream p-3">
       <span className="font-heading font-bold">{title}</span>
+      <Field>
+        <FieldLabel htmlFor={`${title}-party`}>Personas por reserva</FieldLabel>
+        <Input id={`${title}-party`} inputMode="numeric" className="h-11 bg-surface-raised" value={String(party)} onChange={(event) => onParty(partyCount(event.target.value, party))} />
+      </Field>
+      <p className="text-xs text-olive-muted">El cliente no pasa de este número. El personal no tiene este tope.</p>
       <Field>
         <FieldLabel htmlFor={`${title}-total`}>Mesas</FieldLabel>
         <Input id={`${title}-total`} inputMode="numeric" className="h-11 bg-surface-raised" value={String(value.total)} onChange={(event) => onChange({ ...value, total: whole(event.target.value, value.total) })} />
@@ -220,7 +249,7 @@ function SectorFields({ title, value, onChange }: { title: string; value: Sector
         <FieldLabel htmlFor={`${title}-web`}>Cupos web</FieldLabel>
         <Input id={`${title}-web`} inputMode="numeric" className="h-11 bg-surface-raised" value={String(value.web)} onChange={(event) => onChange({ ...value, web: whole(event.target.value, value.web) })} />
       </Field>
-      <p className="text-xs text-olive-muted">{walkIn} por orden de llegada</p>
+      <p className="text-xs text-olive-muted">{walkIn} por orden de llegada. Un cupo es una reserva, no la cantidad de personas.</p>
     </div>
   )
 }

@@ -65,6 +65,13 @@ const rulesInput = z
     closedDayNotice: z.string().trim().min(8).max(400).optional(),
     venueClosedNotice: z.string().trim().min(8).max(400).optional(),
     sectors: z.object({ salon: sectorInput, terrace: sectorInput }).strict(),
+    maxParty: z
+      .object({
+        salon: z.number().int().min(1).max(40),
+        terrace: z.number().int().min(1).max(40),
+      })
+      .strict()
+      .optional(),
     week: z
       .object({
         mon: dayServiceInput,
@@ -133,6 +140,28 @@ async function readFloor(session: StaffSession | null, date: string) {
   return { rules, bookings, pendingCount, confirmedCount, pendingTruncated: pending.size === 50, day }
 }
 
+const demandLimit = 200
+const comingStatuses = new Set(["pending", "confirmed", "arrived", "reschedule_requested", "completed"])
+
+async function readDayDemand(session: StaffSession | null, date: string) {
+  assertStaff(session, floorRoles)
+  if (!firebaseDataAccessEnabled() || !isoDate.test(date)) return null
+  const snap = await getDb().collection(collections.reservations).where("date", "==", date).limit(demandLimit).get()
+  const visits: { zone: ReservationZone; time: string; partySize: number }[] = []
+  for (const doc of snap.docs) {
+    const status = doc.get("status")
+    if (typeof status !== "string" || !comingStatuses.has(status)) continue
+    const zone = doc.get("preferredZone")
+    const time = doc.get("preferredTime")
+    const partySize = doc.get("partySize")
+    if (zone !== "salon" && zone !== "terrace") continue
+    if (typeof time !== "string" || !/^\d{2}:\d{2}$/.test(time)) continue
+    const people = typeof partySize === "number" && Number.isInteger(partySize) && partySize > 0 ? partySize : 0
+    visits.push({ zone, time, partySize: people })
+  }
+  return { visits, truncated: snap.size === demandLimit }
+}
+
 const floorSectionInput = z.enum(["hours", "rules", "zones", "messages", "reception"])
 
 async function saveFloor(session: StaffSession | null, input: unknown, sectionInput?: unknown) {
@@ -166,6 +195,7 @@ async function saveFloor(session: StaffSession | null, input: unknown, sectionIn
     receptionPaused: parsed.data.receptionPaused,
     receptionNotice: parsed.data.receptionNotice ?? stored.receptionNotice,
     sectors: parsed.data.sectors,
+    maxParty: parsed.data.maxParty ?? stored.maxParty,
     week: parsed.data.week,
     clock: clockFromWeek(parsed.data.week, stored.clock),
     notices: {
@@ -281,4 +311,4 @@ function bookingsOf(data: Record<string, unknown> | undefined, zone: Reservation
   )
 }
 
-export { FloorError, enableFloor, getDayOverride, getOperationRules, readFloor, saveDay, saveFloor }
+export { FloorError, enableFloor, getDayOverride, getOperationRules, readDayDemand, readFloor, saveDay, saveFloor }

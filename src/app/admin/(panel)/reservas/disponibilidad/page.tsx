@@ -1,13 +1,14 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { AvailabilityRefresh } from "@/components/features/admin/availability-refresh"
 import { QuotaGrid, QuotaLegend } from "@/components/features/admin/quota-board"
 import { Button } from "@/components/ui/button"
 import { Heading } from "@/components/ui/typography"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { webQuotaRows } from "@/lib/reservations/web-quota"
 import { requireSection } from "@/server/auth/access"
-import { readFloor } from "@/server/operations/service"
+import { readDayDemand, readFloor } from "@/server/operations/service"
 
 export const instant = false
 
@@ -32,6 +33,7 @@ export default async function DisponibilidadPage({
   const requestedZone = one(params.zone)
   const zone = requestedZone === "salon" || requestedZone === "terrace" ? requestedZone : "all"
   const floor = await readFloor(session, date).catch(() => null)
+  const demand = floor ? await readDayDemand(session, date).catch(() => null) : null
   const rows = floor
     ? webQuotaRows({
         date,
@@ -39,6 +41,7 @@ export default async function DisponibilidadPage({
         serviceMinutes: floor.rules.serviceMinutes,
         web: { salon: floor.rules.sectors.salon.web, terrace: floor.rules.sectors.terrace.web },
         bookings: floor.bookings,
+        visits: demand?.visits,
         visit: floor.day,
       })
     : null
@@ -50,7 +53,9 @@ export default async function DisponibilidadPage({
           <Heading as="h1" size="h3">
             Disponibilidad de reservas
           </Heading>
-          <p className="text-sm text-olive-muted">Cupos web reales por horario. No es la ocupación de las mesas del local.</p>
+          <p className="text-sm text-olive-muted">
+            Cada media hora: cupos que siguen libres y personas que llegan a esa hora. Se actualiza sola mientras esta página está abierta. El cupo baja al confirmar; las personas también cuentan las solicitudes pendientes.
+          </p>
         </div>
         <Link href="/admin/reservas" className="inline-flex h-11 items-center self-start text-sm font-semibold text-terracotta sm:shrink-0">
           Reservas
@@ -98,6 +103,10 @@ export default async function DisponibilidadPage({
             </p>
           </div>
           {floor.day.full ? <p className="mb-3 text-sm font-semibold text-status-waiting">Día marcado completo. No entran solicitudes nuevas.</p> : null}
+          {demand?.truncated ? (
+            <p className="mb-3 text-sm font-semibold text-status-waiting">Hay más de 200 reservas ese día. El conteo de personas puede quedar corto.</p>
+          ) : null}
+          <AvailabilityRefresh />
           <QuotaGrid rows={rows} zone={zone} />
           <div className="mt-4">
             <QuotaLegend />

@@ -3,8 +3,8 @@ import { getImageProps } from "next/image"
 import Link from "next/link"
 import { CalendarIcon, ChevronDownIcon, UtensilsCrossedIcon } from "lucide-react"
 
-import piuPortadaMobile from "@/assets/home/piu-portada-mobile.webp"
-import piuPortada from "@/assets/home/piu-portada.webp"
+import cocinaMobile from "@/assets/home/cocina-piu-mobile.webp"
+import cocina from "@/assets/home/cocina-piu.webp"
 import { Button } from "@/components/ui/button"
 import { Eyebrow } from "@/components/ui/typography"
 
@@ -20,12 +20,12 @@ const editorial = Fraunces({
 })
 
 const heroAlt =
-  "Interior de PIÙ: mesón con el logo, horno de piedra y lámparas de mimbre."
+  "Cocina de PIÙ: mesón con el logo, horno de piedra y lámparas de mimbre."
 
 function HeroPhoto() {
   const common = { alt: heroAlt, sizes: "100vw" }
-  const { props: desktop } = getImageProps({ ...common, src: piuPortada })
-  const { props: mobile } = getImageProps({ ...common, src: piuPortadaMobile, priority: true })
+  const { props: desktop } = getImageProps({ ...common, src: cocina })
+  const { props: mobile } = getImageProps({ ...common, src: cocinaMobile, priority: true })
 
   // Con el optimizador, getImageProps entrega srcSet. Sin optimizar
   // (el HTML publicado en App Hosting sirve el archivo estático y srcSet
@@ -37,7 +37,7 @@ function HeroPhoto() {
       <img
         {...mobile}
         alt={heroAlt}
-        className="absolute inset-0 size-full object-cover object-[center_67%] md:object-[center_bottom]"
+        className="absolute inset-0 size-full object-cover object-center md:object-[center_bottom]"
       />
     </picture>
   )
@@ -50,17 +50,16 @@ function Hero() {
       className="relative scroll-mt-0 bg-olive pt-[calc(env(safe-area-inset-top)+4rem)] md:overflow-hidden md:pt-0"
     >
       {/*
-        Móvil: el alto sigue el ancho (no el svh) y recorta el suelo.
-        El logo queda justo encima de los botones en cualquier teléfono.
-        Escritorio: el alto sigue el clamp en vw.
+        Móvil: el alto es el de la foto vertical, con el logo dentro.
+        Escritorio: el alto es el de producción y la foto se ancla abajo, para que el logo blanco quede dentro.
       */}
-      <div className="hero-mobile-shot relative aspect-[941/1120] w-full overflow-hidden md:absolute md:inset-[-2px] md:aspect-auto md:h-auto">
+      <div className="hero-mobile-shot relative aspect-[941/1672] w-full overflow-hidden md:absolute md:inset-[-2px] md:aspect-auto md:h-auto">
         <HeroPhoto />
         <div className="hero-mobile-overlay pointer-events-none absolute inset-0 md:hidden" aria-hidden />
         <div className="hero-scrim pointer-events-none absolute inset-0 hidden md:block" aria-hidden />
       </div>
 
-      <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] z-10 flex aspect-[941/1120] flex-col items-center px-3 pt-6 text-center sm:px-5 md:relative md:inset-auto md:aspect-auto md:h-[clamp(20rem,46vw,calc(100svh-8rem))] md:items-start md:justify-center md:px-8 md:pt-24 md:pb-14 md:text-left">
+      <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] z-10 flex aspect-[941/1672] flex-col items-center px-3 pt-6 text-center sm:px-5 md:relative md:inset-auto md:aspect-auto md:h-[clamp(20rem,46vw,calc(100svh-8rem))] md:items-start md:justify-center md:px-8 md:pt-24 md:pb-14 md:text-left">
         <div className="flex w-full min-w-0 flex-col items-center md:max-w-[34rem] md:items-start md:translate-x-[4vw] lg:translate-x-[5vw]">
           <div className="hero-rise hero-rise-1 flex items-center justify-center gap-3 md:hidden">
             <span className="h-px w-6 bg-terracotta-soft" aria-hidden />

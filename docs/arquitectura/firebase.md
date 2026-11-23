@@ -39,7 +39,7 @@ El rol no se guarda en Firestore. Va en el custom claim `role`: `superadmin` o `
 - **ADMIN:** reservas y catálogo, también a través del servidor. No asigna roles.
 - Un cliente anónimo, o una cuenta sin claim, no es personal.
 
-Los 15 y 20 personas del formulario siguen en `src/lib/reservations/configuration.ts`. El documento de ajustes puede repetirlos más adelante; hoy no existe en la base.
+«Personas por reserva» de Configuración queda en `restaurantSettings/operations`, en `maxParty`. El formulario público usa ese número. Si el documento todavía no lo tiene, salón parte en 15 y terraza en 20. La reserva del personal acepta hasta 40 personas y avisa cuando pasa el tope del cliente.
 
 ## Cómo se conecta
 
