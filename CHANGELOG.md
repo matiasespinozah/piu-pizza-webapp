@@ -60,6 +60,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- El muestrario del dashboard vuelve a compilar. Sus franjas de ejemplo incluyen cuántas personas llegan, igual que Disponibilidad.
 - Arrastrar una categoría en Configuración vuelve a pasar el chequeo del repositorio.
 - Finalizar o cancelar una reserva suelta su cupo aunque el mismo horario tenga otras reservas. Antes el cupo de esa reserva podía quedar tomado.
 - El muestrario `/ui` vuelve a abrir. El formulario de código queda dentro del ejemplo de seguimiento, que sí puede recibir la acción.
