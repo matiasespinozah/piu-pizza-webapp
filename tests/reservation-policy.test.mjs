@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs"
 
 import { planAssignment, readCapacity } from "@/lib/reservations/capacity"
 import { admitRequest, quotaReason } from "@/lib/reservations/day-policy"
-import { applyFloorSection, criticalFingerprint, declaredTables, defaultOperationRules, informedGroups, knownSingleTableSeats, operationsDocument, readinessIssues, readOperationRules } from "@/lib/reservations/operations"
+import { applyFloorSection, criticalFingerprint, declaredTables, defaultOperationRules, informedGroups, operationsDocument, readinessIssues, readOperationRules } from "@/lib/reservations/operations"
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
@@ -235,7 +235,7 @@ test("la configuración inicial no inventa mesas y deja los cupos de salón y te
   assert.equal(slots.includes("21:30"), false)
 })
 
-test("los cupos simultáneos respetan la duración y dejan pendiente un grupo grande", () => {
+test("los cupos simultáneos respetan la duración y un grupo grande ocupa un cupo", () => {
   const document = operationsDocument({
     ...defaultOperationRules(),
     sectors: {
@@ -255,7 +255,7 @@ test("los cupos simultáneos respetan la duración y dejan pendiente un grupo gr
   }
   assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 2, startMin: 18 * 60 }).reason, "overlap")
   assert.equal(planAssignment({ config, bookings: busy, zone: "salon", partySize: 2, startMin: 19 * 60 }).ok, true)
-  assert.equal(planAssignment({ config, bookings: {}, zone: "salon", partySize: knownSingleTableSeats + 1, startMin: 17 * 60 }).reason, "manual")
+  assert.equal(planAssignment({ config, bookings: {}, zone: "salon", partySize: 8, startMin: 17 * 60 }).ok, true)
   const kept = readOperationRules({
     clock: { weekday: { opensAt: "18:00", closesAt: "22:00" }, weekend: { opensAt: "12:00", closesAt: "23:00" }, lastSeatingTime: null },
     tables: [{ id: "mesa-1", label: "Mesa 1", zone: "salon", seats: 4, seatsMax: null, blocked: false, reservable: true, combinable: false, smoker: false }],

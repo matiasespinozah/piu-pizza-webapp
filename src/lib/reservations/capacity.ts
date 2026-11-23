@@ -1,4 +1,3 @@
-import { knownSingleTableSeats } from "@/lib/reservations/operations"
 import type { ReservationZone } from "@/lib/reservations/types"
 
 type SeatTable = {
@@ -16,7 +15,6 @@ type CapacityConfig = {
   tables: SeatTable[]
   /** Cupos simultáneos para la web. Si está, no se asignan mesas físicas. */
   sectors?: Record<ReservationZone, number>
-  singleTableMax?: number
 }
 
 type HoldBooking = {
@@ -57,7 +55,6 @@ function readCapacity(data: unknown, options: { allowFixture: boolean }): Capaci
       serviceMinutes: record.serviceMinutes,
       tables: [],
       sectors,
-      singleTableMax: knownSingleTableSeats,
       maxCombinedTables: 1,
     }
   }
@@ -172,14 +169,13 @@ function occupiedSlots(bookings: Record<string, HoldBooking>, startMin: number, 
 
 /**
  * Una reserva ocupa un cupo del sector durante la duración. No elige una mesa física.
- * Un grupo mayor que la mesa más grande conocida queda pendiente.
+ * La cantidad de personas no frena la confirmación: el cupo es la reserva, no el grupo.
  */
 function planSector(input: {
   config: CapacityConfig
   bookings: Record<string, HoldBooking>
   ignoreReservationId?: string
   zone: ReservationZone
-  partySize: number
   startMin: number
 }): Assignment {
   const web = input.config.sectors?.[input.zone]
@@ -188,8 +184,6 @@ function planSector(input: {
   const endMin = input.startMin + input.config.serviceMinutes
   const used = occupiedSlots(input.bookings, input.startMin, endMin, input.ignoreReservationId)
   if (used >= web) return { ok: false, reason: "overlap" }
-  const singleMax = input.config.singleTableMax ?? knownSingleTableSeats
-  if (input.partySize > singleMax) return { ok: false, reason: "manual" }
   return { ok: true, tableIds: [], endMin, slots: 1 }
 }
 

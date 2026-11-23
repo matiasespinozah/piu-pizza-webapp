@@ -80,7 +80,7 @@ function ReservationSuccess({
               Solicitud recibida
             </h2>
             <p className="text-base font-semibold text-olive-strong">Queda pendiente de confirmación del restaurante.</p>
-            <p className="text-sm text-olive">La mesa todavía no está reservada. PIÙ la confirma y ahí queda tomada.</p>
+            <p className="text-sm text-olive">La reserva todavía no está confirmada. Cuando PIÙ la confirma, el horario queda tomado.</p>
           </div>
         </div>
 

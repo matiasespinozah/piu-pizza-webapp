@@ -11,7 +11,7 @@ const informedGroups = {
   terrace: { of4: 5, of2: 4 },
 } as const
 
-/** La mesa más grande que se detalló es de 4. Un grupo mayor no se confirma solo. */
+/** La mesa más grande que se detalló es de 4. No limita la confirmación: ahí manda el cupo del sector. */
 const knownSingleTableSeats = 4
 
 type SectorTables = {
