@@ -10,6 +10,7 @@ import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
 import { confirmedClock, defaultWeek, instantInSantiago, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 import { pageSchedule, pastWindow, staffView } from "@/lib/reservations/staff-views"
+import { staffPartyException, validateVisit } from "@/lib/reservations/validation"
 import { eligibleServiceTables } from "@/lib/reservations/service-tables"
 import { waiterMayReadNotice } from "@/lib/reservations/service-notices"
 import { canTransition } from "@/lib/reservations/transitions"
@@ -19,6 +20,7 @@ import { claimPublicReference, formatPublicReference } from "@/lib/reservations/
 import { parseTrackingCredential, publicReservationStatus } from "@/lib/reservations/tracking-link"
 import { reservationStatusEnabled, reservationWritesEnabled } from "@/lib/reservations/writes"
 import { requestIsTrusted } from "@/lib/auth/session-policy"
+import { quotaTone, webQuotaRows } from "@/lib/reservations/web-quota"
 import { normalizeReservationEmail, optionalReservationEmail, planReservationCreate, requestCountLabel } from "@/lib/reservations/email"
 
 const now = new Date("2026-11-07T18:00:00Z")
@@ -455,10 +457,35 @@ test("guardar una sección no trae de vuelta el resto desde una copia vieja", ()
   stored.week = { ...stored.week, mon: { ...stored.week.mon, opensAt: "12:00" } }
   const stale = defaultOperationRules()
   stale.sectors = { ...stale.sectors, salon: { ...stale.sectors.salon, web: 3 } }
+  stale.maxParty = { salon: 20, terrace: 20 }
   const next = applyFloorSection(stored, stale, "zones")
   assert.equal(next.sectors.salon.web, 3)
+  assert.equal(next.maxParty.salon, 20)
+  assert.equal(next.maxParty.terrace, 20)
   assert.equal(next.week.mon.opensAt, "12:00")
   assert.equal(next.serviceMinutes, stored.serviceMinutes)
+})
+
+test("el tope de personas guardado frena al cliente y no al personal", () => {
+  const draft = {
+    date: "2026-11-09",
+    partySize: 20,
+    zone: "salon",
+    preferredTime: "18:00",
+    customerName: "Ana",
+    customerPhone: "+56 9 2887 3619",
+    customerEmail: "ana@example.test",
+    marketingOptIn: false,
+    notes: "",
+  }
+  const capped = validateVisit(draft, now, { maxParty: { salon: 15, terrace: 20 } })
+  assert.match(capped.partySize ?? "", /hasta 15/)
+  const opened = validateVisit(draft, now, { maxParty: { salon: 20, terrace: 20 } })
+  assert.equal(opened.partySize, undefined)
+  const staff = validateVisit({ ...draft, partySize: 30 }, now, { maxParty: { salon: 15, terrace: 20 }, skipPartyLimit: true })
+  assert.equal(staff.partySize, undefined)
+  assert.match(staffPartyException("salon", 20, { salon: 15, terrace: 20 }), /Excepción de administración/)
+  assert.equal(staffPartyException("terrace", 20, { salon: 15, terrace: 20 }), "")
 })
 
 test("hoy, futuras y pasadas usan el día de Chile, el mes y un desempate estable", () => {
@@ -626,4 +653,30 @@ test("el mesero solo ve mesas libres y avisos de atención", () => {
   assert.match(service, /Esa acción no está disponible para el mesero/)
   const desk = readFileSync(new URL("../src/server/reservations/service-desk.ts", import.meta.url), "utf8")
   assert.doesNotMatch(desk, /customerEmail|marketingConsent|customerPhone/)
+})
+
+test("la disponibilidad separa las 17:30 y pinta menos de 5 cupos", () => {
+  const rows = webQuotaRows({
+    date: "2026-11-09",
+    week: defaultOperationRules().week,
+    serviceMinutes: 90,
+    web: { salon: 15, terrace: 15 },
+    bookings: [{ id: "a", zone: "salon", tableIds: [], slots: 1, startMin: 17 * 60 + 30, endMin: 19 * 60 }],
+    visits: [
+      { zone: "salon", time: "17:30", partySize: 6 },
+      { zone: "salon", time: "17:00", partySize: 2 },
+    ],
+    visit: { closed: false, hours: { opensAt: "17:00", closesAt: "19:00" }, lastSeatingTime: null },
+  })
+  assert.ok(rows)
+  assert.deepEqual(rows.map((row) => row.time), ["17:00", "17:30", "18:00", "18:30"])
+  const five = rows.find((row) => row.time === "17:00")
+  const half = rows.find((row) => row.time === "17:30")
+  assert.equal(five.people.salon, 2)
+  assert.equal(five.salon.used, 1)
+  assert.equal(half.people.salon, 6)
+  assert.equal(half.salon.used, 1)
+  assert.equal(quotaTone({ used: 10, web: 15 }), "free")
+  assert.equal(quotaTone({ used: 11, web: 15 }), "partial")
+  assert.equal(quotaTone({ used: 15, web: 15 }), "none")
 })

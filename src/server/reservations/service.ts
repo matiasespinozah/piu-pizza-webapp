@@ -564,7 +564,8 @@ async function transitionReservation(session: StaffSession | null, input: Transi
           marketingOptIn: false,
           notes: "",
         },
-        now
+        now,
+        { skipPartyLimit: true },
       )
       if (Object.keys(errors).length > 0) {
         throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Ese horario no está disponible.")
@@ -864,6 +865,7 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
         notes,
       },
       now,
+      { skipPartyLimit: true },
     )
     if (Object.keys(errors).length > 0) {
       throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Esa reserva no entra en el horario público.")

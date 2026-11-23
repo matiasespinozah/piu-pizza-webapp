@@ -10,6 +10,13 @@ type QuotaRow = {
   time: string
   salon: QuotaCell
   terrace: QuotaCell
+  people: { salon: number; terrace: number }
+}
+
+type QuotaVisit = {
+  zone: ReservationZone
+  time: string
+  partySize: number
 }
 
 function clockLabel(total: number) {
@@ -25,6 +32,7 @@ function webQuotaRows(input: {
   serviceMinutes: number | null
   web: Record<ReservationZone, number>
   bookings: (HoldBooking & { id: string })[]
+  visits?: QuotaVisit[]
   visit?: VisitHours | null
 }): QuotaRow[] | null {
   if (input.serviceMinutes === null || input.serviceMinutes <= 0) return null
@@ -42,24 +50,44 @@ function webQuotaRows(input: {
   }
   const salonBookings = byZone("salon")
   const terraceBookings = byZone("terrace")
+  const minutes: number[] = []
+  for (let minute = start; minute < end; minute += reservationConfig.slotMinutes) minutes.push(minute)
+  const seen = new Set(minutes)
+  for (const visit of input.visits ?? []) {
+    if (!/^\d{2}:\d{2}$/.test(visit.time)) continue
+    const minute = toMinutes(visit.time)
+    if (minute < start || minute >= end || seen.has(minute)) continue
+    seen.add(minute)
+    minutes.push(minute)
+  }
+  minutes.sort((left, right) => left - right)
+  const peopleAt = (zone: ReservationZone, minute: number) => {
+    let people = 0
+    for (const visit of input.visits ?? []) {
+    if (visit.zone !== zone || !/^\d{2}:\d{2}$/.test(visit.time) || toMinutes(visit.time) !== minute) continue
+      if (Number.isInteger(visit.partySize) && visit.partySize > 0) people += visit.partySize
+    }
+    return people
+  }
   const rows: QuotaRow[] = []
-  for (let minute = start; minute < end; minute += reservationConfig.slotMinutes) {
+  for (const minute of minutes) {
     const until = minute + input.serviceMinutes
     rows.push({
       time: clockLabel(minute),
       salon: { used: occupiedSlots(salonBookings, minute, until), web: input.web.salon },
       terrace: { used: occupiedSlots(terraceBookings, minute, until), web: input.web.terrace },
+      people: { salon: peopleAt("salon", minute), terrace: peopleAt("terrace", minute) },
     })
   }
   return rows
 }
 
 function quotaTone(cell: QuotaCell): QuotaTone {
-  if (cell.web <= 0 || cell.used >= cell.web) return "none"
   const free = cell.web - cell.used
-  if (free <= Math.max(1, Math.ceil(cell.web * 0.34))) return "partial"
+  if (cell.web <= 0 || free <= 0) return "none"
+  if (free < 5) return "partial"
   return "free"
 }
 
-export type { QuotaCell, QuotaRow, QuotaTone }
+export type { QuotaCell, QuotaRow, QuotaTone, QuotaVisit }
 export { quotaTone, webQuotaRows }

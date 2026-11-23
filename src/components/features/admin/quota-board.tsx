@@ -12,9 +12,10 @@ function freeSeats(cell: QuotaCell) {
   return Math.max(0, cell.web - cell.used)
 }
 
-function seatLine(time: string, label: string, cell: QuotaCell) {
-  if (cell.web <= 0) return `${time} — ${label}: sin cupos`
-  return `${time} — ${label}: ${freeSeats(cell)} de ${cell.web} cupos disponibles`
+function seatLine(time: string, label: string, cell: QuotaCell, people: number) {
+  const who = people === 1 ? "llega 1 persona" : `llegan ${people} personas`
+  if (cell.web <= 0) return `${time} — ${label}: sin cupos · ${who}`
+  return `${time} — ${label}: ${freeSeats(cell)} de ${cell.web} cupos disponibles · ${who}`
 }
 
 function QuotaLegend() {
@@ -24,7 +25,7 @@ function QuotaLegend() {
         <span className="size-2.5 rounded-full bg-status-good-solid" /> Cupos disponibles
       </li>
       <li className="inline-flex min-h-11 items-center gap-1.5">
-        <span className="size-2.5 rounded-full bg-status-waiting-solid" /> Pocos cupos
+        <span className="size-2.5 rounded-full bg-status-waiting-solid" /> Menos de 5 cupos
       </li>
       <li className="inline-flex min-h-11 items-center gap-1.5">
         <span className="size-2.5 rounded-full bg-status-closed" /> Sin cupos
@@ -49,7 +50,7 @@ function QuotaGrid({ rows, zone }: { rows: QuotaRow[]; zone: "all" | "salon" | "
                 const cell = row[key]
                 return (
                   <li key={row.time} className={cn("flex min-h-11 items-center rounded-2xl px-3 py-2 text-sm font-semibold", toneClass[quotaTone(cell)])}>
-                    {seatLine(row.time, label, cell)}
+                    {seatLine(row.time, label, cell, row.people[key])}
                   </li>
                 )
               })}

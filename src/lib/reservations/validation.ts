@@ -10,6 +10,8 @@ type VisitRules = {
   week?: WeekSchedule
   anticipation?: OperationRules["anticipation"]
   maxParty?: OperationRules["maxParty"]
+  /** La reserva del personal no usa el tope de personas del cliente. */
+  skipPartyLimit?: boolean
   receptionPaused?: boolean
   receptionNotice?: OperationRules["receptionNotice"]
   notices?: OperationRules["notices"]
@@ -45,7 +47,10 @@ function validateVisit(draft: ReservationDraft, now = new Date(), rules?: VisitR
   }
 
   const partyMax = partyLimit(draft.zone, rules?.maxParty)
-  if (!Number.isInteger(draft.partySize) || draft.partySize < reservationConfig.partySize.min || draft.partySize > partyMax) {
+  if (
+    rules?.skipPartyLimit !== true &&
+    (!Number.isInteger(draft.partySize) || draft.partySize < reservationConfig.partySize.min || draft.partySize > partyMax)
+  ) {
     const place = draft.zone === "salon" ? "el salón" : "la terraza"
     errors.partySize = draft.zone
       ? `En ${place} se reservan hasta ${partyMax} personas.`
@@ -77,6 +82,13 @@ function validateTime(draft: ReservationDraft, now = new Date(), rules?: VisitRu
   }
 
   return errors
+}
+
+function staffPartyException(zone: "salon" | "terrace", partySize: number, maxParty: OperationRules["maxParty"]) {
+  const cap = zone === "terrace" ? maxParty.terrace : maxParty.salon
+  if (!Number.isInteger(partySize) || partySize <= cap) return ""
+  const place = zone === "terrace" ? "la terraza" : "el salón"
+  return `Excepción de administración: en ${place} el cliente reserva hasta ${cap} personas. Desde el panel esta reserva puede seguir.`
 }
 
 function partyLimit(zone: ReservationDraft["zone"], maxParty?: OperationRules["maxParty"]) {
@@ -150,5 +162,5 @@ function validateContact(
   return errors
 }
 
-export { normalizeChileMobile, validateContact, validateTime, validateVisit }
+export { normalizeChileMobile, staffPartyException, validateContact, validateTime, validateVisit }
 export type { VisitRules }

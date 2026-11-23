@@ -62,6 +62,37 @@ body:has([data-slot="dialog-overlay"][data-state="open"]) .wa-fab {
   }
 }
 
+@keyframes place-tap {
+  0%,
+  62%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  78% {
+    transform: translateY(3px) scale(0.9);
+  }
+}
+
+@keyframes place-tap-ring {
+  0%,
+  62% {
+    transform: scale(0.9);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.place-tap-icon {
+  animation: place-tap 1.6s ease-in-out infinite;
+}
+
+.place-tap-ring {
+  animation: place-tap-ring 1.6s ease-out infinite;
+}
+
 @keyframes cue-drift {
   from {
     transform: translateY(0);
@@ -200,6 +231,8 @@ body:has([data-slot="dialog-overlay"][data-state="open"]) .wa-fab {
   .hero-rise,
   .hero-cue,
   .hero-cue-icon,
+  .place-tap-icon,
+  .place-tap-ring,
   [data-reveal] {
     animation: none !important;
     opacity: 1 !important;
