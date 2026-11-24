@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { SiteFooter } from "@/components/features/layout/site-footer"
+import { PublicSiteFooter } from "@/components/features/layout/public-site-footer"
 import { ReservationStatus } from "@/components/features/reservations/reservation-status"
 import { SiteHeader } from "@/components/features/site-header"
 import { Container } from "@/components/ui/layout"
@@ -23,7 +23,7 @@ export default function ReservationStatusPage() {
           <ReservationStatus />
         </Container>
       </main>
-      <SiteFooter />
+      <PublicSiteFooter />
     </div>
   )
 }

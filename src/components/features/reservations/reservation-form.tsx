@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
 
+import { noteReservationProgress } from "@/components/features/metrics/visit-meter"
 import { ReservationContactStep } from "@/components/features/reservations/reservation-contact-step"
 import { ReservationDateStep } from "@/components/features/reservations/reservation-date-step"
 import { ReservationProgress } from "@/components/features/reservations/reservation-progress"
@@ -71,6 +72,9 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   const [formError, setFormError] = useState("")
   const [receipt, setReceipt] = useState<PublicReceipt | null>(null)
   const [trackingToken, setTrackingToken] = useState<string | null>(null)
+  useEffect(() => {
+    noteReservationProgress({ reached: step === 3, saved: receipt !== null })
+  }, [step, receipt])
   const requestKey = useRef<string | null>(null)
   const today = useSyncExternalStore(
     () => () => {},

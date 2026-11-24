@@ -3,7 +3,8 @@ import { connection } from "next/server"
 import { Suspense } from "react"
 
 import { FloatingWhatsApp } from "@/components/features/layout/floating-whatsapp"
-import { SiteFooter } from "@/components/features/layout/site-footer"
+import { PublicSiteFooter } from "@/components/features/layout/public-site-footer"
+import { ReservationVisitMeter } from "@/components/features/metrics/visit-meter"
 import { ReservationForm } from "@/components/features/reservations/reservation-form"
 import { ReservationHeader } from "@/components/features/reservations/reservation-header"
 import { SiteHeader } from "@/components/features/site-header"
@@ -32,6 +33,7 @@ export default function ReservasPage() {
   return (
     <div data-reservation-page="" className="bg-cream">
       <SiteHeader page="reservas" />
+      <ReservationVisitMeter />
       <FloatingWhatsApp />
       <div className="overflow-x-clip">
         <main className="pt-[calc(env(safe-area-inset-top)+4.5rem)] pb-10 md:pb-16">
@@ -42,7 +44,7 @@ export default function ReservasPage() {
             </Suspense>
           </Container>
         </main>
-        <SiteFooter />
+        <PublicSiteFooter />
       </div>
     </div>
   )

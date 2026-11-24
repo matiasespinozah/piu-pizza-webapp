@@ -52,6 +52,7 @@ const dayServiceInput = z
     open: z.boolean(),
     opensAt: z.string().regex(hhmm),
     closesAt: z.string().regex(hhmm),
+    lastSeatingTime: z.string().regex(hhmm).nullable(),
   })
   .strict()
 
@@ -185,6 +186,9 @@ async function saveFloor(session: StaffSession | null, input: unknown, sectionIn
   const section: FloorSection | null = sectionParsed?.success ? sectionParsed.data : null
   for (const day of Object.values(parsed.data.week)) {
     if (day.opensAt >= day.closesAt) throw new FloorError(400, "La apertura tiene que ser anterior al cierre.")
+    if (day.open && day.lastSeatingTime && (day.lastSeatingTime < day.opensAt || day.lastSeatingTime >= day.closesAt)) {
+      throw new FloorError(400, "La última reserva tiene que quedar entre la apertura y el cierre.")
+    }
   }
   const db = getDb()
   const ref = db.collection(collections.restaurantSettings).doc(settingsDocId)

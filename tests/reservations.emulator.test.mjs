@@ -14,7 +14,7 @@ import {
 } from "@/server/reservations/service"
 import { listServiceBoard } from "@/server/reservations/service-desk"
 import { listStaffNotices, markStaffNoticesRead, sweepNotices } from "@/server/reservations/notifications"
-import { santiagoParts, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
+import { instantInSantiago, santiagoParts, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 
 assert.ok(process.env.FIRESTORE_EMULATOR_HOST, "Estas pruebas solo corren dentro del emulador.")
 assert.equal(process.env.GCLOUD_PROJECT, "demo-piu-pizza")
@@ -501,6 +501,20 @@ test("el personal registra una reserva manual y puede dejarla sin mesa", async (
   )
   assert.equal(created.status, "confirmed")
   assert.equal(created.tableLabel, null)
+  const soon = await createStaffReservation(
+    admin,
+    {
+      customerName: "Llega Ada",
+      customerPhone: "+56 9 1111 2222",
+      date: monday,
+      preferredTime: "19:30",
+      partySize: 2,
+      preferredZone: "salon",
+    },
+    instantInSantiago(monday, "18:00"),
+  )
+  assert.equal(soon.status, "pending")
+  assert.equal(soon.preferredTime, "19:30")
   const stored = (await getDb().collection("reservations").doc(created.id).get()).data()
   assert.equal(stored?.createdSource, "staff")
   assert.equal(stored?.trackingId, "")

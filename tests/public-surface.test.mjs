@@ -43,10 +43,13 @@ test("el sitio público no importa Firebase ni el servidor", () => {
       path.includes("src/app/api/admin/catalog/") ||
       path.includes("src/app/api/admin/tables/")
     const staffApi = path.includes("src/app/api/admin/staff/") || path.includes("src/app/api/admin/join/")
-    const cartaVisitApi = path.endsWith("src/app/api/carta/visita/route.ts")
+    const cartaVisitApi = path.endsWith("src/app/api/carta/visita/route.ts") || path.endsWith("src/app/api/visitas/route.ts")
+    const publicHours =
+      path.endsWith("src/components/features/layout/public-site-footer.tsx") ||
+      path.endsWith("src/components/features/reservations/reservation-header.tsx")
     if (/from ["']firebase-admin/.test(source)) offenders.push(path)
     if (/from ["'](firebase(?:\/[^"']*)?|@\/lib\/firebase)/.test(source) && !loginForm && !joinForm) offenders.push(path)
-    if (/from ["']@\/server\//.test(source) && !adminPage && !reservationApi && !catalogServer && !staffApi && !cartaVisitApi) offenders.push(path)
+    if (/from ["']@\/server\//.test(source) && !adminPage && !reservationApi && !catalogServer && !staffApi && !cartaVisitApi && !publicHours) offenders.push(path)
   }
   assert.deepEqual(offenders, [])
 })
@@ -74,6 +77,19 @@ test("las reglas no abren escritura pública", () => {
   assert.equal(active.includes("allow read, write: if true"), false)
   assert.equal(active.includes("allow write: if true"), false)
   assert.match(active, /match \/reservations\/\{reservationId\}/)
+})
+
+test("la burbuja de ayuda ofrece los dos locales y reservas sigue en el restaurante", () => {
+  const site = text(join(root, "src/lib/site.ts"))
+  assert.match(site, /56927214013/)
+  assert.match(site, /Casa Più/)
+  assert.match(site, /Restaurant Più Pizzas/)
+  assert.match(site, /whatsappHref = `https:\/\/wa\.me\/56928873619/)
+  const bubble = text(join(root, "src/components/features/layout/floating-whatsapp.tsx"))
+  assert.match(bubble, /whatsappVenues/)
+  assert.equal(bubble.includes("56928873619"), false)
+  const form = text(join(root, "src/components/features/reservations/reservation-form.tsx"))
+  assert.match(form, /56928873619/)
 })
 
 test("el acceso a datos nace apagado", () => {

@@ -13,7 +13,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 - El despliegue de `reservationMailRecover` incluye `@google-cloud/functions-framework` y declara los scripts de instalación de pnpm. Así Cloud Build puede instalar la función sin volver a publicar `reservationBackup`.
 - Los correos de reserva quedan preparados y apagados. Al guardar una solicitud pública se encola «Recibimos tu solicitud» y, al confirmarla, «Tu reserva está confirmada». No se envían mientras `PIU_RESERVATION_EMAILS` no sea `on`. Si el envío falla, la reserva sigue guardada. `reservationMailRecover` revisa cada 5 minutos la cola posterior a `PIU_RESERVATION_EMAILS_SINCE`, sin tocar el respaldo de Excel.
-- En el dashboard, solo el propietario ve «Medicion de pruebas». Cuenta una visita de `/carta` cuando la página estuvo visible un segundo, y el tiempo en que la pestaña estuvo al frente. El día queda en un documento de Firestore: una escritura al abrir y otra al salir, y una lectura al consultar. No hay cookie. Si el conteo falla, la carta igual abre.
+- En el dashboard, solo el propietario ve «Medicion de pruebas» de hoy: visitas y tiempo en el inicio, la carta y `/reservas`, más quién llegó a Tus datos y quién dejó la solicitud guardada. Cada visita escribe una sola vez, al salir, en `metricsDays`. Reservar suma una escritura más solo si la solicitud es nueva. No hay cookie. Si el conteo falla, la página igual funciona.
 - En `/admin/reservas`, arriba a la izquierda, «Respaldo» abre la unidad de Drive donde queda el Excel de reservas.
 - Un generador local arma `PIU_Respaldo_Reservas.xlsx` con las hojas Hoy, Mañana y Pendientes, con un máximo de 200 reservas de esos dos días, sin borrar nada de Firestore. Cada corrida lee hasta 250 documentos por día.
 - La función `reservationBackup` queda lista para publicarse, sin desplegarla: corre cada hora en `us-central1` con la cuenta `piu-respaldo-reservas` y actualiza ese Excel en la unidad compartida. Si la lectura o el archivo salen incompletos, conserva el respaldo anterior. Son como máximo 500 lecturas por hora y no mantiene instancias encendidas.
@@ -28,6 +28,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- El horario del footer y de `/reservas` sale de Configuración. La última reserva en línea parte a las 21:00 de lunes a jueves y a las 22:00 viernes y sábado, y se puede cambiar en el mismo horario. El footer lee un documento, con la caché de la carta.
+- La burbuja de WhatsApp pregunta a qué local escribir. Casa Più abre el +56 9 2721 4013 y Restaurant Più Pizzas abre el número que ya estaba. Las reservas siguen escribiendo al restaurante.
 - En Personal, el propietario elige el rol al crear la invitación. Cuando la persona crea su cuenta, entra con ese rol. No hace falta aprobarla otra vez. Una invitación de propietario pide confirmación en ese momento. Las solicitudes que ya estaban pendientes se aprueban como antes.
 - En Disponibilidad y al confirmar, el cupo de un sector son personas, no reservas ni mesas. Una reserva de 15 personas ocupa 15 de las 20. Queda amarillo si quedan menos de 5 personas y rojo si no queda ninguna. Las mesas se siguen acomodando en el local.
 - En `/nosotros`, la historia se lee por capítulos. El campeonato de 2023 queda solo arriba. El horno de la foto es el segundo y llega en el bloque de 2026, junto al segundo lugar en Italia. Junto a Camila va la cocina, y junto a «Lo que nos mueve» el interior. Las fotos entran completas, en WebP, sin recortar a las personas.
@@ -65,6 +67,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- En `/admin/reservas`, una reserva anotada por el personal ya no exige las 2 horas de anticipación. Esa regla sigue solo en `/reservas`. El horario de apertura y los cupos no cambian.
 - Confirmar una reserva ya no pide un motivo porque el grupo sea más grande que una mesa. Cada reserva ocupa un cupo del sector, sea de 2 o de más personas. En `/reservas` el texto habla de la reserva y de las personas.
 - Arrastrar una categoría en Configuración vuelve a pasar el chequeo del repositorio.
 - Finalizar o cancelar una reserva suelta su cupo aunque el mismo horario tenga otras reservas. Antes el cupo de esa reserva podía quedar tomado.

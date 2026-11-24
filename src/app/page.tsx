@@ -7,7 +7,8 @@ import { Hero } from "@/components/features/home/hero"
 import { ReserveSection } from "@/components/features/home/reserve-section"
 import { VisitSection } from "@/components/features/home/visit-section"
 import { FloatingWhatsApp } from "@/components/features/layout/floating-whatsapp"
-import { SiteFooter } from "@/components/features/layout/site-footer"
+import { PublicSiteFooter } from "@/components/features/layout/public-site-footer"
+import { VisitMeter } from "@/components/features/metrics/visit-meter"
 import { SiteHeader } from "@/components/features/site-header"
 
 import "./home.css"
@@ -32,13 +33,14 @@ export default async function Home() {
       <FloatingWhatsApp />
       <div className="overflow-x-clip">
         <main>
+          <VisitMeter surface="home" />
           <Hero />
           <ChefSuggestions suggestions={suggestions} />
           <EssenceSection />
           <ReserveSection />
           <VisitSection />
         </main>
-        <SiteFooter />
+        <PublicSiteFooter />
       </div>
     </div>
   )

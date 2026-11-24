@@ -18,6 +18,22 @@ env:
   # descomentar estas líneas; sin el secreto el endpoint responde 404.
   # - variable: PIU_NOTICES_CRON_SECRET
   #   secret: PIU_NOTICES_CRON_SECRET
+  # Correos de reserva. Crear RESEND_API_KEY en Secret Manager después de verificar
+  # piupizzas.cl. PIU_RESERVATION_EMAILS queda comentado: sin ese valor no se envía nada.
+  # - variable: RESEND_API_KEY
+  #   secret: RESEND_API_KEY
+  #   availability:
+  #     - RUNTIME
+  # - variable: PIU_RESERVATION_EMAIL_FROM
+  #   value: "PIÙ Pizza & Dolce <reservas@piupizzas.cl>"
+  # - variable: PIU_RESERVATION_EMAILS_SINCE
+  #   value: "2026-11-24T00:00:00.000Z"
+  # - variable: PIU_RESERVATION_EMAILS
+  #   value: "on"
+  # - variable: PIU_RESERVATION_MAIL_SECRET
+  #   secret: PIU_RESERVATION_MAIL_SECRET
+  #   availability:
+  #     - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyAtlMZnZcLyvMwX7AtUaoEswEenkBJGAy4
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN

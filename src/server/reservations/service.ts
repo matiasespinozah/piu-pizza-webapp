@@ -30,6 +30,7 @@ import { reservationWritesEnabled } from "@/lib/reservations/writes"
 import { assertStaff } from "@/server/auth/authorization"
 import { getDb } from "@/server/firebase/firestore"
 import { readTrackingState, recoverTrackingToken } from "@/server/reservations/tracking"
+import { recordReservationSaved } from "@/server/metrics/visits"
 import { enqueueReservationMail } from "@/server/reservations/mail"
 import { publishReservationNotice } from "@/server/reservations/notifications"
 
@@ -311,6 +312,7 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       partySize: input.partySize,
       revision: 1,
     }).catch(() => undefined)
+    await recordReservationSaved().catch(() => undefined)
   }
   await enqueueReservationMail({ reservationId: input.idempotencyKey, kind: "received" }).catch(() => undefined)
 
@@ -567,7 +569,7 @@ async function transitionReservation(session: StaffSession | null, input: Transi
           notes: "",
         },
         now,
-        { skipPartyLimit: true },
+        { skipPartyLimit: true, skipAnticipation: true },
       )
       if (Object.keys(errors).length > 0) {
         throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Ese horario no está disponible.")
@@ -877,7 +879,7 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
         notes,
       },
       now,
-      { skipPartyLimit: true },
+      { skipPartyLimit: true, skipAnticipation: true },
     )
     if (Object.keys(errors).length > 0) {
       throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Esa reserva no entra en el horario público.")
