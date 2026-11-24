@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 import { FloatingWhatsApp } from "@/components/features/layout/floating-whatsapp"
-import { SiteFooter } from "@/components/features/layout/site-footer"
+import { PublicSiteFooter } from "@/components/features/layout/public-site-footer"
 import { CartaVisitMeter } from "@/components/features/menu/carta-visit"
 import { MenuExplorer } from "@/components/features/menu/menu-explorer"
 import { MenuHeader } from "@/components/features/menu/menu-header"
@@ -34,7 +34,7 @@ export default async function CartaPage() {
           <CartaVisitMeter />
           <MenuExplorer categories={categories} products={products} />
         </main>
-        <SiteFooter />
+        <PublicSiteFooter />
       </div>
     </div>
   )

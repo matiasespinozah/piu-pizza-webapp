@@ -70,14 +70,35 @@ type DayService = {
   open: boolean
   opensAt: string
   closesAt: string
+  /** Última hora en que se puede pedir reserva en línea. Null: hasta antes del cierre. */
+  lastSeatingTime: string | null
+}
+
+type HoursLine = {
+  days: string
+  hours: string
+  lastSeatingTime: string | null
 }
 
 type WeekSchedule = Record<Weekday, DayService>
 
+/** Última reserva en línea cuando el día todavía no tiene una hora guardada. */
+function defaultLastSeating(day: Weekday) {
+  if (day === "fri" || day === "sat") return "22:00"
+  if (day === "sun") return null
+  return "21:00"
+}
+
+function resolvedLastSeating(day: Weekday, opensAt: string, closesAt: string, value: string | null | undefined) {
+  const chosen = value === undefined ? defaultLastSeating(day) : value
+  if (!chosen || chosen < opensAt || chosen >= closesAt) return null
+  return chosen
+}
+
 /** Horario que el restaurante ya confirmó, día por día. El domingo no abre. */
 function defaultWeek(): WeekSchedule {
-  const weekday: DayService = { open: true, opensAt: "17:00", closesAt: "22:00" }
-  const weekend: DayService = { open: true, opensAt: "13:00", closesAt: "23:00" }
+  const weekday: DayService = { open: true, opensAt: "17:00", closesAt: "22:00", lastSeatingTime: "21:00" }
+  const weekend: DayService = { open: true, opensAt: "13:00", closesAt: "23:00", lastSeatingTime: "22:00" }
   return {
     mon: { ...weekday },
     tue: { ...weekday },
@@ -85,18 +106,24 @@ function defaultWeek(): WeekSchedule {
     thu: { ...weekday },
     fri: { ...weekend },
     sat: { ...weekend },
-    sun: { open: false, opensAt: "13:00", closesAt: "22:00" },
+    sun: { open: false, opensAt: "13:00", closesAt: "22:00", lastSeatingTime: null },
   }
 }
 
 /** Arma la semana desde el horario antiguo de lun–jue y vie–sáb. El domingo queda cerrado. */
 function weekFromClock(clock: ReservationClock): WeekSchedule {
   const week = defaultWeek()
-  for (const day of ["mon", "tue", "wed", "thu"] as const) {
-    week[day] = { open: true, opensAt: clock.weekday.opensAt, closesAt: clock.weekday.closesAt }
+  const apply = (day: Weekday, open: boolean, window: OpeningWindow) => {
+    week[day] = {
+      open,
+      opensAt: window.opensAt,
+      closesAt: window.closesAt,
+      lastSeatingTime: resolvedLastSeating(day, window.opensAt, window.closesAt, clock.lastSeatingTime ?? week[day].lastSeatingTime),
+    }
   }
-  week.fri = { open: true, opensAt: clock.weekend.opensAt, closesAt: clock.weekend.closesAt }
-  week.sat = { open: true, opensAt: clock.weekend.opensAt, closesAt: clock.weekend.closesAt }
+  for (const day of ["mon", "tue", "wed", "thu"] as const) apply(day, true, clock.weekday)
+  apply("fri", true, clock.weekend)
+  apply("sat", true, clock.weekend)
   week.sun = { ...week.sun, open: false }
   return week
 }
@@ -173,7 +200,13 @@ function preferenceSlots(
 
   const start = toMinutes(window.opensAt)
   const end = toMinutes(window.closesAt)
-  const lastSource = visit?.hours ? visit.lastSeatingTime : clock.lastSeatingTime
+  const day = weekdayOf(isoDate)
+  const service = week?.[day]
+  const lastSource = visit?.hours
+    ? visit.lastSeatingTime
+    : service
+      ? resolvedLastSeating(day, window.opensAt, window.closesAt, service.lastSeatingTime)
+      : clock.lastSeatingTime
   const lastArrival = lastSource ? toMinutes(lastSource) : null
   const slots: string[] = []
   for (let minute = start; minute < end; minute += reservationConfig.slotMinutes) {
@@ -212,6 +245,42 @@ function instantInSantiago(isoDate: string, hhmm: string) {
   return new Date(utc)
 }
 
+const dayNames: Record<Weekday, string> = {
+  mon: "lunes",
+  tue: "martes",
+  wed: "miércoles",
+  thu: "jueves",
+  fri: "viernes",
+  sat: "sábado",
+  sun: "domingo",
+}
+
+function joinDayNames(names: string[]) {
+  const titled = names.map((name) => name.charAt(0).toUpperCase() + name.slice(1))
+  if (titled.length === 1) return titled[0]
+  if (titled.length === 2) return `${titled[0]} y ${titled[1].toLowerCase()}`
+  return `${titled[0]} a ${titled[titled.length - 1].toLowerCase()}`
+}
+
+/** Agrupa días seguidos con el mismo horario para el footer y la página de reservas. */
+function hoursLines(week: WeekSchedule): HoursLine[] {
+  const groups: { ids: Weekday[]; hours: string; lastSeatingTime: string | null }[] = []
+  for (const id of ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const) {
+    const row = week[id]
+    const open = row?.open === true
+    const hours = open ? `${row.opensAt}–${row.closesAt} hrs.` : "Cerrado"
+    const lastSeatingTime = open ? resolvedLastSeating(id, row.opensAt, row.closesAt, row.lastSeatingTime) : null
+    const previous = groups.at(-1)
+    if (previous && previous.hours === hours && previous.lastSeatingTime === lastSeatingTime) previous.ids.push(id)
+    else groups.push({ ids: [id], hours, lastSeatingTime })
+  }
+  return groups.map((group) => ({
+    days: joinDayNames(group.ids.map((id) => dayNames[id])),
+    hours: group.hours,
+    lastSeatingTime: group.lastSeatingTime,
+  }))
+}
+
 function previousIso(isoDate: string) {
   const [year, month, day] = isoDate.split("-").map(Number)
   const date = new Date(Date.UTC(year, month - 1, day))
@@ -222,7 +291,9 @@ function previousIso(isoDate: string) {
 export {
   clockFromWeek,
   confirmedClock,
+  defaultLastSeating,
   defaultWeek,
+  hoursLines,
   formatVisitDate,
   instantInSantiago,
   isClosedDay,
@@ -230,10 +301,11 @@ export {
   openingWindow,
   preferenceSlots,
   previousIso,
+  resolvedLastSeating,
   santiagoParts,
   todayIsoInSantiago,
   toMinutes,
   weekdayOf,
   weekFromClock,
 }
-export type { DayService, OpeningWindow, ReservationClock, VisitHours, Weekday, WeekSchedule }
+export type { DayService, HoursLine, OpeningWindow, ReservationClock, VisitHours, Weekday, WeekSchedule }

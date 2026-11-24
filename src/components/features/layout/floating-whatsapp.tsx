@@ -3,7 +3,7 @@
 import * as React from "react"
 import { XIcon } from "lucide-react"
 
-import { whatsappHref } from "@/lib/site"
+import { whatsappVenues } from "@/lib/site"
 
 const dismissKey = "piu-whatsapp-help-dismissed"
 const showAfterMs = 90_000
@@ -22,6 +22,9 @@ function WhatsAppGlyph({ className }: { className?: string }) {
 
 function FloatingWhatsApp() {
   const [bubble, setBubble] = React.useState(false)
+  const [open, setOpen] = React.useState(false)
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  const chooserOpen = React.useRef(false)
   const dismissed = React.useRef(false)
   const phase = React.useRef<"wait" | "show">("wait")
   const showTimer = React.useRef(0)
@@ -58,6 +61,10 @@ function FloatingWhatsApp() {
       markedAt.current = Date.now()
       showTimer.current = window.setTimeout(() => {
         if (dismissed.current || document.hidden) return
+        if (chooserOpen.current) {
+          armShow(showAfterMs)
+          return
+        }
         phase.current = "show"
         setBubble(true)
         markedAt.current = Date.now()
@@ -91,6 +98,29 @@ function FloatingWhatsApp() {
     }
   }, [clearTimers])
 
+  const setChooser = React.useCallback((next: boolean) => {
+    chooserOpen.current = next
+    setOpen(next)
+  }, [])
+
+  React.useEffect(() => {
+    if (!open) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setChooser(false)
+    }
+    function onPointer(event: PointerEvent) {
+      const root = rootRef.current
+      if (root && event.target instanceof Node && root.contains(event.target)) return
+      setChooser(false)
+    }
+    document.addEventListener("keydown", onKey)
+    document.addEventListener("pointerdown", onPointer)
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.removeEventListener("pointerdown", onPointer)
+    }
+  }, [open, setChooser])
+
   // Se oculta mientras la persona desliza y reaparece con un "pop" al detenerse.
   const [scrolling, setScrolling] = React.useState(false)
   React.useEffect(() => {
@@ -109,6 +139,7 @@ function FloatingWhatsApp() {
 
   return (
     <div
+      ref={rootRef}
       data-scrolling={scrolling ? "" : undefined}
       className="wa-fab pointer-events-none fixed right-3 bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] z-30 flex origin-bottom-right flex-col items-end gap-2 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] data-[scrolling]:scale-50 data-[scrolling]:opacity-0 data-[scrolling]:duration-200 data-[scrolling]:ease-out data-[scrolling]:*:pointer-events-none motion-reduce:transition-opacity motion-reduce:data-[scrolling]:scale-100 md:right-6 md:bottom-[max(1.25rem,env(safe-area-inset-bottom))]"
     >
@@ -129,17 +160,49 @@ function FloatingWhatsApp() {
         </div>
       ) : null}
 
-      <a
-        href={whatsappHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Escribir a PIÙ por WhatsApp"
-        onClick={hideBubble}
+      {open ? (
+        <div
+          id="whatsapp-venues"
+          role="dialog"
+          aria-label="Elegir local"
+          className="pointer-events-auto w-[min(17.5rem,calc(100vw-1.5rem))] rounded-2xl bg-cream p-3 text-olive shadow-lift motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
+        >
+          <p className="px-1 text-sm leading-5 font-medium">¿A qué local quieres comunicarte?</p>
+          <ul className="mt-2 flex flex-col gap-2">
+            {whatsappVenues.map((place) => (
+              <li key={place.id}>
+                <a
+                  href={place.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setChooser(false)}
+                  className="flex min-h-11 items-center gap-2.5 rounded-xl border border-olive-line px-3 py-2 text-sm leading-5 font-semibold outline-none hover:bg-olive-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-olive"
+                >
+                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: "#25D366" }}>
+                    <WhatsAppGlyph className="size-4" />
+                  </span>
+                  {place.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={open ? "whatsapp-venues" : undefined}
+        aria-label={open ? "Cerrar opciones de WhatsApp" : "Escribir a PIÙ por WhatsApp"}
+        onClick={() => {
+          hideBubble()
+          setChooser(!open)
+        }}
         className="pointer-events-auto inline-flex size-[2.85rem] items-center justify-center rounded-full text-white shadow-lift outline-none transition-[transform,filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-olive motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500 md:size-14"
         style={{ backgroundColor: "#25D366" }}
       >
         <WhatsAppGlyph className="size-[1.425rem] md:size-7" />
-      </a>
+      </button>
     </div>
   )
 }

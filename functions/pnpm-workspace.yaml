@@ -1,0 +1,6 @@
+# pnpm 11 exige declarar los scripts de instalación. Sin esto Cloud Build
+# aborta el despliegue de la función. No se ejecutan: no hacen falta.
+allowBuilds:
+  "@firebase/util": false
+  esbuild: false
+  protobufjs: false

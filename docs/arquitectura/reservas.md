@@ -83,7 +83,7 @@ Con el número de personas por sector, una reserva ocupa a todo su grupo. Quince
 
 ## Horario
 
-`America/Santiago`. Lunes a jueves 17:00–22:00. Viernes y sábado 13:00–23:00. Domingo cerrado. Los horarios del formulario llegan hasta el intervalo anterior al cierre. Cualquier día, una hora solo se puede pedir con al menos 2 horas de anticipación: a las 18:00 todavía entra la de las 20:00. La solicitud queda pendiente hasta que el restaurante la confirme.
+`America/Santiago`. Lunes a jueves 17:00–22:00. Viernes y sábado 13:00–23:00. Domingo cerrado. Ese horario se edita en Configuración y es el que muestra el footer y `/reservas`. La última reserva en línea parte en 21:00 de lunes a jueves y en 22:00 viernes y sábado; también se cambia ahí. El formulario público no ofrece un horario posterior. Cualquier día, pide una hora con al menos 2 horas de anticipación: a las 18:00 todavía entra la de las 20:00. La reserva que anota el personal, y un cambio de horario desde el panel, pueden quedar dentro de esas dos horas y después de la última reserva en línea. Siguen el horario de apertura. La solicitud queda pendiente hasta que el restaurante la confirme. El footer lee un solo documento de configuración, con la misma caché de 5 minutos que la carta.
 
 ## Respaldo Excel
 

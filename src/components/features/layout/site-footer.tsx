@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/logo"
 import { Container } from "@/components/ui/layout"
 import { textLinkVariants } from "@/components/ui/text-link"
-import { footerNav, openingHours, socialLinks } from "@/lib/site"
+import type { HoursLine } from "@/lib/reservations/schedule"
+import { footerNav, socialLinks } from "@/lib/site"
 
-function SiteFooter() {
+function SiteFooter({ hours }: { hours: HoursLine[] }) {
   return (
     <footer className="bg-olive text-cream">
       <Container className="grid gap-12 py-16 sm:py-20 lg:grid-cols-3 lg:gap-16 lg:py-24">
@@ -58,7 +59,7 @@ function SiteFooter() {
               Horarios de atención
             </h2>
             <dl className="mt-5 space-y-3 text-[0.9375rem] leading-5">
-              {openingHours.map((row) => (
+              {hours.map((row) => (
                 <div key={row.days} className="flex max-w-[22rem] justify-between gap-6">
                   <dt className="text-cream/80">{row.days}</dt>
                   <dd className="font-label font-semibold tabular-nums">{row.hours}</dd>

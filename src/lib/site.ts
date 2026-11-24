@@ -18,6 +18,24 @@ const whatsappMessage = "Hola, tengo una consulta sobre PIÙ Pizza & Dolce."
 
 const whatsappHref = `https://wa.me/56928873619?text=${encodeURIComponent(whatsappMessage)}`
 
+function whatsappChat(phone: string, message: string) {
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+}
+
+/** Locales que se eligen desde la burbuja de ayuda. El de reservas sigue en `whatsappHref`. */
+const whatsappVenues = [
+  {
+    id: "casa",
+    name: "Casa Più",
+    href: whatsappChat("56927214013", "Hola, tengo una consulta para Casa Più."),
+  },
+  {
+    id: "restaurant",
+    name: "Restaurant Più Pizzas",
+    href: whatsappChat("56928873619", "Hola, tengo una consulta para Restaurant Più Pizzas."),
+  },
+] as const
+
 const socialLinks = [
   {
     name: "Instagram",
@@ -29,12 +47,6 @@ const socialLinks = [
     href: "https://www.tiktok.com/@piupizzas.cl",
     icon: "/logos/tiktok.avif",
   },
-] as const
-
-const openingHours = [
-  { days: "Lunes a jueves", hours: "17:00–22:00 hrs." },
-  { days: "Viernes y sábado", hours: "13:00–23:00 hrs." },
-  { days: "Domingo", hours: "Cerrado" },
 ] as const
 
 const footerNav = [
@@ -49,9 +61,9 @@ export {
   footerNav,
   mapsEmbedUrl,
   mapsSearchUrl,
-  openingHours,
   socialLinks,
   venue,
   whatsappHref,
   whatsappMessage,
+  whatsappVenues,
 }

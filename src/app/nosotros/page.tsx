@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 import { AboutStory } from "@/components/features/about/about-story"
 import { FloatingWhatsApp } from "@/components/features/layout/floating-whatsapp"
-import { SiteFooter } from "@/components/features/layout/site-footer"
+import { PublicSiteFooter } from "@/components/features/layout/public-site-footer"
 import { SiteHeader } from "@/components/features/site-header"
 
 import "./nosotros.css"
@@ -27,7 +27,7 @@ export default function NosotrosPage() {
       <main className="pt-[calc(env(safe-area-inset-top)+4.5rem)]">
         <AboutStory />
       </main>
-      <SiteFooter />
+      <PublicSiteFooter />
     </div>
   )
 }
