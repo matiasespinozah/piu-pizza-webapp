@@ -29,6 +29,7 @@ Nombres en inglés, alineados con el código. No hay documentos cargados.
 | `restaurantSettings/operations` | Tope por zona, cupo sin reserva (`walkInHold`, null hasta definirlo) y anticipación (null). | Nadie. |
 | `auditLogs` | Quién cambió qué, sin copiar el teléfono del cliente. | Nadie. |
 | `reservationAccess` | Hash del enlace de seguimiento, vencimiento, revocación y un cifrado del secreto. No guarda el secreto en claro. | Nadie. |
+| `reservationMail` | Cola de un correo por reserva y tipo (`received` o `confirmed`): estado, intentos y el id de Resend. No guarda el cuerpo ni copia el correo del cliente. | Nadie. |
 | `reservationStatusRate` | Contador de consultas de seguimiento, sin la dirección ni el secreto. | Nadie. |
 | `reservationMail` | Cola de un correo por reserva y tipo (`received` o `confirmed`): estado, intentos y el id de Resend. No guarda el cuerpo ni copia el correo del cliente. | Nadie. |
 | `metricsDays` | Contadores del día para inicio, carta y reservas. Una escritura al salir de la página y otra solo si una solicitud pública nueva quedó guardada. No guarda persona ni cookie. | Nadie. El panel lee ese único documento. |

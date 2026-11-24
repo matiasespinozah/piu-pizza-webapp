@@ -11,8 +11,8 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
-- Los correos de reserva siguen apagados. Una función aparte, `reservationMailRecover`, queda lista para revisar cada 5 minutos la cola que no salió, sin desplegarla y sin tocar el respaldo de Excel. Las tareas anteriores a `PIU_RESERVATION_EMAILS_SINCE` se omiten y no se borran.
-- Los correos de reserva quedan preparados y apagados. Al guardar una solicitud pública se encola «Recibimos tu solicitud» y, al confirmarla, «Tu reserva está confirmada». No se envían hasta activar Resend con el dominio verificado. Si el envío falla, la reserva sigue guardada. La vista previa local está en `/correo`.
+- El despliegue de `reservationMailRecover` incluye `@google-cloud/functions-framework` y declara los scripts de instalación de pnpm. Así Cloud Build puede instalar la función sin volver a publicar `reservationBackup`.
+- Los correos de reserva quedan preparados y apagados. Al guardar una solicitud pública se encola «Recibimos tu solicitud» y, al confirmarla, «Tu reserva está confirmada». No se envían mientras `PIU_RESERVATION_EMAILS` no sea `on`. Si el envío falla, la reserva sigue guardada. `reservationMailRecover` revisa cada 5 minutos la cola posterior a `PIU_RESERVATION_EMAILS_SINCE`, sin tocar el respaldo de Excel.
 - En el dashboard, solo el propietario ve «Medicion de pruebas» de hoy: visitas y tiempo en el inicio, la carta y `/reservas`, más quién llegó a Tus datos y quién dejó la solicitud guardada. Cada visita escribe una sola vez, al salir, en `metricsDays`. Reservar suma una escritura más solo si la solicitud es nueva. No hay cookie. Si el conteo falla, la página igual funciona.
 - En `/admin/reservas`, arriba a la izquierda, «Respaldo» abre la unidad de Drive donde queda el Excel de reservas.
 - Un generador local arma `PIU_Respaldo_Reservas.xlsx` con las hojas Hoy, Mañana y Pendientes, con un máximo de 200 reservas de esos dos días, sin borrar nada de Firestore. Cada corrida lee hasta 250 documentos por día.

@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase-admin/app"
 import { getFirestore, type Firestore } from "firebase-admin/firestore"
+import { defineSecret, defineString } from "firebase-functions/params"
 import { onSchedule } from "firebase-functions/v2/scheduler"
 import { google } from "googleapis"
 
@@ -23,6 +24,14 @@ import type { ReservationStatus, ReservationZone } from "@/lib/reservations/type
 import type { BackupDatabase } from "../../src/lib/reservations/backup-source"
 import { backupDriveClient, type GoogleDriveApi } from "../../src/lib/reservations/backup-drive-client"
 import { backupServiceAccount, runReservationDriveBackup } from "../../src/lib/reservations/backup-drive"
+
+const resendApiKey = defineSecret("RESEND_API_KEY")
+const reservationEmails = defineString("PIU_RESERVATION_EMAILS", { default: "off" })
+const reservationEmailFrom = defineString("PIU_RESERVATION_EMAIL_FROM", {
+  default: "PIÙ Pizza & Dolce <reservas@piupizzas.cl>",
+})
+const reservationEmailsSince = defineString("PIU_RESERVATION_EMAILS_SINCE", { default: "" })
+const publicSiteUrl = defineString("PIU_PUBLIC_SITE_URL", { default: "https://piupizzas.cl" })
 
 initializeApp()
 
@@ -176,16 +185,28 @@ const reservationMailRecover = onSchedule(
     maxInstances: 1,
     concurrency: 1,
     retryCount: 0,
+    secrets: [resendApiKey],
   },
   async () => {
-    const env = process.env
+    const env = {
+      RESEND_API_KEY: resendApiKey.value(),
+      PIU_RESERVATION_EMAILS: reservationEmails.value(),
+      PIU_RESERVATION_EMAIL_FROM: reservationEmailFrom.value(),
+      PIU_RESERVATION_EMAILS_SINCE: reservationEmailsSince.value(),
+      PIU_PUBLIC_SITE_URL: publicSiteUrl.value(),
+    }
     const mode = mailDeliveryMode(env)
     const since = mailActivationSince(env)
     if (mode !== "ready" || !since) return
     const db = getFirestore()
-    await recoverReservationMail(mailStore(db), (reservationId, kind) => loadSnapshot(db, reservationId, kind), resendTransport(env), mode, mailLinks(env), {
-      since,
-    })
+    await recoverReservationMail(
+      mailStore(db),
+      (reservationId, kind) => loadSnapshot(db, reservationId, kind),
+      resendTransport(env),
+      mode,
+      mailLinks(env),
+      { since },
+    )
   },
 )
 
