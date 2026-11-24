@@ -257,6 +257,28 @@ test("la configuración inicial no inventa mesas y deja los cupos de salón y te
   assert.equal(monday.includes("21:30"), false)
   assert.equal(friday.at(-1), "22:00")
   assert.equal(friday.includes("22:30"), false)
+  const extended = preferenceSlots(
+    "2026-11-09",
+    now,
+    confirmedClock,
+    { closed: false, hours: { opensAt: "13:00", closesAt: "22:00" }, lastSeatingTime: null },
+    defaultWeek(),
+    0,
+  )
+  assert.equal(extended.at(-1), "21:00")
+  assert.equal(extended.includes("21:30"), false)
+  const cleared = defaultWeek()
+  for (const day of Object.values(cleared)) day.lastSeatingTime = null
+  const restored = readOperationRules({ ...document, week: cleared })
+  assert.equal(restored?.week.mon.lastSeatingTime, "21:00")
+  assert.equal(restored?.week.fri.lastSeatingTime, "22:00")
+  const withoutCap = preferenceSlots("2026-11-09", now, restored.clock, null, restored.week, 0)
+  assert.equal(withoutCap.includes("21:30"), false)
+  assert.throws(
+    () => readPublicBody(JSON.stringify(body({ preferredTime: "21:30" })), now, { clock: restored.clock, week: restored.week }),
+    (error) => error instanceof ReservationError && error.status === 422,
+  )
+  readPublicBody(JSON.stringify(body({ preferredTime: "21:00" })), now, { clock: restored.clock, week: restored.week })
   const legacyWeek = defaultWeek()
   for (const day of Object.values(legacyWeek)) delete day.lastSeatingTime
   const legacy = readOperationRules({ ...document, week: legacyWeek })
@@ -688,6 +710,7 @@ test("el mesero solo ve mesas libres y avisos de atención", () => {
   assert.equal(waiterMayReadNotice({ type: "changed", title: "Mesa actualizada" }), true)
   const service = readFileSync(new URL("../src/server/reservations/service.ts", import.meta.url), "utf8")
   assert.match(service, /Esa acción no está disponible para el mesero/)
+  assert.match(service, /preferenceSlots\(input\.date/)
   const desk = readFileSync(new URL("../src/server/reservations/service-desk.ts", import.meta.url), "utf8")
   assert.doesNotMatch(desk, /customerEmail|marketingConsent|customerPhone/)
 })
