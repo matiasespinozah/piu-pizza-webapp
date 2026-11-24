@@ -111,5 +111,10 @@ service cloud.firestore {
     match /metricsCarta/{dayId} {
       allow read, write: if false;
     }
+
+    // Cola de correos de reserva. Solo el servidor. No guarda el cuerpo del mensaje.
+    match /reservationMail/{mailId} {
+      allow read, write: if false;
+    }
   }
 }

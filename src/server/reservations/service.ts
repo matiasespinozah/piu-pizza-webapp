@@ -30,6 +30,7 @@ import { reservationWritesEnabled } from "@/lib/reservations/writes"
 import { assertStaff } from "@/server/auth/authorization"
 import { getDb } from "@/server/firebase/firestore"
 import { readTrackingState, recoverTrackingToken } from "@/server/reservations/tracking"
+import { enqueueReservationMail } from "@/server/reservations/mail"
 import { publishReservationNotice } from "@/server/reservations/notifications"
 
 const pageSize = 20
@@ -311,6 +312,7 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
       revision: 1,
     }).catch(() => undefined)
   }
+  await enqueueReservationMail({ reservationId: input.idempotencyKey, kind: "received" }).catch(() => undefined)
 
   return { duplicate: outcome.duplicate, receipt: receiptOf(outcome.data), trackingToken: outcome.trackingToken }
 }
@@ -818,6 +820,9 @@ async function transitionReservation(session: StaffSession | null, input: Transi
   })
 
   await publishReservationNotice(notice).catch(() => undefined)
+  if (notice.action === "confirm") {
+    await enqueueReservationMail({ reservationId: notice.id, kind: "confirmed" }).catch(() => undefined)
+  }
 }
 
 type StaffReservationInput = {

@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Los correos de reserva quedan preparados y apagados. Al guardar una solicitud pública se encola «Recibimos tu solicitud» y, al confirmarla, «Tu reserva está confirmada». No se envían mientras `PIU_RESERVATION_EMAILS` no sea `on`. Si el envío falla, la reserva sigue guardada. `reservationMailRecover` revisa cada 5 minutos la cola posterior a `PIU_RESERVATION_EMAILS_SINCE`, sin tocar el respaldo de Excel.
 - En el dashboard, solo el propietario ve «Medicion de pruebas». Cuenta una visita de `/carta` cuando la página estuvo visible un segundo, y el tiempo en que la pestaña estuvo al frente. El día queda en un documento de Firestore: una escritura al abrir y otra al salir, y una lectura al consultar. No hay cookie. Si el conteo falla, la carta igual abre.
 - En `/admin/reservas`, arriba a la izquierda, «Respaldo» abre la unidad de Drive donde queda el Excel de reservas.
 - Un generador local arma `PIU_Respaldo_Reservas.xlsx` con las hojas Hoy, Mañana y Pendientes, con un máximo de 200 reservas de esos dos días, sin borrar nada de Firestore. Cada corrida lee hasta 250 documentos por día.
