@@ -70,7 +70,7 @@ type DayService = {
   open: boolean
   opensAt: string
   closesAt: string
-  /** Última hora en que se puede pedir reserva en línea. Null: hasta antes del cierre. */
+  /** Última hora en que se puede pedir reserva en línea. Vacío usa 21:00 de lunes a jueves y 22:00 viernes y sábado. */
   lastSeatingTime: string | null
 }
 
@@ -90,9 +90,18 @@ function defaultLastSeating(day: Weekday) {
 }
 
 function resolvedLastSeating(day: Weekday, opensAt: string, closesAt: string, value: string | null | undefined) {
-  const chosen = value === undefined ? defaultLastSeating(day) : value
+  const chosen = value || defaultLastSeating(day)
   if (!chosen || chosen < opensAt || chosen >= closesAt) return null
   return chosen
+}
+
+/** Tope de llegada en línea. Un día sin hora propia hereda la semana; nunca llega hasta el cierre. */
+function seatingDeadline(isoDate: string, window: OpeningWindow, clock: ReservationClock, visit?: VisitHours | null, week?: WeekSchedule | null) {
+  const day = weekdayOf(isoDate)
+  const service = week?.[day]
+  const weekly = resolvedLastSeating(day, window.opensAt, window.closesAt, service ? service.lastSeatingTime : clock.lastSeatingTime)
+  if (!visit?.lastSeatingTime) return weekly
+  return resolvedLastSeating(day, window.opensAt, window.closesAt, visit.lastSeatingTime) ?? weekly
 }
 
 /** Horario que el restaurante ya confirmó, día por día. El domingo no abre. */
@@ -154,7 +163,7 @@ const confirmedClock: ReservationClock = {
 }
 
 /**
- * Horario de atención. Sin última llegada, los horarios llegan hasta el intervalo anterior al cierre.
+ * Horario de atención. La última reserva en línea corta los horarios antes del cierre.
  */
 function openingWindow(
   isoDate: string,
@@ -200,13 +209,7 @@ function preferenceSlots(
 
   const start = toMinutes(window.opensAt)
   const end = toMinutes(window.closesAt)
-  const day = weekdayOf(isoDate)
-  const service = week?.[day]
-  const lastSource = visit?.hours
-    ? visit.lastSeatingTime
-    : service
-      ? resolvedLastSeating(day, window.opensAt, window.closesAt, service.lastSeatingTime)
-      : clock.lastSeatingTime
+  const lastSource = seatingDeadline(isoDate, window, clock, visit, week)
   const lastArrival = lastSource ? toMinutes(lastSource) : null
   const slots: string[] = []
   for (let minute = start; minute < end; minute += reservationConfig.slotMinutes) {

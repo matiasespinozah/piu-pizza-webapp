@@ -255,7 +255,6 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
         <h2 id={titleId} ref={headingRef} tabIndex={-1} className="sr-only">
           {stepTitle[step]}
         </h2>
-        <p className="mb-4 text-sm text-olive-strong">Al enviar, la solicitud queda pendiente de confirmación del restaurante. La reserva no queda tomada todavía.</p>
         {!admission.ok ? (
           <p role="status" className="mb-4 rounded-2xl border border-olive-line bg-cream px-4 py-3 text-base text-olive">
             {admission.message}
@@ -277,10 +276,6 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
           <div className="flex flex-col gap-5">
             <ReservationSummary draft={draft} phone={phone} />
             <ReservationContactStep draft={draft} errors={errors} onChange={patch} />
-            <p className="text-sm text-olive-muted">
-              Usamos tu nombre, tu celular y tu correo para coordinar esta solicitud. La política de privacidad todavía no está
-              publicada.
-            </p>
             <label className="flex min-h-11 items-start gap-3 text-sm leading-5 text-olive">
               <Checkbox
                 checked={draft.marketingOptIn === true}
@@ -290,9 +285,10 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
               />
               <span>Acepto recibir información, novedades y promociones de PIÙ Pizza & Dolce por correo electrónico.</span>
             </label>
-            <p id="reservation-promotions-note" className="text-sm text-olive-muted">
-              Viene marcada. Si no la quieres, desmárcala. Tu reserva se envía igual.
+            <p id="reservation-promotions-note" className="-mt-3 text-xs text-olive-muted">
+              Si no la quieres, desmárcala.
             </p>
+            <p className="text-sm text-olive-muted">Tu solicitud queda pendiente hasta que la confirmemos.</p>
           </div>
         ) : null}
         {formError ? (
