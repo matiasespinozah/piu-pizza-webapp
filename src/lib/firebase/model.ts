@@ -24,6 +24,7 @@ const collections = {
   invitationRate: "invitationRate",
   staffNotifications: "staffNotifications",
   metricsCarta: "metricsCarta",
+  reservationMail: "reservationMail",
 } as const
 
 const settingsDocId = "operations"
