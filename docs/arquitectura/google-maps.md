@@ -8,4 +8,4 @@ La sección **Ven a encontrarnos** incrusta un mapa con el iframe oficial de Goo
 - **Interacción:** el mapa es visual (`pointer-events: none`) para no capturar el scroll; las indicaciones van por «Cómo llegar».
 - **Indicaciones:** `https://www.google.com/maps/dir/?api=1&destination=…` abre Maps nativo o web.
 
-Datos centralizados en `src/lib/site.ts` (`venue`, `mapsEmbedUrl`, `directionsUrl`, `openingHours`).
+Datos centralizados en `src/lib/site.ts` (`venue`, `mapsEmbedUrl`, `directionsUrl`). El horario del footer sale de la configuración del local.

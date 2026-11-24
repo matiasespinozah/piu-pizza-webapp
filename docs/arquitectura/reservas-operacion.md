@@ -67,7 +67,7 @@ Cada reserva confirmada ocupa a sus personas en el sector mientras dura. Quince 
 
 La configuración permanente (cantidad de mesas, cupos web, duración y horario) vive en `/admin/configuracion`. Pausar las reservas online y marcar una fecha como completa se hace en `/admin/reservas`. `/admin/mesas` sigue existiendo solo como redirección hacia Reservas, para no perder enlaces antiguos. El motor, los documentos de Firestore y las mesas configuradas no cambian. El horario queda en Firestore y no vuelve a los valores iniciales al recargar ni al publicar una versión nueva.
 
-Guardar no enciende la página pública. Una pausa o un día completo rechaza solicitudes nuevas en el servidor. Las ya guardadas siguen en el panel. En Zonas y cupos, «Personas por reserva» es el máximo que puede pedir el cliente en esa zona. Al guardarlo, el formulario público usa ese número. La reserva que anota el personal no tiene ese tope: si lo supera, el panel avisa que es una excepción de administración. Los cupos web siguen siendo cuántas reservas en línea pueden coincidir, no cuántas personas entran en una.
+Guardar no enciende la página pública. Una pausa o un día completo rechaza solicitudes nuevas en el servidor. Las ya guardadas siguen en el panel. En Zonas y cupos, «Personas por reserva» es el máximo que puede pedir el cliente en esa zona. Al guardarlo, el formulario público usa ese número. La reserva que anota el personal no tiene ese tope: si lo supera, el panel avisa que es una excepción de administración. Tampoco exige las 2 horas del formulario público: puede quedar para más temprano el mismo día, dentro del horario de apertura. Los cupos web siguen siendo cuántas reservas en línea pueden coincidir, no cuántas personas entran en una.
 
 ## La cantidad de personas
 

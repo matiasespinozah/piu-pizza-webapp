@@ -12,6 +12,8 @@ type VisitRules = {
   maxParty?: OperationRules["maxParty"]
   /** La reserva del personal no usa el tope de personas del cliente. */
   skipPartyLimit?: boolean
+  /** La reserva del personal no exige la anticipación del formulario público. */
+  skipAnticipation?: boolean
   receptionPaused?: boolean
   receptionNotice?: OperationRules["receptionNotice"]
   notices?: OperationRules["notices"]
@@ -76,7 +78,7 @@ function validateTime(draft: ReservationDraft, now = new Date(), rules?: VisitRu
     errors.preferredTime = "Elige un horario de preferencia."
   } else if (!open.includes(draft.preferredTime)) {
     errors.preferredTime = "Ese horario no corresponde al día elegido."
-  } else {
+  } else if (rules?.skipAnticipation !== true) {
     const anticipation = anticipationError(draft, now, rules?.anticipation)
     if (anticipation) errors.preferredTime = anticipation
   }

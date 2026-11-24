@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { isLikelyBot, readCartaBeacon, sameSiteOrigin } from "@/lib/metrics/carta-visit"
-import { recordCartaVisit } from "@/server/metrics/carta"
+import { recordLegacyCartaVisit } from "@/server/metrics/visits"
 
 const noStore = { "Cache-Control": "no-store" }
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     if (raw.length > 80) return done()
     const visit = readCartaBeacon(JSON.parse(raw) as unknown)
     if (!visit) return done()
-    await recordCartaVisit(visit)
+    await recordLegacyCartaVisit(visit)
   } catch {
     // La carta no depende de este conteo.
   }

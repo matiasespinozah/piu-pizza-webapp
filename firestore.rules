@@ -107,8 +107,18 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Conteo diario de la carta. Una escritura por apertura y otra al salir. Solo el servidor.
+    // Conteo diario anterior de la carta. Ya no se escribe. Solo el servidor.
     match /metricsCarta/{dayId} {
+      allow read, write: if false;
+    }
+
+    // Inicio, carta y reservas del día. Una escritura al salir y otra si la reserva se guardó.
+    match /metricsDays/{dayId} {
+      allow read, write: if false;
+    }
+
+    // Cola de correos de reserva. Solo el servidor. No guarda el cuerpo del mensaje.
+    match /reservationMail/{mailId} {
       allow read, write: if false;
     }
   }

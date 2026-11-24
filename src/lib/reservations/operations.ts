@@ -1,4 +1,4 @@
-import { confirmedClock, defaultWeek, formatVisitDate, todayIsoInSantiago, weekFromClock, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, formatVisitDate, resolvedLastSeating, todayIsoInSantiago, weekFromClock, type ReservationClock, type WeekSchedule } from "@/lib/reservations/schedule"
 
 const declaredTables = { salon: 19, terrace: 15 } as const
 
@@ -262,7 +262,16 @@ function readWeek(value: unknown, clock: ReservationClock): WeekSchedule | null 
     const row = item as Record<string, unknown>
     if (typeof row.open !== "boolean" || typeof row.opensAt !== "string" || typeof row.closesAt !== "string") return null
     if (!HHMM.test(row.opensAt) || !HHMM.test(row.closesAt) || row.opensAt >= row.closesAt) return null
-    week[day] = { open: row.open, opensAt: row.opensAt, closesAt: row.closesAt }
+    const last = row.lastSeatingTime
+    const lastSeatingTime =
+      last === undefined
+        ? resolvedLastSeating(day, row.opensAt, row.closesAt, undefined)
+        : last === null
+          ? null
+          : typeof last === "string" && HHMM.test(last)
+            ? resolvedLastSeating(day, row.opensAt, row.closesAt, last)
+            : null
+    week[day] = { open: row.open, opensAt: row.opensAt, closesAt: row.closesAt, lastSeatingTime }
   }
   return week
 }

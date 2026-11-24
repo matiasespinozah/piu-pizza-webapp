@@ -8,9 +8,9 @@ import { applyFloorSection, criticalFingerprint, declaredTables, defaultOperatio
 import { pendingOwnerDecisions, reservationConfig } from "@/lib/reservations/configuration"
 import { ReservationError } from "@/lib/reservations/errors"
 import { readPublicBody } from "@/lib/reservations/public-request"
-import { confirmedClock, defaultWeek, instantInSantiago, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
+import { confirmedClock, defaultWeek, hoursLines, instantInSantiago, isClosedDay, openingWindow, preferenceSlots, previousIso, todayIsoInSantiago, weekdayOf } from "@/lib/reservations/schedule"
 import { pageSchedule, pastWindow, staffView } from "@/lib/reservations/staff-views"
-import { staffPartyException, validateVisit } from "@/lib/reservations/validation"
+import { staffPartyException, validateTime, validateVisit } from "@/lib/reservations/validation"
 import { eligibleServiceTables } from "@/lib/reservations/service-tables"
 import { waiterMayReadNotice } from "@/lib/reservations/service-notices"
 import { canTransition } from "@/lib/reservations/transitions"
@@ -112,6 +112,25 @@ test("cualquier día se reserva con al menos dos horas y a las 18:00 todavía se
     )
   }
   assert.equal(reservationConfig.minimumLeadHours, 2)
+})
+
+test("el personal puede anotar una hora dentro de las dos horas y el cliente no", () => {
+  const date = "2026-11-09"
+  const atSix = instantInSantiago(date, "18:00")
+  const draft = {
+    date,
+    partySize: 2,
+    zone: "salon",
+    preferredTime: "19:30",
+    customerName: "Ana",
+    customerPhone: "+56 9 2887 3619",
+    customerEmail: "ana@example.test",
+    marketingOptIn: false,
+    notes: "",
+  }
+  assert.match(validateTime(draft, atSix).preferredTime ?? "", /2 horas/)
+  assert.equal(validateTime(draft, atSix, { skipAnticipation: true }).preferredTime, undefined)
+  assert.match(validateTime({ ...draft, preferredTime: "16:00" }, atSix, { skipAnticipation: true }).preferredTime ?? "", /no corresponde/)
 })
 
 test("lo que Felipe no confirmó sigue vacío y no se usa como capacidad", () => {
@@ -224,6 +243,25 @@ test("la configuración inicial no inventa mesas y deja los cupos de salón y te
   assert.equal(document.week.mon.closesAt, "22:00")
   assert.equal(document.week.fri.opensAt, "13:00")
   assert.equal(document.week.fri.closesAt, "23:00")
+  assert.equal(document.week.mon.lastSeatingTime, "21:00")
+  assert.equal(document.week.fri.lastSeatingTime, "22:00")
+  const lines = hoursLines(defaultWeek())
+  assert.deepEqual(lines.map((line) => line.days), ["Lunes a jueves", "Viernes y sábado", "Domingo"])
+  assert.equal(lines[0].hours, "17:00–22:00 hrs.")
+  assert.equal(lines[0].lastSeatingTime, "21:00")
+  assert.equal(lines[1].lastSeatingTime, "22:00")
+  assert.equal(lines[2].hours, "Cerrado")
+  const monday = preferenceSlots("2026-11-09", now, confirmedClock, null, defaultWeek(), 0)
+  const friday = preferenceSlots("2026-11-13", now, confirmedClock, null, defaultWeek(), 0)
+  assert.equal(monday.at(-1), "21:00")
+  assert.equal(monday.includes("21:30"), false)
+  assert.equal(friday.at(-1), "22:00")
+  assert.equal(friday.includes("22:30"), false)
+  const legacyWeek = defaultWeek()
+  for (const day of Object.values(legacyWeek)) delete day.lastSeatingTime
+  const legacy = readOperationRules({ ...document, week: legacyWeek })
+  assert.equal(legacy?.week.thu.lastSeatingTime, "21:00")
+  assert.equal(legacy?.week.sat.lastSeatingTime, "22:00")
   assert.equal(document.dailyLimit.mode, "unset")
   assert.equal(document.tables.length, 0)
   const salonInformed = informedGroups.salon.of4 + informedGroups.salon.of3 + informedGroups.salon.of2

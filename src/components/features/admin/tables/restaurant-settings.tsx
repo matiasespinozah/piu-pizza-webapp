@@ -56,6 +56,7 @@ function RestaurantSettings({
         onSave={() => save("hours")}
         wide
       >
+        <p className="text-sm text-olive-muted">La última reserva es el último horario que el cliente puede pedir en línea. El local puede seguir abierto después.</p>
         <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-x-6">
           {dayLabels.map((day) => {
             const row = draft.week[day.id]
@@ -68,7 +69,7 @@ function RestaurantSettings({
                     Abierto
                   </label>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Field>
                     <FieldLabel htmlFor={`${day.id}-open`}>Apertura</FieldLabel>
                     <Input id={`${day.id}-open`} type="time" className="admin-control" value={row.opensAt} onChange={(event) => setWeek(setDraft, draft.week, day.id, { opensAt: event.target.value })} />
@@ -76,6 +77,16 @@ function RestaurantSettings({
                   <Field>
                     <FieldLabel htmlFor={`${day.id}-close`}>Cierre</FieldLabel>
                     <Input id={`${day.id}-close`} type="time" className="admin-control" value={row.closesAt} onChange={(event) => setWeek(setDraft, draft.week, day.id, { closesAt: event.target.value })} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor={`${day.id}-last`}>Última reserva</FieldLabel>
+                    <Input
+                      id={`${day.id}-last`}
+                      type="time"
+                      className="admin-control"
+                      value={row.lastSeatingTime ?? ""}
+                      onChange={(event) => setWeek(setDraft, draft.week, day.id, { lastSeatingTime: event.target.value || null })}
+                    />
                   </Field>
                 </div>
               </li>
@@ -216,7 +227,9 @@ function weekSummary(week: OperationRules["week"]) {
   const first = week[openDays[0].id]
   const same = openDays.every((day) => week[day.id].opensAt === first.opensAt && week[day.id].closesAt === first.closesAt)
   const names = openDays.map((day) => day.label.slice(0, 3)).join(", ")
-  return same ? `${names} · ${first.opensAt}–${first.closesAt}` : `${openDays.length} días con horario propio`
+  if (!same) return `${openDays.length} días con horario propio`
+  const last = first.lastSeatingTime ? ` · última reserva ${first.lastSeatingTime}` : ""
+  return `${names} · ${first.opensAt}–${first.closesAt}${last}`
 }
 
 function SectorFields({
