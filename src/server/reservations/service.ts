@@ -7,12 +7,13 @@ import type { StaffSession } from "@/lib/auth/roles"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
 import { collections, settingsDocId } from "@/lib/firebase/model"
 import { planAssignment, readCapacity, type HoldBooking } from "@/lib/reservations/capacity"
-import { admitStored, limitsStored, quotaReason, readDayOverride } from "@/lib/reservations/day-policy"
+import { admitStored, limitsStored, quotaReason, readDayOverride, visitException } from "@/lib/reservations/day-policy"
 import { ReservationError } from "@/lib/reservations/errors"
 import type { PublicReservationInput } from "@/lib/reservations/public-request"
 import { claimPublicReference } from "@/lib/reservations/reference"
 import { optionalReservationEmail, planReservationCreate, storedReservationEmail } from "@/lib/reservations/email"
-import { isPastDate, todayIsoInSantiago, toMinutes } from "@/lib/reservations/schedule"
+import { readOperationRules } from "@/lib/reservations/operations"
+import { isPastDate, preferenceSlots, todayIsoInSantiago, toMinutes } from "@/lib/reservations/schedule"
 import { eligibleServiceTables, readServiceTables } from "@/lib/reservations/service-tables"
 import { pastWindow, staffView } from "@/lib/reservations/staff-views"
 import { canTransition, nextStatus, type StaffAction } from "@/lib/reservations/transitions"
@@ -29,6 +30,7 @@ import type {
 import { reservationWritesEnabled } from "@/lib/reservations/writes"
 import { assertStaff } from "@/server/auth/authorization"
 import { getDb } from "@/server/firebase/firestore"
+import { getDayOverride, getOperationRules } from "@/server/operations/service"
 import { readTrackingState, recoverTrackingToken } from "@/server/reservations/tracking"
 import { recordReservationSaved } from "@/server/metrics/visits"
 import { enqueueReservationMail } from "@/server/reservations/mail"
@@ -223,6 +225,12 @@ async function createPublicReservation(input: PublicReservationInput, ip: string
     const daySnap = await tx.get(dayRef)
     const admission = admitStored(settingsSnap.data(), daySnap.exists ? daySnap.data() : null, input.date)
     if (!admission.ok) throw new ReservationError(422, admission.code, admission.message)
+    const storedRules = readOperationRules(settingsSnap.data())
+    const storedDay = readDayOverride(daySnap.exists ? daySnap.data() : null, input.date)
+    const bookable = preferenceSlots(input.date, now, storedRules?.clock, visitException(storedDay), storedRules?.week, 0)
+    if (!bookable.includes(input.preferredTime)) {
+      throw new ReservationError(422, "invalid", "Ese horario no corresponde al día elegido.")
+    }
 
     const rate = await tx.get(rateRef)
     const used = Number(rate.data()?.count ?? 0)
@@ -556,6 +564,8 @@ async function transitionReservation(session: StaffSession | null, input: Transi
         throw new ReservationError(422, "invalid", "Indica la fecha, la hora y la zona propuestas.")
       }
       if (!(input.action === "reschedule" && input.exceptionConfirmed === true)) {
+      const timeRules = readOperationRules((await tx.get(settingsRef)).data())
+      const timeDay = readDayOverride((await tx.get(db.collection(collections.reservationDays).doc(input.proposedDate))).data(), input.proposedDate)
       const errors = validateTime(
         {
           date: input.proposedDate,
@@ -569,7 +579,7 @@ async function transitionReservation(session: StaffSession | null, input: Transi
           notes: "",
         },
         now,
-        { skipPartyLimit: true, skipAnticipation: true },
+        { skipPartyLimit: true, skipAnticipation: true, clock: timeRules?.clock, week: timeRules?.week, day: timeDay ?? undefined },
       )
       if (Object.keys(errors).length > 0) {
         throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Ese horario no está disponible.")
@@ -866,6 +876,8 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
   const email = emailResult.email
   const exceptionReason = (input.exceptionReason ?? "").trim()
   if (!input.exceptionConfirmed) {
+    const operation = await getOperationRules()
+    const day = await getDayOverride(input.date)
     const errors = validateTime(
       {
         date: input.date,
@@ -879,7 +891,7 @@ async function createStaffReservation(session: StaffSession | null, input: Staff
         notes,
       },
       now,
-      { skipPartyLimit: true, skipAnticipation: true },
+      { skipPartyLimit: true, skipAnticipation: true, clock: operation.clock, week: operation.week, day },
     )
     if (Object.keys(errors).length > 0) {
       throw new ReservationError(422, "invalid", Object.values(errors)[0] ?? "Esa reserva no entra en el horario público.")
