@@ -1,8 +1,12 @@
 "use client"
 
+import * as React from "react"
+
 import { ProductImage } from "@/components/features/menu/product-image"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { formatCLP } from "@/components/ui/price"
+import { productViewEvent } from "@/lib/analytics/events"
+import { trackEvent } from "@/lib/analytics/track"
 import type { Product } from "@/lib/catalog/types"
 
 type ProductDetailDialogProps = {
@@ -12,6 +16,11 @@ type ProductDetailDialogProps = {
 
 /** Ficha ampliada de un producto: imagen grande, nombre, precio y descripción completa. */
 function ProductDetailDialog({ product, onClose }: ProductDetailDialogProps) {
+  // Qué platos despiertan interés: una vista por cada vez que se abre la ficha.
+  React.useEffect(() => {
+    if (product) trackEvent(productViewEvent(product))
+  }, [product])
+
   return (
     <Dialog open={product !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent

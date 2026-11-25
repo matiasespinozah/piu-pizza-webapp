@@ -279,23 +279,38 @@ test("al cambiar de foto se conservan los archivos en uso, que ahora son tres", 
   assert.deepEqual(photosToDelete(names, "../x", keep), [])
 })
 
-test("una foto genera una miniatura de 360 px y una de 900 px mucho más livianas", async () => {
-  // Ruido desenfocado: textura parecida a una foto, sin ser incompresible.
-  const source = await sharp({ create: { width: 3000, height: 2000, channels: 3, noise: { type: "gaussian", mean: 128, sigma: 30 } } })
-    .blur(6)
-    .jpeg({ quality: 80 })
-    .toBuffer()
-  const main = await prepareProductImage(source)
-  const variants = await prepareProductVariants(main.bytes)
-  const thumb = await sharp(variants.thumb).metadata()
-  const medium = await sharp(variants.medium).metadata()
-  assert.equal(thumb.format, "webp")
-  assert.equal(thumb.width, 360)
-  assert.equal(medium.width, 900)
-  assert.ok(variants.thumb.byteLength < variants.medium.byteLength)
-  assert.ok(variants.medium.byteLength < main.bytes.byteLength)
+test("las versiones chicas miden por el lado corto: sirven a fotos verticales y horizontales", async () => {
+  const photo = (width, height) =>
+    sharp({ create: { width, height, channels: 3, noise: { type: "gaussian", mean: 128, sigma: 30 } } })
+      .blur(6)
+      .jpeg({ quality: 80 })
+      .toBuffer()
+  const sizes = async (bytes) => {
+    const meta = await sharp(bytes).metadata()
+    return [meta.width, meta.height]
+  }
+
+  // Horizontal (3:2): el lado corto es el alto. La fila de la carta recorta a cuadrado y necesita 360 px de alto.
+  const landscape = await prepareProductImage(await photo(3000, 2000))
+  const wide = await prepareProductVariants(landscape.bytes)
+  assert.equal((await sizes(wide.thumb))[1], 360)
+  assert.equal((await sizes(wide.medium))[1], 900)
+  assert.equal((await sizes(wide.thumb))[0] >= 360, true)
+
+  // Vertical (3:4), como las fotos de la carta: el lado corto es el ancho.
+  const portrait = await prepareProductImage(await photo(2400, 3200))
+  const tall = await prepareProductVariants(portrait.bytes)
+  assert.deepEqual(await sizes(tall.thumb), [360, 480])
+  assert.deepEqual(await sizes(tall.medium), [900, 1200])
+  assert.equal((await sharp(tall.thumb).metadata()).format, "webp")
+
+  // Orden de tamaños: miniatura < mediana < principal.
+  assert.ok(tall.thumb.byteLength < tall.medium.byteLength)
+  assert.ok(tall.medium.byteLength < portrait.bytes.byteLength)
+
   // Una foto que ya es chica no se agranda.
-  const tiny = await sharp({ create: { width: 300, height: 200, channels: 3, background: "#c33" } }).png().toBuffer()
-  const tinyVariants = await prepareProductVariants(await prepareProductImage(tiny).then((item) => item.bytes))
-  assert.equal((await sharp(tinyVariants.medium).metadata()).width, 300)
+  const tiny = await prepareProductImage(await photo(300, 200))
+  const small = await prepareProductVariants(tiny.bytes)
+  assert.deepEqual(await sizes(small.medium), [300, 200])
+  assert.deepEqual(await sizes(small.thumb), [300, 200])
 })
