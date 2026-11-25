@@ -289,3 +289,81 @@ test("la carta lee más de una página de productos", async () => {
   for (const id of ids) cleanup.delete(db.collection(collections.products).doc(id))
   await cleanup.commit()
 })
+
+test("las versiones chicas de la foto sobreviven a editar y a reimportar, y se reemplazan con la foto", async () => {
+  await wipe()
+  await importFudoCatalog()
+  const db = getDb()
+  const id = "piu-01-001-jugo-natural-fram"
+  const url = (name) => `https://firebasestorage.googleapis.com/v0/b/demo/o/${encodeURIComponent(`products/${id}/${name}`)}?alt=media&token=1`
+  const photo = url("a.webp")
+  const variants = { thumb: url("a-360.webp"), medium: url("a-900.webp") }
+  const published = async () => (await db.collection(collections.catalog).doc(publicCatalogDocId).get()).data()?.products?.find((item) => item.id === id)
+  const stored = async () => (await db.collection(collections.products).doc(id).get()).data()
+
+  // 1) Foto con versiones: quedan en el producto y en la carta pública.
+  await publishProductImage(admin, id, photo, variants)
+  assert.deepEqual((await stored()).imageVariants, variants)
+  assert.deepEqual((await published()).imageVariants, variants)
+
+  // 2) Editar nombre o precio no las borra.
+  const before = await stored()
+  await saveProduct(admin, {
+    id,
+    categoryId: before.categoryId,
+    name: before.name,
+    description: before.description,
+    priceClp: 4100,
+    availability: before.availability,
+    isVisible: true,
+    isFeatured: before.isFeatured,
+    sortOrder: Math.min(before.sortOrder, 999),
+  })
+  assert.equal((await stored()).priceClp, 4100)
+  assert.equal((await stored()).imageUrl, photo)
+  assert.deepEqual((await stored()).imageVariants, variants)
+  assert.deepEqual((await published()).imageVariants, variants)
+
+  // 3) Reimportar el archivo de Fudo conserva la foto y sus versiones.
+  await importFudoCatalog()
+  assert.equal((await stored()).imageUrl, photo)
+  assert.deepEqual((await stored()).imageVariants, variants)
+  assert.deepEqual((await published()).imageVariants, variants)
+
+  // 4) Una foto nueva sin versiones borra las anteriores: ya no corresponden.
+  const next = url("b.webp")
+  await publishProductImage(admin, id, next)
+  assert.equal((await stored()).imageUrl, next)
+  assert.equal((await stored()).imageVariants, null)
+  assert.equal("imageVariants" in (await published()), false)
+
+  // 5) Las versiones tienen que ser fotos de Storage: si no, no se publica nada.
+  await assert.rejects(() => publishProductImage(admin, id, next, { thumb: "https://ejemplo.cl/x.webp", medium: url("b-900.webp") }))
+  assert.equal((await stored()).imageVariants, null)
+
+  // 6) Un producto anterior a este cambio, sin el campo, se sigue publicando.
+  const legacy = "piu-01-002-legacy"
+  await db.collection(collections.products).doc(legacy).set({
+    categoryId: before.categoryId,
+    name: "Producto anterior",
+    description: "",
+    priceClp: 1000,
+    imageUrl: null,
+    availability: "available",
+    isFeatured: false,
+    isVisible: true,
+    sortOrder: 50,
+  })
+  await saveProduct(admin, {
+    id: legacy,
+    categoryId: before.categoryId,
+    name: "Producto anterior",
+    description: "",
+    priceClp: 1200,
+    availability: "available",
+    isVisible: true,
+    isFeatured: false,
+    sortOrder: 50,
+  })
+  assert.equal((await db.collection(collections.products).doc(legacy).get()).data()?.priceClp, 1200)
+})

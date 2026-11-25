@@ -16,6 +16,7 @@ function ProductCard({ product }: { product: Product }) {
         <ProductImage
           compact
           src={product.imageUrl}
+          variants={product.imageVariants}
           name={product.name}
           sizes="96px"
           className={soldOut ? "size-14 opacity-60 sm:size-24" : "size-14 sm:size-24"}

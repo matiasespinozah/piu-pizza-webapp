@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
+import Image, { getImageProps } from "next/image"
 import { cn } from "cn"
 
+import type { ImageVariants } from "@/lib/catalog/photos"
 import {
   PRODUCT_PLACEHOLDER_SRC,
   isProductPlaceholderSrc,
@@ -21,6 +22,8 @@ const ratioClass = {
 
 type ProductImageProps = {
   src?: string | null
+  /** La misma foto en 360 y 900 px. Con ellas el navegador no baja la original en una miniatura. */
+  variants?: ImageVariants | null
   name: string
   sizes?: string
   ratio?: keyof typeof ratioClass
@@ -31,12 +34,45 @@ type ProductImageProps = {
   compact?: boolean
 }
 
+/**
+ * En producción `next/image` no optimiza (ver `.agents/rules/images-media.md`): entrega un solo archivo.
+ * Aquí el navegador elige entre 360 px, 900 px y la foto principal según el ancho que ocupa y la densidad.
+ */
+function VariantPhoto({
+  src,
+  variants,
+  alt,
+  sizes,
+  priority,
+  onError,
+}: {
+  src: string
+  variants: ImageVariants
+  alt: string
+  sizes: string
+  priority: boolean
+  onError: () => void
+}) {
+  const { props } = getImageProps({
+    src,
+    alt,
+    fill: true,
+    sizes,
+    priority,
+    className: "object-cover object-center",
+  })
+  const srcSet = `${variants.thumb} 360w, ${variants.medium} 900w, ${src} 1600w`
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img {...props} alt={alt} srcSet={srcSet} sizes={sizes} onError={onError} />
+}
+
 function ProductImage(props: ProductImageProps) {
   return <ProductImageFrame key={String(props.src ?? "")} {...props} />
 }
 
 function ProductImageFrame({
   src,
+  variants,
   name,
   sizes = "(max-width: 640px) 100vw, 33vw",
   ratio = "1/1",
@@ -47,12 +83,14 @@ function ProductImageFrame({
 }: ProductImageProps) {
   const resolved = resolveProductImageSrc(src)
   const [failedSrc, setFailedSrc] = React.useState<string | null>(null)
+  const [variantsFailed, setVariantsFailed] = React.useState(false)
 
   const primaryFailed = failedSrc === resolved
   const placeholderFailed = failedSrc === PRODUCT_PLACEHOLDER_SRC
   const showPlaceholder = !isUsableProductImageSrc(src) || primaryFailed || isProductPlaceholderSrc(resolved)
   const showEmpty = placeholderFailed
   const displaySrc = showPlaceholder ? PRODUCT_PLACEHOLDER_SRC : resolved
+  const useVariants = !showPlaceholder && !variantsFailed && variants != null
   const alt = showPlaceholder ? `Ilustración de PIÙ para ${name}` : `Fotografía de ${name}`
 
   return (
@@ -62,16 +100,28 @@ function ProductImageFrame({
       ) : (
         <div className={cn("absolute inset-0", showPlaceholder && (compact ? "p-1.5" : "p-5 sm:p-6"))}>
           <div className="relative size-full">
-            <Image
-              src={displaySrc}
-              alt={alt}
-              fill
-              sizes={sizes}
-              priority={priority}
-              quality={quality}
-              className={showPlaceholder ? "object-contain object-center mix-blend-multiply" : "object-cover object-center"}
-              onError={() => setFailedSrc(displaySrc)}
-            />
+            {useVariants ? (
+              <VariantPhoto
+                src={displaySrc}
+                variants={variants}
+                alt={alt}
+                sizes={sizes}
+                priority={priority}
+                // Si una versión chica no carga, se vuelve a la foto principal antes de rendirse.
+                onError={() => setVariantsFailed(true)}
+              />
+            ) : (
+              <Image
+                src={displaySrc}
+                alt={alt}
+                fill
+                sizes={sizes}
+                priority={priority}
+                quality={quality}
+                className={showPlaceholder ? "object-contain object-center mix-blend-multiply" : "object-cover object-center"}
+                onError={() => setFailedSrc(displaySrc)}
+              />
+            )}
           </div>
         </div>
       )}

@@ -23,6 +23,7 @@ function ProductDetailDialog({ product, onClose }: ProductDetailDialogProps) {
             <div className="relative">
               <ProductImage
                 src={product.imageUrl}
+                variants={product.imageVariants}
                 name={product.name}
                 ratio="1/1"
                 sizes="(max-width: 640px) 100vw, 512px"

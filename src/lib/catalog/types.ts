@@ -4,6 +4,8 @@
  * y en el futuro pueden venir de Firestore sin cambiar los componentes.
  */
 
+import type { ImageVariants } from "@/lib/catalog/photos"
+
 type Category = {
   id: string
   slug: string
@@ -24,6 +26,8 @@ type Product = {
   priceClp: number
   /** Ruta local o URL de la fotografía. Si falta, `ProductImage` usa la ilustración PIÙ. */
   imageUrl?: string | null
+  /** La misma foto en 360 y 900 px. Si falta, se usa solo `imageUrl`. */
+  imageVariants?: ImageVariants | null
   availability: ProductAvailability
   isFeatured: boolean
   sortOrder: number

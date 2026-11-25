@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Esta invitación no está disponible." }, { status: 400, headers: noStore })
   }
 
-  const address = clientAddress(request.headers.get("x-forwarded-for"))
+  const address = clientAddress(request.headers.get("x-forwarded-for"), request.headers.get("cf-connecting-ip"))
   try {
     if (parsed.data.intent === "preview") {
       const preview = await previewStaffInvitation(parsed.data.token, address)

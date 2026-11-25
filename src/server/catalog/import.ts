@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
 import { catalogImportAllowed, planCatalogImport } from "@/lib/catalog/import-plan"
+import { readImageVariants } from "@/lib/catalog/photos"
 import { collections } from "@/lib/firebase/model"
 import { republishPublicCatalog } from "@/server/catalog/publish"
 import { getDb } from "@/server/firebase/firestore"
@@ -61,6 +62,8 @@ async function importFudoCatalog(env: Record<string, string | undefined> = proce
       description: textField(current?.description, product.description, overwrite),
       priceClp: typeof current?.priceClp === "number" && !overwrite ? current.priceClp : product.priceClp,
       imageUrl: typeof current?.imageUrl === "string" && current.imageUrl ? current.imageUrl : null,
+      // Las versiones chicas siguen a la foto: si la foto se conserva, ellas también.
+      imageVariants: typeof current?.imageUrl === "string" && current.imageUrl ? readImageVariants(current.imageVariants) : null,
       availability: product.availability,
       isFeatured: typeof current?.isFeatured === "boolean" ? current.isFeatured : product.isFeatured,
       isVisible: typeof current?.isVisible === "boolean" ? current.isVisible : product.isVisible,

@@ -13,7 +13,10 @@ import "../home.css"
 export const metadata: Metadata = {
   title: "Carta",
   description: "Explora la carta de PIÙ Pizza & Dolce: sabores para compartir, momentos para recordar.",
+  alternates: { canonical: "/carta" },
   openGraph: {
+    url: "/carta",
+    images: [{ url: "/opengraph-image.jpg", width: 1200, height: 630, alt: "El local de PIÙ Pizza & Dolce" }],
     title: "Carta · PIÙ",
     description: "Explora la carta de PIÙ Pizza & Dolce.",
     locale: "es_CL",
