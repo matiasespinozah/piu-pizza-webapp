@@ -45,7 +45,7 @@ async function prepareProductImage(input: Buffer) {
   return { bytes: output, hash }
 }
 
-/** Anchos de las versiones chicas. `thumb` cubre una miniatura de 96 px en pantalla 3×. */
+/** Lado corto de las versiones chicas. `thumb` cubre una miniatura de 96 px en pantalla 3×. */
 const variantWidths = { thumb: 360, medium: 900 } as const
 
 /**
@@ -53,9 +53,11 @@ const variantWidths = { thumb: 360, medium: 900 } as const
  * de imágenes, así que sin esto una miniatura de 96 px descarga la foto de hasta 400 KB.
  */
 async function prepareProductVariants(prepared: Buffer) {
-  const make = (width: number, quality: number) =>
+  // `fit: "outside"` mide por el lado corto: la fila de la carta recorta la foto a cuadrado y la tarjeta
+  // del chef a 4:3, así que una foto horizontal necesita ese lado corto completo y no solo el ancho.
+  const make = (side: number, quality: number) =>
     sharp(prepared, { failOn: "error", limitInputPixels: maxInputPixels })
-      .resize({ width, withoutEnlargement: true })
+      .resize({ width: side, height: side, fit: "outside", withoutEnlargement: true })
       .webp({ quality, effort: 5 })
       .toBuffer()
   const [thumb, medium] = await Promise.all([make(variantWidths.thumb, 76), make(variantWidths.medium, 78)])

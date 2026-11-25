@@ -11,6 +11,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Agregado
 
+- Google Analytics 4 (la propiedad de Firebase Analytics, ID `G-2XJXG2E0WJ`), cargado con `gtag.js` al terminar de cargar la página y solo en producción. Mide páginas vistas en tiempo real (también al navegar sin recargar), fichas de producto abiertas, categorías, búsquedas en la carta, cada paso del formulario de reservas, solicitudes enviadas (día, hora, personas, zona y anticipación, sin datos del cliente), errores de reserva por código, clics a WhatsApp, mapa, redes y «Mi reserva», y para mantención las métricas de rendimiento reales (LCP, CLS, INP, FCP, TTFB) y los errores de JavaScript del navegador. No se mide `/admin`, `/api` ni `/reservas/estado` (su dirección lleva un código secreto): ahí se activa el interruptor `ga-disable` de Google, que apaga incluso lo automático. Nunca se envía la URL de un enlace de WhatsApp. El consentimiento es medición básica sin publicidad; edad y género quedan apagados (`googleSignals`). Hay pasos que se hacen una sola vez en la consola de Google Analytics, listados en `docs/arquitectura/analitica.md`. Nuevos: `src/lib/analytics/`, `Analytics` en el layout, `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` en `apphosting.yaml`, y el CSP en reporte permite los dominios de Google Analytics.
 - El despliegue de `reservationMailRecover` incluye `@google-cloud/functions-framework` y declara los scripts de instalación de pnpm. Así Cloud Build puede instalar la función sin volver a publicar `reservationBackup`.
 - Los correos de reserva quedan preparados y apagados. Al guardar una solicitud pública se encola «Recibimos tu solicitud» y, al confirmarla, «Tu reserva está confirmada». No se envían mientras `PIU_RESERVATION_EMAILS` no sea `on`. Si el envío falla, la reserva sigue guardada. `reservationMailRecover` revisa cada 5 minutos la cola posterior a `PIU_RESERVATION_EMAILS_SINCE`, sin tocar el respaldo de Excel.
 - En el dashboard, solo el propietario ve «Medicion de pruebas» de hoy: visitas y tiempo en el inicio, la carta y `/reservas`, más quién llegó a Tus datos y quién dejó la solicitud guardada. Cada visita escribe una sola vez, al salir, en `metricsDays`. Reservar suma una escritura más solo si la solicitud es nueva. No hay cookie. Si el conteo falla, la página igual funciona.
@@ -71,6 +72,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- Las versiones chicas de las fotos de la carta (`prepareProductVariants`) miden por el **lado corto** (360 y 900 px) en vez de por el ancho. Con una foto horizontal, la miniatura de 360 px de ancho quedaba de ~200 px de alto y, recortada a cuadrado en la fila de la carta, se veía estirada en pantallas 3×. Con las fotos verticales de la carta actual no cambia nada: 360×480 y 900×1200. Se comprobó con las fotos reales de producción que la miniatura y la versión de 900 px no se distinguen de la original al tamaño en que se muestran.
 - En `/admin/reservas`, una reserva anotada por el personal ya no exige las 2 horas de anticipación. Esa regla sigue solo en `/reservas`. El horario de apertura y los cupos no cambian.
 - Confirmar una reserva ya no pide un motivo porque el grupo sea más grande que una mesa. Cada reserva ocupa un cupo del sector, sea de 2 o de más personas. En `/reservas` el texto habla de la reserva y de las personas.
 - Arrastrar una categoría en Configuración vuelve a pasar el chequeo del repositorio.
@@ -146,6 +148,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Seguridad
 
+- El CSP en modo reporte permite el beacon de Cloudflare Web Analytics (`static.cloudflareinsights.com` en `script-src` y `cloudflareinsights.com` en `connect-src`). Lo detectó la revisión en producción como un aviso de CSP; no bloqueaba nada, pero con la política en bloqueo habría roto esa analítica.
 - Cada pedido del panel vuelve a leer la cuenta en Authentication. Una cookie del mismo segundo no conserva un rol ya reducido, ni el acceso de una cuenta suspendida o revocada. Aprobar exige correo verificado y, si el rol es propietario, confirmación. Una ficha pendiente con un claim distinto se puede aprobar o rechazar sin duplicar el permiso. El último propietario no se puede quedar sin acceso, y el que todavía no tiene ficha `staff` sigue entrando.
 - Una invitación no cambia la contraseña de un correo que ya existe. Esa persona entra con su clave actual y el servidor vincula la ficha solo si el token corresponde a ese correo.
 - `invitations` e `invitationRate` quedan negadas al navegador, igual que `staff`. Crear la cuenta no escribe el claim `role`. Aprobar a alguien sigue siendo un paso aparte.
