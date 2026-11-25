@@ -56,6 +56,22 @@ test("el tope usa la dirección que agrega la plataforma, no la primera del clie
   assert.equal(clientAddress(" 1.1.1.1 , 203.0.113.10 "), "203.0.113.10")
 })
 
+test("detrás de Cloudflare el tope usa la IP del visitante, y solo si la conexión viene de Cloudflare", () => {
+  // Conexión desde el borde de Cloudflare: se confía en CF-Connecting-IP.
+  assert.equal(clientAddress("198.51.100.7, 172.69.10.1", "198.51.100.7"), "198.51.100.7")
+  assert.equal(clientAddress("x, 104.16.0.5", "2001:db8::1"), "2001:db8::1")
+  assert.equal(clientAddress("x, 2606:4700::1234", "198.51.100.7"), "198.51.100.7")
+  // Conexión directa al origen: el encabezado se puede falsificar y se ignora.
+  assert.equal(clientAddress("198.51.100.7, 203.0.113.10", "9.9.9.9"), "203.0.113.10")
+  // Valor inválido o ausente: se vuelve a la última IP de la plataforma.
+  assert.equal(clientAddress("x, 172.69.10.1", "no-es-ip"), "172.69.10.1")
+  assert.equal(clientAddress("x, 172.69.10.1", "198.51.100.7, 8.8.8.8"), "172.69.10.1")
+  assert.equal(clientAddress("x, 172.69.10.1", null), "172.69.10.1")
+  assert.equal(clientAddress("x, 172.69.10.1", ""), "172.69.10.1")
+  // Una IP cercana pero fuera de los rangos no cuenta como Cloudflare.
+  assert.equal(clientAddress("x, 104.32.0.1", "9.9.9.9"), "104.32.0.1")
+})
+
 test("las escrituras de reservas nacen apagadas y no apuntan al proyecto real desde el emulador", () => {
   assert.equal(reservationWritesEnabled({}), false)
   assert.equal(reservationWritesEnabled({ PIU_RESERVATIONS_WRITES: "on" }), false)

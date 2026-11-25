@@ -68,7 +68,7 @@ function SiteHeader({ page = "home" }: SiteHeaderProps) {
           href="/#inicio"
           className="inline-flex shrink-0 rounded-xl outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-olive md:focus-visible:outline-cream"
         >
-          <Logo size={56} alt="" className="size-[3.25rem] md:size-11" />
+          <Logo size={56} alt="" priority className="size-[3.25rem] md:size-11" />
           <span className="sr-only">PIÙ, ir al inicio</span>
         </Link>
 

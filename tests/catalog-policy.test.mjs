@@ -6,15 +6,17 @@ import { catalogImportAllowed, planCatalogImport } from "@/lib/catalog/import-pl
 import { catalogCacheLife } from "@/lib/catalog/public-cache"
 import { dropIndex, moveCategoryId, movesForCategoryOrder } from "@/lib/catalog/category-order"
 import { newCategoryId } from "@/lib/catalog/slug"
-import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
+import { isCatalogPhotoUrl, photosToDelete, readImageVariants } from "@/lib/catalog/photos"
 import {
   assertPublicCatalogFits,
   firestoreDocumentLimit,
   projectPublicCatalog,
+  publicCatalogSchema,
   publicSuggestions,
   PublicCatalogTooLargeError,
 } from "@/lib/catalog/public-snapshot"
-import { prepareProductImage } from "@/server/catalog/images"
+import { productSchema } from "@/lib/firebase/model"
+import { prepareProductImage, prepareProductVariants } from "@/server/catalog/images"
 import sharp from "sharp"
 
 const catalog = JSON.parse(readFileSync(new URL("../data/catalog/piu-catalogo-fudo.json", import.meta.url), "utf8"))
@@ -193,4 +195,107 @@ test("arrastrar una categoría reubica el orden sin repetir números", () => {
   )
   assert.equal(movesForCategoryOrder(current, ["chef", "palitos", "bebidas"])?.length, 0)
   assert.equal(movesForCategoryOrder(current, ["chef", "otra"]), null)
+})
+
+const storageUrl = (name) =>
+  `https://firebasestorage.googleapis.com/v0/b/demo/o/${encodeURIComponent(`products/p1/${name}`)}?alt=media&token=1`
+
+test("las versiones chicas de la foto se leen solo si ambas son de Storage", () => {
+  const good = { thumb: storageUrl("h-360.webp"), medium: storageUrl("h-900.webp") }
+  assert.deepEqual(readImageVariants(good), good)
+  assert.equal(readImageVariants(undefined), null)
+  assert.equal(readImageVariants(null), null)
+  assert.equal(readImageVariants("texto"), null)
+  assert.equal(readImageVariants({ thumb: good.thumb }), null)
+  assert.equal(readImageVariants({ thumb: good.thumb, medium: "https://ejemplo.cl/x.webp" }), null)
+  assert.equal(readImageVariants({ thumb: 1, medium: 2 }), null)
+})
+
+test("un dato malo de las versiones no impide leer el producto ni la carta publicada", () => {
+  const base = {
+    categoryId: "c",
+    name: "Pizza",
+    description: "",
+    priceClp: 1000,
+    imageUrl: storageUrl("h.webp"),
+    availability: "available",
+    isFeatured: false,
+    isVisible: true,
+    sortOrder: 1,
+  }
+  // Documento anterior a las versiones: sin el campo.
+  const old = productSchema.safeParse(base)
+  assert.equal(old.success, true)
+  assert.equal(old.data.imageVariants, null)
+  // Valor corrupto: se ignora, el producto se sigue publicando con su foto principal.
+  assert.equal(productSchema.safeParse({ ...base, imageVariants: "roto" }).data.imageVariants, null)
+  assert.equal(productSchema.safeParse({ ...base, imageVariants: { thumb: "x" } }).success, true)
+  const ok = { thumb: storageUrl("h-360.webp"), medium: storageUrl("h-900.webp") }
+  assert.deepEqual(productSchema.safeParse({ ...base, imageVariants: ok }).data.imageVariants, ok)
+
+  // La carta publicada antes de este cambio no trae el campo y sigue siendo válida.
+  const snapshot = { categories: [], products: [{ id: "p1", ...Object.fromEntries(Object.entries(base).filter(([k]) => k !== "isVisible")) }] }
+  const parsedOld = publicCatalogSchema.safeParse(snapshot)
+  assert.equal(parsedOld.success, true)
+  assert.equal(parsedOld.data.products[0].imageVariants, undefined)
+  snapshot.products[0].imageVariants = ok
+  assert.deepEqual(publicCatalogSchema.safeParse(snapshot).data.products[0].imageVariants, ok)
+  snapshot.products[0].imageVariants = { thumb: "https://ejemplo.cl/a.webp", medium: "b" }
+  const bad = publicCatalogSchema.safeParse(snapshot)
+  assert.equal(bad.success, true)
+  assert.equal(bad.data.products[0].imageVariants, undefined)
+})
+
+test("la carta pública lleva las versiones solo de los productos que las tienen", () => {
+  const ok = { thumb: storageUrl("h-360.webp"), medium: storageUrl("h-900.webp") }
+  const category = { id: "c", slug: "c", name: "C", description: null, sortOrder: 1, isVisible: true }
+  const product = (id, extra = {}) => ({
+    id,
+    categoryId: "c",
+    name: id,
+    description: "",
+    priceClp: 1000,
+    imageUrl: storageUrl(`${id}.webp`),
+    availability: "available",
+    isFeatured: false,
+    isVisible: true,
+    sortOrder: 1,
+    ...extra,
+  })
+  const projected = projectPublicCatalog([category], [product("a", { imageVariants: ok }), product("b"), product("c2", { imageVariants: null })])
+  const byId = Object.fromEntries(projected.products.map((item) => [item.id, item]))
+  assert.deepEqual(byId.a.imageVariants, ok)
+  assert.equal("imageVariants" in byId.b, false)
+  assert.equal("imageVariants" in byId.c2, false)
+})
+
+test("al cambiar de foto se conservan los archivos en uso, que ahora son tres", () => {
+  const names = ["products/p1/a.webp", "products/p1/a-900.webp", "products/p1/a-360.webp", "products/p1/old.webp", "products/p1/old-900.webp", "products/p2/z.webp"]
+  const keep = ["products/p1/a.webp", "products/p1/a-900.webp", "products/p1/a-360.webp"]
+  assert.deepEqual(photosToDelete(names, "p1", keep), ["products/p1/old.webp", "products/p1/old-900.webp"])
+  assert.equal(photosToDelete(names, "p1", "products/p1/a.webp").length, 4)
+  // Si algo a conservar no es de ese producto, no se borra nada.
+  assert.deepEqual(photosToDelete(names, "p1", ["products/p1/a.webp", "products/p2/z.webp"]), [])
+  assert.deepEqual(photosToDelete(names, "../x", keep), [])
+})
+
+test("una foto genera una miniatura de 360 px y una de 900 px mucho más livianas", async () => {
+  // Ruido desenfocado: textura parecida a una foto, sin ser incompresible.
+  const source = await sharp({ create: { width: 3000, height: 2000, channels: 3, noise: { type: "gaussian", mean: 128, sigma: 30 } } })
+    .blur(6)
+    .jpeg({ quality: 80 })
+    .toBuffer()
+  const main = await prepareProductImage(source)
+  const variants = await prepareProductVariants(main.bytes)
+  const thumb = await sharp(variants.thumb).metadata()
+  const medium = await sharp(variants.medium).metadata()
+  assert.equal(thumb.format, "webp")
+  assert.equal(thumb.width, 360)
+  assert.equal(medium.width, 900)
+  assert.ok(variants.thumb.byteLength < variants.medium.byteLength)
+  assert.ok(variants.medium.byteLength < main.bytes.byteLength)
+  // Una foto que ya es chica no se agranda.
+  const tiny = await sharp({ create: { width: 300, height: 200, channels: 3, background: "#c33" } }).png().toBuffer()
+  const tinyVariants = await prepareProductVariants(await prepareProductImage(tiny).then((item) => item.bytes))
+  assert.equal((await sharp(tinyVariants.medium).metadata()).width, 300)
 })

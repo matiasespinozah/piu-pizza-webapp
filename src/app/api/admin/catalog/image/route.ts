@@ -4,9 +4,17 @@ import { NextResponse } from "next/server"
 import { requestIsTrusted } from "@/lib/auth/session-policy"
 import { StaffAccessError } from "@/server/auth/authorization"
 import { readStaffGate } from "@/server/auth/session"
+import { maxUploadBytes } from "@/server/catalog/images"
 import { CatalogError, replaceProductPhoto } from "@/server/catalog/service"
 
 const noStore = { "Cache-Control": "private, no-store" }
+
+/** El cuerpo trae la foto más el id del producto y los bordes del formulario. */
+const maxBodyBytes = maxUploadBytes + 64 * 1024
+
+function tooLarge() {
+  return NextResponse.json({ ok: false, message: "La foto tiene que pesar menos de 8 MB." }, { status: 413, headers: noStore })
+}
 
 export async function POST(request: Request) {
   const trusted = requestIsTrusted({
@@ -20,12 +28,19 @@ export async function POST(request: Request) {
   const gate = await readStaffGate()
   if (gate.status !== 200) return NextResponse.json({ ok: false }, { status: gate.status, headers: noStore })
 
+  // Se corta antes de leer el cuerpo: así una subida enorme no llena la memoria de la instancia.
+  // Si el encabezado no llega, queda el tope por archivo de más abajo.
+  const declared = Number(request.headers.get("content-length"))
+  if (Number.isFinite(declared) && declared > maxBodyBytes) return tooLarge()
+
   const form = await request.formData().catch(() => null)
   const id = form?.get("productId")
   const file = form?.get("file")
   if (typeof id !== "string" || !(file instanceof File)) {
     return NextResponse.json({ ok: false, message: "Falta el producto o la foto." }, { status: 400, headers: noStore })
   }
+
+  if (file.size > maxUploadBytes) return tooLarge()
 
   try {
     const saved = await replaceProductPhoto(gate.session, id, Buffer.from(await file.arrayBuffer()))

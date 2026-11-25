@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
     const day = /^\d{4}-\d{2}-\d{2}$/.test(date) ? await getDayOverride(date) : null
     const input = readPublicBody(raw, new Date(), { ...publicRules(rules), day })
-    const forwarded = clientAddress(request.headers.get("x-forwarded-for"))
+    const forwarded = clientAddress(request.headers.get("x-forwarded-for"), request.headers.get("cf-connecting-ip"))
     const result = await createPublicReservation(input, forwarded)
     return NextResponse.json(
       { ok: true, duplicate: result.duplicate, request: result.receipt, trackingToken: result.trackingToken },

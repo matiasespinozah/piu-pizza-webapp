@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { readImageVariants } from "@/lib/catalog/photos"
+
 import type { ReservationStatus, ReservationZone } from "@/lib/reservations/types"
 
 /**
@@ -80,6 +82,9 @@ const productSchema = z.object({
   /** Pesos chilenos, entero. Nunca un decimal. */
   priceClp: z.number().int().nonnegative(),
   imageUrl: z.string().trim().min(1).nullable(),
+  /** Fotos de 360 y 900 px de la misma imagen. Opcional y tolerante: un valor malo se lee como null. */
+  // `.optional()` es imprescindible: sin él, un producto sin este campo no pasaría el esquema.
+  imageVariants: z.unknown().optional().transform(readImageVariants),
   availability: z.enum(["available", "unavailable"]),
   isFeatured: z.boolean(),
   isVisible: z.boolean(),

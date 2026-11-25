@@ -18,12 +18,32 @@ function isCatalogPhotoUrl(value: string) {
   return path.includes("/products/")
 }
 
-/** Archivos de un producto que se pueden borrar. Si la foto a conservar no está en su carpeta, no se borra ninguna. */
-function photosToDelete(names: readonly string[], productId: string, keep?: string) {
-  if (!productId || productId.includes("/") || productId.includes("..")) return []
-  const prefix = `products/${productId}/`
-  if (keep && !keep.startsWith(prefix)) return []
-  return names.filter((name) => name.startsWith(prefix) && name !== keep)
+/** Versiones más chicas de la misma foto: `thumb` (360 px, para listas) y `medium` (900 px). */
+type ImageVariants = { thumb: string; medium: string }
+
+/**
+ * Lee las variantes guardadas en un producto. Si falta alguna, o no es una foto de Storage,
+ * devuelve null y el sitio usa solo la foto principal. Nunca lanza: un dato malo no debe
+ * impedir que el producto se publique.
+ */
+function readImageVariants(value: unknown): ImageVariants | null {
+  if (typeof value !== "object" || value === null) return null
+  const { thumb, medium } = value as Record<string, unknown>
+  if (typeof thumb !== "string" || typeof medium !== "string") return null
+  return isCatalogPhotoUrl(thumb) && isCatalogPhotoUrl(medium) ? { thumb, medium } : null
 }
 
-export { isCatalogPhotoUrl, photosToDelete }
+/**
+ * Archivos de un producto que se pueden borrar. `keep` son los que siguen en uso (la foto y sus variantes).
+ * Si alguno no está en la carpeta del producto, no se borra ninguno.
+ */
+function photosToDelete(names: readonly string[], productId: string, keep?: string | readonly string[]) {
+  if (!productId || productId.includes("/") || productId.includes("..")) return []
+  const prefix = `products/${productId}/`
+  const kept = new Set(typeof keep === "string" ? [keep] : (keep ?? []))
+  if ([...kept].some((name) => !name.startsWith(prefix))) return []
+  return names.filter((name) => name.startsWith(prefix) && !kept.has(name))
+}
+
+export { isCatalogPhotoUrl, photosToDelete, readImageVariants }
+export type { ImageVariants }

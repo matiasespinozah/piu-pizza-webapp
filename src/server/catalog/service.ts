@@ -8,10 +8,10 @@ import { z } from "zod"
 
 import type { StaffSession } from "@/lib/auth/roles"
 import { duplicateCategoryMessage, newCategoryId } from "@/lib/catalog/slug"
-import { isCatalogPhotoUrl, photosToDelete } from "@/lib/catalog/photos"
+import { isCatalogPhotoUrl, photosToDelete, readImageVariants, type ImageVariants } from "@/lib/catalog/photos"
 import { categorySchema, collections, productSchema } from "@/lib/firebase/model"
 import { assertStaff } from "@/server/auth/authorization"
-import { CatalogImageError, prepareProductImage } from "@/server/catalog/images"
+import { CatalogImageError, prepareProductImage, prepareProductVariants } from "@/server/catalog/images"
 import { firebaseDataAccessEnabled } from "@/lib/firebase/access"
 import { assertFirebaseDataEnabled } from "@/server/firebase/guard"
 import { getAdminApp } from "@/server/firebase/admin"
@@ -195,7 +195,7 @@ async function saveProduct(session: StaffSession | null, input: unknown) {
   assertFirebaseDataEnabled()
   const data = parse(productInput, input)
   const id = data.id || randomUUID()
-  const fields = productSchema.omit({ imageUrl: true }).parse({
+  const fields = productSchema.omit({ imageUrl: true, imageVariants: true }).parse({
     categoryId: data.categoryId,
     name: data.name,
     description: data.description,
@@ -211,7 +211,7 @@ async function saveProduct(session: StaffSession | null, input: unknown) {
     }
     const current = state.products.find((product) => product.id === id)
     if (data.id && !current) throw new CatalogError(404, "Ese producto no está en la carta.")
-    const next = { id, ...fields, imageUrl: current?.imageUrl ?? null }
+    const next = { id, ...fields, imageUrl: current?.imageUrl ?? null, imageVariants: current?.imageVariants ?? null }
     const products = current
       ? state.products.map((product) => (product.id === id ? next : product))
       : [...state.products, next]
@@ -224,6 +224,8 @@ async function saveProduct(session: StaffSession | null, input: unknown) {
           description: next.description,
           priceClp: next.priceClp,
           imageUrl: next.imageUrl,
+          // Al editar nombre o precio se conservan las versiones chicas de la foto.
+          imageVariants: next.imageVariants,
           availability: next.availability,
           isFeatured: next.isFeatured,
           isVisible: next.isVisible,
@@ -252,21 +254,74 @@ async function deleteProduct(session: StaffSession | null, id: string) {
   await deleteStoredPhotos(id)
 }
 
-async function publishProductImage(session: StaffSession | null, id: string, imageUrl: string) {
+/**
+ * Publica la foto principal y sus versiones chicas juntas. Sin versiones (`null`) se borran las anteriores:
+ * ya no corresponden a la foto nueva.
+ */
+async function publishProductImage(
+  session: StaffSession | null,
+  id: string,
+  imageUrl: string,
+  imageVariants: ImageVariants | null = null,
+) {
   assertStaff(session, catalogRoles)
   assertFirebaseDataEnabled()
   if (!isCatalogPhotoUrl(imageUrl)) throw new CatalogError(500, "No se pudo publicar la foto.")
+  if (imageVariants && !(isCatalogPhotoUrl(imageVariants.thumb) && isCatalogPhotoUrl(imageVariants.medium))) {
+    throw new CatalogError(500, "No se pudo publicar la foto.")
+  }
   await commitCatalogMutation((state) => {
     const current = state.products.find((product) => product.id === id)
     if (!current) throw new CatalogError(404, "Ese producto no está en la carta.")
-    const next = { ...current, imageUrl }
+    const next = { ...current, imageUrl, imageVariants }
     return {
       state: { ...state, products: state.products.map((product) => (product.id === id ? next : product)) },
       apply(tx) {
-        tx.update(getDb().collection(collections.products).doc(id), { imageUrl })
+        tx.update(getDb().collection(collections.products).doc(id), { imageUrl, imageVariants })
       },
     }
   })
+}
+
+type PhotoBucket = ReturnType<ReturnType<typeof getStorage>["bucket"]>
+
+/** Sube un archivo de foto con caché larga y devuelve su URL pública con token. */
+async function storePhotoFile(bucket: PhotoBucket, bucketName: string, path: string, bytes: Buffer) {
+  const token = randomUUID()
+  await bucket.file(path).save(bytes, {
+    contentType: "image/webp",
+    metadata: {
+      cacheControl: "public, max-age=31536000, immutable",
+      metadata: { firebaseStorageDownloadTokens: token },
+    },
+  })
+  return photoUrl(bucketName, path, token)
+}
+
+function variantPaths(mainPath: string) {
+  const base = mainPath.replace(/\.webp$/, "")
+  return { medium: `${base}-900.webp`, thumb: `${base}-360.webp` }
+}
+
+/**
+ * Sube las dos versiones chicas de una foto. Si algo falla, devuelve null y borra lo que alcanzó a subir:
+ * la foto principal se publica igual y el sitio la usa sola, como antes.
+ */
+async function storePhotoVariants(bucket: PhotoBucket, bucketName: string, mainPath: string, mainBytes: Buffer) {
+  const paths = variantPaths(mainPath)
+  try {
+    const made = await prepareProductVariants(mainBytes)
+    const [thumb, medium] = await Promise.all([
+      storePhotoFile(bucket, bucketName, paths.thumb, made.thumb),
+      storePhotoFile(bucket, bucketName, paths.medium, made.medium),
+    ])
+    const variants: ImageVariants = { thumb, medium }
+    if (!isCatalogPhotoUrl(thumb) || !isCatalogPhotoUrl(medium)) throw new Error("url")
+    return { variants, paths }
+  } catch {
+    await Promise.all([bucket.file(paths.thumb).delete(), bucket.file(paths.medium).delete()].map((job) => job.catch(() => undefined)))
+    return null
+  }
 }
 
 async function replaceProductPhoto(session: StaffSession | null, id: string, file: Buffer) {
@@ -289,30 +344,69 @@ async function replaceProductPhoto(session: StaffSession | null, id: string, fil
 
   const path = `products/${id}/${prepared.hash}.webp`
   const bucket = getStorage(getAdminApp()).bucket(bucketName)
-  const token = randomUUID()
-  await bucket.file(path).save(prepared.bytes, {
-    contentType: "image/webp",
-    metadata: {
-      cacheControl: "public, max-age=31536000, immutable",
-      metadata: { firebaseStorageDownloadTokens: token },
-    },
-  })
-
-  const imageUrl = photoUrl(bucketName, path, token)
+  const imageUrl = await storePhotoFile(bucket, bucketName, path, prepared.bytes)
   const stored = bucket.file(path)
   if (!isCatalogPhotoUrl(imageUrl)) {
     await stored.delete().catch(() => undefined)
     throw new CatalogError(500, "No se pudo publicar la foto.")
   }
+  const made = await storePhotoVariants(bucket, bucketName, path, prepared.bytes)
   try {
-    await publishProductImage(session, id, imageUrl)
+    await publishProductImage(session, id, imageUrl, made?.variants ?? null)
   } catch (error) {
-    await stored.delete().catch(() => undefined)
+    await Promise.all(
+      [stored, ...(made ? [bucket.file(made.paths.thumb), bucket.file(made.paths.medium)] : [])].map((item) =>
+        item.delete().catch(() => undefined),
+      ),
+    )
     throw error
   }
   const fresh = await ref.get()
-  if (fresh.get("imageUrl") === imageUrl) await deleteStoredPhotos(id, path)
+  if (fresh.get("imageUrl") === imageUrl) await deleteStoredPhotos(id, made ? [path, made.paths.thumb, made.paths.medium] : [path])
   return { imageUrl }
+}
+
+/** Nombre del archivo en Storage a partir de la URL de descarga de una foto del catálogo. */
+function storagePathOf(photo: string) {
+  try {
+    const marker = "/o/"
+    const url = new URL(photo)
+    const at = url.pathname.indexOf(marker)
+    return at === -1 ? null : decodeURIComponent(url.pathname.slice(at + marker.length))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Agrega las versiones chicas a un producto que ya tiene foto, sin cambiar la foto principal ni su URL.
+ * Lo usa el script de migración. No toca nada si el producto no tiene foto o ya tiene versiones.
+ */
+async function addProductPhotoVariants(session: StaffSession | null, id: string) {
+  assertStaff(session, catalogRoles)
+  assertFirebaseDataEnabled()
+  const snap = await getDb().collection(collections.products).doc(id).get()
+  if (!snap.exists) return "missing" as const
+  const imageUrl = snap.get("imageUrl")
+  if (typeof imageUrl !== "string" || !isCatalogPhotoUrl(imageUrl)) return "no-photo" as const
+  if (readImageVariants(snap.get("imageVariants"))) return "already" as const
+
+  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+  if (!bucketName) throw new CatalogError(503, "Storage no está configurado en este entorno.")
+  const path = storagePathOf(imageUrl)
+  if (!path || !path.startsWith(`products/${id}/`)) return "no-photo" as const
+
+  const bucket = getStorage(getAdminApp()).bucket(bucketName)
+  const [main] = await bucket.file(path).download()
+  const made = await storePhotoVariants(bucket, bucketName, path, main)
+  if (!made) return "failed" as const
+  try {
+    await publishProductImage(session, id, imageUrl, made.variants)
+  } catch (error) {
+    await Promise.all([bucket.file(made.paths.thumb).delete(), bucket.file(made.paths.medium).delete()].map((job) => job.catch(() => undefined)))
+    throw error
+  }
+  return "done" as const
 }
 
 function photoUrl(bucketName: string, path: string, token: string) {
@@ -322,7 +416,7 @@ function photoUrl(bucketName: string, path: string, token: string) {
   return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encoded}?alt=media&token=${token}`
 }
 
-async function deleteStoredPhotos(productId: string, keep?: string) {
+async function deleteStoredPhotos(productId: string, keep?: string | readonly string[]) {
   const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
   if (!bucketName) return
   const bucket = getStorage(getAdminApp()).bucket(bucketName)
@@ -332,6 +426,7 @@ async function deleteStoredPhotos(productId: string, keep?: string) {
 }
 
 export {
+  addProductPhotoVariants,
   CatalogError,
   countCatalogProducts,
   deleteCategory,

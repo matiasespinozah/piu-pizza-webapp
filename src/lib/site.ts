@@ -1,3 +1,6 @@
+/** Dominio público. Lo usan los metadatos, el sitemap y los datos estructurados. */
+const siteUrl = "https://piupizzas.cl"
+
 const venue = {
   name: "PIÙ Pizza & Dolce",
   street: "Primera Transversal 2595",
@@ -53,7 +56,7 @@ const footerNav = [
   { href: "/#inicio", label: "Inicio" },
   { href: "/carta", label: "Carta" },
   { href: "/reservas", label: "Reservas" },
-  { href: "/#esencia", label: "Nosotros" },
+  { href: "/nosotros", label: "Nosotros" },
 ] as const
 
 export {
@@ -61,6 +64,7 @@ export {
   footerNav,
   mapsEmbedUrl,
   mapsSearchUrl,
+  siteUrl,
   socialLinks,
   venue,
   whatsappHref,
