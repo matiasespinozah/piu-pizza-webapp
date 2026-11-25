@@ -52,7 +52,7 @@ async function postReservationStatus(request: Request) {
   if (!parsed.success) return reply({ ok: false, message: "Pega el enlace completo de seguimiento." }, 400)
 
   try {
-    const status = await readPublicStatus(parsed.data.credential, clientAddress(request.headers.get("x-forwarded-for")))
+    const status = await readPublicStatus(parsed.data.credential, clientAddress(request.headers.get("x-forwarded-for"), request.headers.get("cf-connecting-ip")))
     return reply({ ok: true, status })
   } catch (error) {
     return fail(error)

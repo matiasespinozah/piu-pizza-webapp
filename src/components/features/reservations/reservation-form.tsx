@@ -199,7 +199,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
 
   if (receptionEnabled && !rulesReady) {
     return (
-      <section data-reservation-form="" data-reservation-enabled="on" aria-busy="true" className="min-h-48 rounded-3xl border border-olive-line bg-surface-raised px-5 py-8 shadow-lift">
+      <section data-reservation-form="" data-reservation-enabled="on" aria-busy="true" className="min-h-[32.5rem] rounded-3xl border border-olive-line bg-surface-raised px-5 py-8 shadow-lift">
         <p className="text-base text-olive-muted">Revisando si podemos tomar tu reserva…</p>
       </section>
     )

@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { categorySchema, productSchema } from "@/lib/firebase/model"
+import { readImageVariants, type ImageVariants } from "@/lib/catalog/photos"
 import type { Product } from "@/lib/catalog/types"
 
 /** Límite de un documento de Firestore, en bytes. */
@@ -24,6 +25,7 @@ type SourceProduct = {
   description: string
   priceClp: number
   imageUrl: string | null
+  imageVariants?: ImageVariants | null
   availability: Product["availability"]
   isFeatured: boolean
   isVisible: boolean
@@ -45,6 +47,8 @@ type PublicProduct = {
   description: string
   priceClp: number
   imageUrl: string | null
+  /** Solo si el producto las tiene. */
+  imageVariants?: ImageVariants | null
   availability: Product["availability"]
   isFeatured: boolean
   sortOrder: number
@@ -73,6 +77,8 @@ const publicCatalogSchema = z.object({
       description: z.string().trim().max(500),
       priceClp: z.number().int().nonnegative(),
       imageUrl: z.string().trim().min(1).nullable(),
+      // Un snapshot anterior no la trae; un valor malo se ignora en vez de invalidar la carta.
+      imageVariants: z.unknown().optional().transform((value) => readImageVariants(value) ?? undefined),
       availability: z.enum(["available", "unavailable"]),
       isFeatured: z.boolean(),
       sortOrder: z.number().int(),
@@ -122,6 +128,7 @@ function projectPublicCatalog(categories: readonly SourceCategory[], products: r
           description: product.description,
           priceClp: product.priceClp,
           imageUrl: product.imageUrl,
+          ...(product.imageVariants ? { imageVariants: product.imageVariants } : {}),
           availability: product.availability,
           isFeatured: product.isFeatured,
           sortOrder: product.sortOrder,

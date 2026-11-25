@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Anybody, Roboto_Mono } from "next/font/google";
+import { siteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -18,11 +19,14 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  applicationName: "PIÙ Pizza & Dolce",
   title: {
     default: "PIÙ — Pizza & Dolce",
     template: "%s · PIÙ",
   },
   description: "Pizza & Dolce.",
+  openGraph: { siteName: "PIÙ Pizza & Dolce", locale: "es_CL", type: "website" },
 };
 
 // Mobile first: ancho del dispositivo, contenido bajo el notch con safe areas, sin bloquear el zoom.

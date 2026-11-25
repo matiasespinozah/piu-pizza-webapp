@@ -12,6 +12,12 @@ import { assertStaff } from "@/server/auth/authorization"
 import { getDb } from "@/server/firebase/firestore"
 
 const reminderMinutes = 30
+/**
+ * El barrido lee hasta 60 reservas. La campana consulta cada pocos segundos desde cada panel
+ * abierto, así que el barrido corre a lo más una vez por minuto en cada instancia.
+ */
+const sweepEveryMs = 60 * 1000
+let lastSweepAt = 0
 const attentionAfterMs = 20 * 60 * 1000
 
 type NoticeType = "created" | "upcoming" | "attention" | "rescheduled" | "cancelled" | "changed" | "confirmed"
@@ -147,7 +153,10 @@ async function sweepNotices(now = new Date()) {
 
 async function listStaffNotices(session: StaffSession | null, now = new Date()): Promise<StaffNotice[]> {
   const actor = assertStaff(session, ["superadmin", "admin", "mesero"])
-  await sweepNotices(now).catch(() => undefined)
+  if (now.getTime() - lastSweepAt >= sweepEveryMs || now.getTime() < lastSweepAt) {
+    lastSweepAt = now.getTime()
+    await sweepNotices(now).catch(() => undefined)
+  }
   const snap = await getDb().collection(collections.staffNotifications).orderBy("at", "desc").limit(30).get()
   const notices = snap.docs.map((doc) => {
     const data = doc.data()

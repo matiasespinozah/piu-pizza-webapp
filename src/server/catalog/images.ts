@@ -5,6 +5,8 @@ import { createHash } from "node:crypto"
 import sharp from "sharp"
 
 const maxUploadBytes = 8 * 1024 * 1024
+/** Una foto de celular de 48 MP son 48 millones. Más que eso es una imagen que se descomprime a cientos de MB. */
+const maxInputPixels = 64_000_000
 const maxOutputBytes = 400 * 1024
 const edges = [1600, 1400, 1200]
 const qualities = [80, 76, 72]
@@ -43,12 +45,29 @@ async function prepareProductImage(input: Buffer) {
   return { bytes: output, hash }
 }
 
+/** Anchos de las versiones chicas. `thumb` cubre una miniatura de 96 px en pantalla 3×. */
+const variantWidths = { thumb: 360, medium: 900 } as const
+
+/**
+ * Versiones chicas de la foto ya preparada, para listas y tarjetas. En producción no hay optimizador
+ * de imágenes, así que sin esto una miniatura de 96 px descarga la foto de hasta 400 KB.
+ */
+async function prepareProductVariants(prepared: Buffer) {
+  const make = (width: number, quality: number) =>
+    sharp(prepared, { failOn: "error", limitInputPixels: maxInputPixels })
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality, effort: 5 })
+      .toBuffer()
+  const [thumb, medium] = await Promise.all([make(variantWidths.thumb, 76), make(variantWidths.medium, 78)])
+  return { thumb, medium }
+}
+
 function render(input: Buffer, edge: number, quality: number) {
-  return sharp(input, { failOn: "error" })
+  return sharp(input, { failOn: "error", limitInputPixels: maxInputPixels })
     .rotate()
     .resize({ width: edge, height: edge, fit: "inside", withoutEnlargement: true })
     .webp({ quality, effort: 5 })
     .toBuffer()
 }
 
-export { CatalogImageError, prepareProductImage }
+export { CatalogImageError, maxUploadBytes, prepareProductImage, prepareProductVariants, variantWidths }

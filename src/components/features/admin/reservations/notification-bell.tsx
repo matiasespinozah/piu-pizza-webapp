@@ -71,6 +71,9 @@ function chime() {
   }
 }
 
+const visiblePollMs = 25_000
+const hiddenPollMs = 120_000
+
 function NotificationBell({ reservationPath = (id: string) => `/admin/reservas?id=${id}` }: { reservationPath?: (id: string) => string } = {}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -105,13 +108,39 @@ function NotificationBell({ reservationPath = (id: string) => `/admin/reservas?i
   }, [])
 
   useEffect(() => {
+    // Con la pestaña a la vista se consulta cada 25 s. En segundo plano, cada 2 minutos:
+    // el aviso sigue llegando, pero cada consulta lee Firestore y un panel olvidado abierto
+    // no debe consultar todo el día al mismo ritmo.
+    let timer: number | undefined
+    function schedule() {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(async () => {
+        try {
+          await load()
+        } catch {
+          // Un corte de red no detiene los avisos: se reintenta en el siguiente turno.
+        } finally {
+          schedule()
+        }
+      }, document.hidden ? hiddenPollMs : visiblePollMs)
+    }
+    function onVisibility() {
+      if (document.hidden) {
+        schedule()
+        return
+      }
+      void load()
+      schedule()
+    }
     const started = window.setTimeout(() => void load(), 0)
-    const timer = window.setInterval(() => void load(), 25000)
+    schedule()
+    document.addEventListener("visibilitychange", onVisibility)
     window.addEventListener("pointerdown", unlockAudio)
     return () => {
       window.clearTimeout(started)
-      window.clearInterval(timer)
+      window.clearTimeout(timer)
       if (hideBanner.current) window.clearTimeout(hideBanner.current)
+      document.removeEventListener("visibilitychange", onVisibility)
       window.removeEventListener("pointerdown", unlockAudio)
     }
   }, [load])

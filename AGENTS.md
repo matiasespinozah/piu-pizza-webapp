@@ -107,7 +107,7 @@ public/                ← solo assets estáticos pequeños (logo, favicon, OG)
 4. **Toda lectura a Firestore pasa por `src/server/`** y va cacheada (`"use cache"` + `cacheLife`). Nunca leer Firestore en cada request de una página pública.
 5. **Nada de listeners en tiempo real (`onSnapshot`)** sin justificación escrita y `limit()`.
 6. **Toda query lleva `limit()`** y paginación por cursor. Nunca `offset`.
-7. **Imágenes siempre optimizadas** (AVIF/WebP, ≤ 300 KB, `next/image` con `sizes`). Nunca subir fotos crudas de cámara.
+7. **Imágenes siempre optimizadas desde el origen** (AVIF/WebP, ≤ 300 KB, `next/image` con `sizes`). En producción no hay optimizador: App Hosting lo apaga. Nunca subir fotos crudas de cámara ni PNG pesados a `public/`.
 8. **`minInstances: 0`** en App Hosting salvo decisión explícita del dueño del proyecto.
 9. **Sin login por SMS / Phone Auth** (cobra por mensaje).
 10. **Reglas de seguridad deny-by-default** en Firestore y Storage; nunca `allow read, write: if true`.

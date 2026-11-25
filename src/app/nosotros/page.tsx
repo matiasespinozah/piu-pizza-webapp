@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   title: "Quiénes somos",
   description:
     "Somos Felipe y Camila. PIÙ Pizza & Dolce nació en la cocina de nuestra casa, en Maipú.",
+  alternates: { canonical: "/nosotros" },
   openGraph: {
+    url: "/nosotros",
+    images: [{ url: "/opengraph-image.jpg", width: 1200, height: 630, alt: "El local de PIÙ Pizza & Dolce" }],
     title: "Quiénes somos · PIÙ",
     description: "La historia de Felipe, Camila y PIÙ Pizza & Dolce.",
     locale: "es_CL",
