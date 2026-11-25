@@ -46,3 +46,7 @@ env:
     value: "864707447905"
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: "1:864707447905:web:a64297850b8873793d6e20"
+  # ID de medición de Google Analytics 4 (público, como el resto de la config web). Sin este valor el sitio
+  # no carga Analytics. Ver docs/arquitectura/analitica.md.
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: G-2XJXG2E0WJ

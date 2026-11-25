@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Anybody, Roboto_Mono } from "next/font/google";
 import { siteUrl } from "@/lib/site";
+import { Analytics } from "@/components/features/analytics/analytics";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -43,7 +44,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={cn("h-full antialiased", anybody.variable, robotoMono.variable)}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

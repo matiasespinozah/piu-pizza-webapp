@@ -9,7 +9,7 @@ const isDev = process.env.NODE_ENV !== "production"
  * su propio script, así que la política completa va solo en modo reporte
  * (`Content-Security-Policy-Report-Only`): el navegador avisa en la consola, no bloquea.
  * Cuando una revisión en producción no muestre violaciones, se mueve a `cspEnforced`.
- * Orígenes: Firebase Auth (solo el login del panel), fotos de la carta en Storage y el mapa.
+ * Orígenes: Firebase Auth (solo el login del panel), fotos de la carta en Storage, el mapa y Google Analytics.
  * `unsafe-inline` es necesario mientras las páginas sean estáticas (un nonce las volvería dinámicas).
  */
 const cspEnforced = [
@@ -22,11 +22,11 @@ const cspEnforced = [
 const cspReportOnly = [
   "default-src 'self'",
   // Cloudflare Web Analytics inyecta su beacon: lo detectó el modo reporte en producción.
-  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://firebasestorage.googleapis.com",
+  "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com",
   "font-src 'self' data:",
-  `connect-src 'self' https://cloudflareinsights.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com${isDev ? " http://127.0.0.1:* http://localhost:* ws://localhost:* ws://127.0.0.1:*" : ""}`,
+  `connect-src 'self' https://cloudflareinsights.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com${isDev ? " http://127.0.0.1:* http://localhost:* ws://localhost:* ws://127.0.0.1:*" : ""}`,
   "frame-src https://www.google.com https://piu-pizza-cl.firebaseapp.com",
   "media-src 'self'",
   "worker-src 'self' blob:",
