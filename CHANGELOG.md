@@ -71,6 +71,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Corregido
 
+- Las versiones chicas de las fotos de la carta (`prepareProductVariants`) miden por el **lado corto** (360 y 900 px) en vez de por el ancho. Con una foto horizontal, la miniatura de 360 px de ancho quedaba de ~200 px de alto y, recortada a cuadrado en la fila de la carta, se veía estirada en pantallas 3×. Con las fotos verticales de la carta actual no cambia nada: 360×480 y 900×1200. Se comprobó con las fotos reales de producción que la miniatura y la versión de 900 px no se distinguen de la original al tamaño en que se muestran.
 - En `/admin/reservas`, una reserva anotada por el personal ya no exige las 2 horas de anticipación. Esa regla sigue solo en `/reservas`. El horario de apertura y los cupos no cambian.
 - Confirmar una reserva ya no pide un motivo porque el grupo sea más grande que una mesa. Cada reserva ocupa un cupo del sector, sea de 2 o de más personas. En `/reservas` el texto habla de la reserva y de las personas.
 - Arrastrar una categoría en Configuración vuelve a pasar el chequeo del repositorio.

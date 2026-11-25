@@ -39,9 +39,16 @@ async function published() {
   return (await getDb().collection(collections.catalog).doc(publicCatalogDocId).get()).data()?.products?.find((item) => item.id === id)
 }
 
-async function width(path) {
+async function shortSide(path) {
   const [bytes] = await bucket().file(path).download()
-  return (await sharp(bytes).metadata()).width
+  const meta = await sharp(bytes).metadata()
+  return Math.min(meta.width, meta.height)
+}
+
+async function longSide(path) {
+  const [bytes] = await bucket().file(path).download()
+  const meta = await sharp(bytes).metadata()
+  return Math.max(meta.width, meta.height)
 }
 
 test("subir una foto guarda tres archivos y publica las versiones en la carta", async () => {
@@ -54,9 +61,9 @@ test("subir una foto guarda tres archivos y publica las versiones en la carta", 
   const main = files.find((name) => !/-(360|900)\.webp$/.test(name))
   assert.ok(main)
   assert.deepEqual(files, [main, main.replace(/\.webp$/, "-360.webp"), main.replace(/\.webp$/, "-900.webp")].sort())
-  assert.equal(await width(main), 1600)
-  assert.equal(await width(main.replace(/\.webp$/, "-900.webp")), 900)
-  assert.equal(await width(main.replace(/\.webp$/, "-360.webp")), 360)
+  assert.equal(await longSide(main), 1600)
+  assert.equal(await shortSide(main.replace(/\.webp$/, "-900.webp")), 900)
+  assert.equal(await shortSide(main.replace(/\.webp$/, "-360.webp")), 360)
 
   const doc = await stored()
   assert.equal(doc.imageUrl, imageUrl)
@@ -88,8 +95,8 @@ test("agregar las versiones a una foto que no las tiene no cambia la foto ni su 
   const doc = await stored()
   assert.equal(doc.imageUrl, before.imageUrl)
   assert.equal((await names()).length, 3)
-  assert.equal(await width(main.replace(/\.webp$/, "-360.webp")), 360)
-  assert.equal(await width(main.replace(/\.webp$/, "-900.webp")), 900)
+  assert.equal(await shortSide(main.replace(/\.webp$/, "-360.webp")), 360)
+  assert.equal(await shortSide(main.replace(/\.webp$/, "-900.webp")), 900)
   assert.deepEqual((await published()).imageVariants, doc.imageVariants)
   assert.equal((await published()).imageUrl, before.imageUrl)
 
