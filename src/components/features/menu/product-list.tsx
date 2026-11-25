@@ -25,7 +25,8 @@ function ProductList({ products }: { products: readonly Product[] }) {
               aria-label={product.availability === "available" ? `Ver detalle de ${product.name}` : `Ver detalle de ${product.name}, agotado`}
               className="block w-full cursor-pointer text-left outline-none transition-colors hover:bg-olive-wash/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-olive"
             >
-              <ProductCard product={product} />
+              {/* Las primeras filas cargan ya: son las que se ven al abrir la categoría. */}
+              <ProductCard product={product} eagerImage={index < 6} />
             </button>
           </li>
         ))}
