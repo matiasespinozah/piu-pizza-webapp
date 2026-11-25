@@ -45,12 +45,55 @@ Con `denied`, GA mide sin cookies y de forma aproximada hasta que el visitante a
 **Edad, género e intereses** no están activos. Necesitan las señales de Google (`googleSignals = true` en `config.ts`) y además conceder `ad_user_data` y `ad_personalization`, o sea cookies de publicidad. Se activa también en GA (Administrador → Configuración de datos → Recopilación de datos → Señales de Google). Con poco tráfico, Google oculta estos datos por umbrales de privacidad. Es una decisión del dueño.
 
 ## Qué hay que configurar en la consola de Google Analytics (no está en el código)
-Una sola vez, en `analytics.google.com` → Administrador → propiedad de `piu-pizza-cl`:
-1. **Flujos de datos → web → Medición mejorada → ícono de engranaje.** Apagar **«Cambios de página según eventos del historial del navegador»** (el sitio ya envía cada página; encendido duplicaría y podría enviar la dirección de `/reservas/estado`) y **«Clics de salida»** (el sitio los mide solo, sin la URL).
-2. **Eventos → Marcar como evento clave:** `generate_lead` (reserva enviada) y, si quieres, `click_whatsapp`.
-3. **Definiciones personalizadas → Dimensiones personalizadas (alcance: evento)**, para poder verlos en los informes: `visit_weekday`, `visit_hour`, `days_ahead`, `party_size`, `zone`, `venue`, `link_area`, `step_name`, `error_code`, `http_status`. Los parámetros no registrados no aparecen en los informes. Y para las métricas de rendimiento, `metric_rating`.
-4. **Configuración de datos → Retención de datos:** 14 meses.
-5. **Flujos de datos → Configurar ajustes de etiquetas → Definir tráfico interno** con la IP del local, y activar el filtro de tráfico interno, para no contar al personal.
+Se hace una sola vez, en <https://analytics.google.com> con `matias@espinozah.cl`. Elige la propiedad de `piu-pizza-cl` y abre **Administrar** (el engranaje ⚙ abajo a la izquierda). Los nombres de los menús pueden variar un poco según la versión de la consola.
+
+### 1. Apagar dos medidas automáticas (imprescindible)
+Si quedan encendidas, la consola contaría páginas dos veces y podría enviar la dirección de `/reservas/estado`, que lleva un código secreto.
+1. Administrar → columna **Propiedad** → **Flujos de datos** → clic en el flujo web (`PIU Pizza Web`).
+2. En **Medición mejorada**, clic en el engranaje ⚙.
+3. Apagar **«Cambios de página según eventos del historial del navegador»** y **«Clics de salida»**.
+4. Dejar encendidos «Vistas de página», «Desplazamiento» y «Descargas de archivos». **Guardar**.
+
+### 2. Registrar las dimensiones personalizadas (para ver los datos en los informes)
+Sin esto, los datos llegan pero **no aparecen** en los informes.
+1. Administrar → **Propiedad** → **Visualización de datos** → **Definiciones personalizadas**.
+2. Pestaña **Dimensiones personalizadas** → **Crear dimensión personalizada**.
+3. Para cada fila de la tabla: poner el **Nombre**, **Alcance = Evento** y escribir el **Parámetro de evento** exacto. **Guardar**.
+
+| Nombre | Parámetro de evento |
+|---|---|
+| Día de la visita | `visit_weekday` |
+| Hora de la visita | `visit_hour` |
+| Anticipación (días) | `days_ahead` |
+| Personas | `party_size` |
+| Zona | `zone` |
+| Local de WhatsApp | `venue` |
+| Dónde se hizo clic | `link_area` |
+| Paso del formulario | `step_name` |
+| Código de error | `error_code` |
+| Estado HTTP | `http_status` |
+| Evaluación de rendimiento | `metric_rating` |
+
+Un parámetro aparece en la lista desplegable solo después de que Google recibió un evento con él (puede tardar un día). Si todavía no está, se puede escribir a mano.
+
+### 3. Marcar la reserva como evento clave
+1. Administrar → **Propiedad** → **Visualización de datos** → **Eventos clave** → **Nuevo evento clave**.
+2. Escribir `generate_lead` (una solicitud de reserva enviada). **Guardar**.
+3. Opcional: repetir con `click_whatsapp`.
+
+### 4. Retención de datos: 14 meses
+Por defecto Google guarda el detalle solo **2 meses**.
+1. Administrar → **Propiedad** → **Configuración de datos** → **Retención de datos**.
+2. En «Retención de datos de eventos» elegir **14 meses**. **Guardar**.
+
+### 5. No contar al personal (tráfico interno)
+1. Anota la IP pública del local: desde el WiFi del local, busca «cuál es mi IP» en Google.
+2. Administrar → **Flujos de datos** → el flujo web → **Configurar ajustes de etiquetas** → **Mostrar todo** → **Definir tráfico interno** → **Crear**.
+3. Nombre «Local PIÙ», tipo de coincidencia «La dirección IP es igual a», pegar la IP. **Crear**.
+4. Administrar → **Configuración de datos** → **Filtros de datos** → el filtro **Internal Traffic** → cambiar su estado de **Probando** a **Activo**. Es permanente.
+
+### 6. Comprobar que llegan los datos
+Informes → **Tiempo real**. Abre <https://piupizzas.cl> desde tu celular con datos móviles y mira que aparezca tu visita, la página y el dispositivo. Puede tardar unos segundos.
 
 ## Dónde mirar
 - **Tiempo real** (Informes → Tiempo real): quién está ahora, en qué páginas y desde qué dispositivo.
