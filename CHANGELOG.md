@@ -146,6 +146,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Seguridad
 
+- El CSP en modo reporte permite el beacon de Cloudflare Web Analytics (`static.cloudflareinsights.com` en `script-src` y `cloudflareinsights.com` en `connect-src`). Lo detectó la revisión en producción como un aviso de CSP; no bloqueaba nada, pero con la política en bloqueo habría roto esa analítica.
 - Cada pedido del panel vuelve a leer la cuenta en Authentication. Una cookie del mismo segundo no conserva un rol ya reducido, ni el acceso de una cuenta suspendida o revocada. Aprobar exige correo verificado y, si el rol es propietario, confirmación. Una ficha pendiente con un claim distinto se puede aprobar o rechazar sin duplicar el permiso. El último propietario no se puede quedar sin acceso, y el que todavía no tiene ficha `staff` sigue entrando.
 - Una invitación no cambia la contraseña de un correo que ya existe. Esa persona entra con su clave actual y el servidor vincula la ficha solo si el token corresponde a ese correo.
 - `invitations` e `invitationRate` quedan negadas al navegador, igual que `staff`. Crear la cuenta no escribe el claim `role`. Aprobar a alguien sigue siendo un paso aparte.
