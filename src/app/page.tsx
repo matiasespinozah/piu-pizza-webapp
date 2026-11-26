@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import { ChefSuggestions } from "@/components/features/home/chef-suggestions"
 import { getChefSuggestions } from "@/server/dal/catalog"
+import { hoursLines } from "@/lib/reservations/schedule"
 import { getPublicWeek } from "@/server/reservations/public-hours"
 import { EssenceSection } from "@/components/features/home/essence-section"
 import { Hero } from "@/components/features/home/hero"
@@ -43,7 +44,7 @@ export default async function Home() {
           <ChefSuggestions suggestions={suggestions} />
           <EssenceSection />
           <ReserveSection />
-          <VisitSection />
+          <VisitSection hours={hoursLines(week)} />
         </main>
         <PublicSiteFooter />
       </div>
