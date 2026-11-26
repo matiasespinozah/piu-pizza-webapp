@@ -1,3 +1,5 @@
+import type { HoursLine } from "@/lib/reservations/schedule"
+
 /** Dominio público. Lo usan los metadatos, el sitemap y los datos estructurados. */
 const siteUrl = "https://piupizzas.cl"
 
@@ -26,6 +28,15 @@ function directionsFor(mapsQuery: string) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapsQuery)}`
 }
 
+function whatsappChat(phone: string, message: string) {
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+}
+
+const casaVisitHours: HoursLine[] = [
+  { days: "Lunes a jueves", hours: "17:00–22:00 hrs.", lastSeatingTime: null },
+  { days: "Viernes y sábado", hours: "14:00–22:00 hrs.", lastSeatingTime: null },
+]
+
 /** Direcciones y mapas de la sección Visítanos en el inicio. */
 const visitVenues = [
   {
@@ -37,6 +48,16 @@ const visitVenues = [
     mapsEmbedUrl,
     mapsSearchUrl: mapsSearchFor("Restaurant Più Pizzas", "Primera Transversal 2595, Maipú, Región Metropolitana, Chile"),
     directionsUrl: directionsFor("Primera Transversal 2595, Maipú, Región Metropolitana, Chile"),
+    badge: "Salón principal · Horno a la vista",
+    indexLabel: "01 · Maipú centro",
+    landmark: "A pasos del Estadio Santiago Bueras y la Plaza de Maipú.",
+    highlights: ["Mesas familiares", "Terraza y barra", "Reservas en línea"] as const,
+    reserveHref: "/reservas",
+    reserveLabel: "Reservar mesa",
+    reserveExternal: false,
+    scheduleHours: null,
+    showLastSeating: true,
+    hoursNote: null,
   },
   {
     id: "casa",
@@ -48,16 +69,22 @@ const visitVenues = [
       "https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1sAv.+Santa+Rosa+63,+Maip%C3%BA,+Regi%C3%B3n+Metropolitana,+Chile!6i15!3m1!1ses!5m1!1ses",
     mapsSearchUrl: mapsSearchFor("Casa Più", "Av. Santa Rosa 63, Maipú, Región Metropolitana, Chile"),
     directionsUrl: directionsFor("Av. Santa Rosa 63, Maipú, Región Metropolitana, Chile"),
+    badge: "Casa Più · Pizzas y dolce",
+    indexLabel: "02 · Santa Rosa",
+    landmark: "Entre Metro Monte Tabor y Las Parcelas.",
+    highlights: ["Pizzas, dolce y café", "Para compartir"] as const,
+    reserveHref: whatsappChat("56927214013", "Hola, quiero consultar por Casa Più."),
+    reserveLabel: "Escribir por WhatsApp",
+    reserveExternal: true,
+    scheduleHours: casaVisitHours,
+    showLastSeating: false,
+    hoursNote: "Sin reservas en línea. Escríbenos por WhatsApp.",
   },
 ] as const
 
 const whatsappMessage = "Hola, tengo una consulta sobre PIÙ Pizza & Dolce."
 
 const whatsappHref = `https://wa.me/56928873619?text=${encodeURIComponent(whatsappMessage)}`
-
-function whatsappChat(phone: string, message: string) {
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-}
 
 /** Locales que se eligen desde la burbuja de ayuda. El de reservas sigue en `whatsappHref`. */
 const whatsappVenues = [
