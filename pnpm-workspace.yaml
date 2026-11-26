@@ -9,3 +9,11 @@ allowBuilds:
   "@firebase/util": false
   protobufjs: false
   re2: false
+
+# Parches de seguridad dentro del mismo major, para dependencias transitivas que
+# su paquete padre todavía no actualiza. Revisar y quitar cuando el padre lo haga.
+overrides:
+  # @firebase/firestore fija ~1.9 (vulnerable). En el sitio solo corre en los tests de reglas.
+  "@grpc/grpc-js": "^1.14.7"
+  # firebase-admin → @google-cloud/storage.
+  fast-xml-parser: "^5.11.3"

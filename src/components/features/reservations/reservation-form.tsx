@@ -11,6 +11,8 @@ import { ReservationTimeStep } from "@/components/features/reservations/reservat
 import { ReservationSuccess } from "@/components/features/reservations/reservation-success"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { leadEvent, reservationErrorEvent, reservationStepEvent } from "@/lib/analytics/events"
+import { trackEvent } from "@/lib/analytics/track"
 import { requiredLeadHours, reservationWhatsappMessage } from "@/lib/reservations/configuration"
 import { todayIsoInSantiago } from "@/lib/reservations/schedule"
 import { normalizeChileMobile, validateContact, validateTime, validateVisit } from "@/lib/reservations/validation"
@@ -75,6 +77,11 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
   useEffect(() => {
     noteReservationProgress({ reached: step === 3, saved: receipt !== null })
   }, [step, receipt])
+  // Dónde se abandona el formulario: un evento al llegar a cada paso (1 visita, 2 horario, 3 datos).
+  useEffect(() => {
+    if (!receptionEnabled || !rulesReady || receipt) return
+    trackEvent(reservationStepEvent(step))
+  }, [step, rulesReady, receipt, receptionEnabled])
   const requestKey = useRef<string | null>(null)
   const today = useSyncExternalStore(
     () => () => {},
@@ -178,14 +185,28 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
           notes: draft.notes,
         }),
       })
-      const body = (await response.json().catch(() => null)) as { request?: PublicReceipt; message?: string; trackingToken?: string | null } | null
+      const body = (await response.json().catch(() => null)) as { request?: PublicReceipt; message?: string; code?: string; trackingToken?: string | null } | null
       if ((response.status === 201 || response.status === 200) && body?.request?.status === "pending") {
         setReceipt(body.request)
         setTrackingToken(typeof body.trackingToken === "string" ? body.trackingToken : null)
+        // Solo la solicitud nueva (201), no un reenvío que el servidor reconoce como el mismo (200). Sin datos del cliente.
+        if (response.status === 201) {
+          trackEvent(
+            leadEvent({
+              date: draft.date,
+              preferredTime: draft.preferredTime,
+              partySize: draft.partySize,
+              zone: draft.zone,
+              marketingOptIn: draft.marketingOptIn === true,
+            }),
+          )
+        }
         return
       }
+      trackEvent(reservationErrorEvent(body?.code, response.status))
       setFormError(body?.message || "No se pudo enviar la solicitud.")
     } catch {
+      trackEvent(reservationErrorEvent(undefined, "network"))
       setFormError("No pudimos saber si se envió. Si lo intentas otra vez, no se creará una segunda solicitud.")
     } finally {
       setSending(false)
@@ -199,7 +220,7 @@ function ReservationForm({ receptionEnabled }: { receptionEnabled: boolean }) {
 
   if (receptionEnabled && !rulesReady) {
     return (
-      <section data-reservation-form="" data-reservation-enabled="on" aria-busy="true" className="min-h-48 rounded-3xl border border-olive-line bg-surface-raised px-5 py-8 shadow-lift">
+      <section data-reservation-form="" data-reservation-enabled="on" aria-busy="true" className="min-h-[32.5rem] rounded-3xl border border-olive-line bg-surface-raised px-5 py-8 shadow-lift">
         <p className="text-base text-olive-muted">Revisando si podemos tomar tu reserva…</p>
       </section>
     )

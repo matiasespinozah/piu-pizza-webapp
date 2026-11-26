@@ -7,7 +7,7 @@ import type { Product } from "@/lib/catalog/types"
  * El precio siempre queda alineado arriba a la derecha, sin importar cuánto mida el nombre,
  * y la descripción usa todo el ancho disponible bajo el nombre y el precio.
  */
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, eagerImage = false }: { product: Product; eagerImage?: boolean }) {
   const soldOut = product.availability !== "available"
 
   return (
@@ -16,6 +16,8 @@ function ProductCard({ product }: { product: Product }) {
         <ProductImage
           compact
           src={product.imageUrl}
+          variants={product.imageVariants}
+          eager={eagerImage}
           name={product.name}
           sizes="96px"
           className={soldOut ? "size-14 opacity-60 sm:size-24" : "size-14 sm:size-24"}

@@ -4,8 +4,10 @@ import Link from "next/link"
 import { Fraunces } from "next/font/google"
 
 import cocina from "@/assets/about/cocina-nosotros.webp"
+import cocinaSmall from "@/assets/about/cocina-nosotros-1200.webp"
 import equipo from "@/assets/about/equipo-2-anos.webp"
 import interior from "@/assets/about/interior-nosotros.webp"
+import interiorSmall from "@/assets/about/interior-nosotros-1200.webp"
 import horno from "@/assets/about/llegada-horno.webp"
 import maestro from "@/assets/about/maestro-2023.webp"
 import primerDia from "@/assets/about/primer-dia.webp"
@@ -13,6 +15,7 @@ import daniele from "@/assets/about/primera-visita-maestro.webp"
 import italia from "@/assets/about/segundo-lugar-2026.webp"
 import { StoryFrame } from "@/components/features/about/story-frame"
 import { Button } from "@/components/ui/button"
+import { ResponsivePhoto } from "@/components/ui/responsive-photo"
 import { Eyebrow, Heading, Text } from "@/components/ui/typography"
 import { cn } from "cn"
 
@@ -54,6 +57,7 @@ const drives = [
 function HistoryPhoto({
   side,
   image,
+  small,
   alt,
   caption,
   className,
@@ -63,6 +67,8 @@ function HistoryPhoto({
 }: {
   side: "left" | "right"
   image: StaticImageData
+  /** La misma foto en ~1200 px para celulares, si la original es más ancha. */
+  small?: StaticImageData
   alt: string
   caption?: string
   className?: string
@@ -74,7 +80,11 @@ function HistoryPhoto({
     <StoryFrame side={side} className={className}>
       <figure>
         <div className={cn("overflow-hidden bg-olive", frameClassName)}>
-          <Image src={image} alt={alt} placeholder="blur" sizes={sizes} className="h-auto w-full" />
+          {small ? (
+            <ResponsivePhoto src={image} small={small} alt={alt} placeholder="blur" sizes={sizes} className="h-auto w-full" />
+          ) : (
+            <Image src={image} alt={alt} placeholder="blur" sizes={sizes} className="h-auto w-full" />
+          )}
         </div>
         {caption ? (
           <figcaption className={cn("mt-3 text-sm leading-snug text-olive-muted", captionClassName)}>{caption}</figcaption>
@@ -169,6 +179,7 @@ function AboutStory() {
           <HistoryPhoto
             side="right"
             image={cocina}
+            small={cocinaSmall}
             alt="Cocina de PIÙ: mesón con el logo, horno de piedra y lámparas de mimbre."
             className="md:col-span-6 md:col-start-7"
             frameClassName="-mx-4 sm:-mx-6 md:mx-0 md:rounded-2xl"
@@ -238,6 +249,7 @@ function AboutStory() {
           <HistoryPhoto
             side="left"
             image={interior}
+            small={interiorSmall}
             alt="Interior de PIÙ: mesas, mesón y el logo junto a la barra."
             className="md:sticky md:top-24 md:col-span-5"
             frameClassName="-mx-4 sm:-mx-6 md:mx-0 md:rounded-2xl"

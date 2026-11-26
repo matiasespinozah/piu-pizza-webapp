@@ -17,6 +17,7 @@ function SuggestionCard({ suggestion, index }: { suggestion: Product; index: num
       <div className="relative">
         <ProductImage
           src={suggestion.imageUrl}
+          variants={suggestion.imageVariants}
           name={suggestion.name}
           ratio="4/3"
           sizes="(max-width: 1024px) 78vw, 380px"

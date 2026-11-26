@@ -7,6 +7,8 @@ import { EmptyCategory } from "@/components/features/menu/empty-category"
 import { MenuSearch } from "@/components/features/menu/menu-search"
 import { ProductList } from "@/components/features/menu/product-list"
 import { Container } from "@/components/ui/layout"
+import { categoryEvent, searchEvent } from "@/lib/analytics/events"
+import { trackEvent } from "@/lib/analytics/track"
 import { searchProducts } from "@/lib/catalog/search"
 import type { Category, Product } from "@/lib/catalog/types"
 
@@ -51,9 +53,18 @@ function MenuExplorer({ categories, products }: MenuExplorerProps) {
     }
   }, [categories])
 
+  // Lo que busca la gente en la carta, una vez que termina de escribir.
+  React.useEffect(() => {
+    if (!searching) return
+    const timer = window.setTimeout(() => trackEvent(searchEvent(query, results.length)), 900)
+    return () => window.clearTimeout(timer)
+  }, [query, results.length, searching])
+
   function selectCategory(id: string) {
     setQuery("")
     setActiveId(id)
+    const item = navItems.find((candidate) => candidate.id === id)
+    if (item) trackEvent(categoryEvent({ id: item.id, name: item.name }))
   }
 
   return (

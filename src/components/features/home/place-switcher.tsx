@@ -1,26 +1,32 @@
 "use client"
 
 import { useState } from "react"
-import Image, { type StaticImageData } from "next/image"
+import { type StaticImageData } from "next/image"
 import { MousePointerClick } from "lucide-react"
 import { cn } from "cn"
 
+import { ResponsivePhoto } from "@/components/ui/responsive-photo"
+
 import interior from "@/assets/home/interior-lugar.webp"
+import interiorSmall from "@/assets/home/interior-lugar-1200.webp"
 import terraza from "@/assets/home/terraza-lugar.webp"
+import terrazaSmall from "@/assets/home/terraza-lugar-1200.webp"
 
 type PlaceId = "terraza" | "interior"
 
-const places: { id: PlaceId; label: string; image: StaticImageData; alt: string }[] = [
+const places: { id: PlaceId; label: string; image: StaticImageData; small: StaticImageData; alt: string }[] = [
   {
     id: "terraza",
     label: "Terraza",
     image: terraza,
+    small: terrazaSmall,
     alt: "Terraza de PIÙ: mesas de madera bajo el toldo y las luces.",
   },
   {
     id: "interior",
     label: "Interior",
     image: interior,
+    small: interiorSmall,
     alt: "Interior de PIÙ: mesas, mesón y el logo junto a la barra.",
   },
 ]
@@ -69,8 +75,9 @@ function PlaceSwitcher() {
                 quiet && "h-14 w-full sm:h-full sm:w-16 sm:flex-none",
               )}
             >
-              <Image
+              <ResponsivePhoto
                 src={item.image}
+                small={item.small}
                 alt=""
                 fill
                 placeholder="blur"

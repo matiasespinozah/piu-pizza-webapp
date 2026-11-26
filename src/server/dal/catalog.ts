@@ -36,6 +36,7 @@ function toMenu(catalog: PublicCatalog): { categories: Category[]; products: Pro
       description: product.description,
       priceClp: product.priceClp,
       imageUrl: product.imageUrl,
+      imageVariants: product.imageVariants ?? null,
       availability: product.availability,
       isFeatured: product.isFeatured,
       sortOrder: product.sortOrder,
