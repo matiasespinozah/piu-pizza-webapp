@@ -18,7 +18,7 @@ function VisitSection({ hours }: { hours: HoursLine[] }) {
           </div>
         </Reveal>
 
-        <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-2 lg:gap-7">
+        <div className="mt-6 grid gap-5 sm:mt-8 sm:gap-6 lg:mt-10 lg:grid-cols-2 lg:gap-7">
           {visitVenues.map((location) => (
             <Reveal key={location.id}>
               <VisitLocationCard location={location} hours={hours} />
