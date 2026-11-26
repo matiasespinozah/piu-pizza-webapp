@@ -53,13 +53,13 @@ function Hero() {
         Móvil: el alto es el de la foto vertical, con el logo dentro.
         Escritorio: el alto es el de producción y la foto se ancla abajo, para que el logo blanco quede dentro.
       */}
-      <div className="hero-mobile-shot relative aspect-[941/1672] w-full overflow-hidden md:absolute md:inset-[-2px] md:aspect-auto md:h-auto">
+      <div className="hero-mobile-shot relative aspect-[941/1505] w-full overflow-hidden md:absolute md:inset-[-2px] md:aspect-auto md:h-auto">
         <HeroPhoto />
         <div className="hero-mobile-overlay pointer-events-none absolute inset-0 md:hidden" aria-hidden />
         <div className="hero-scrim pointer-events-none absolute inset-0 hidden md:block" aria-hidden />
       </div>
 
-      <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] z-10 flex aspect-[941/1672] flex-col items-center px-3 pt-6 text-center sm:px-5 md:relative md:inset-auto md:aspect-auto md:h-[clamp(20rem,46vw,calc(100svh-8rem))] md:items-start md:justify-center md:px-8 md:pt-24 md:pb-14 md:text-left">
+      <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] z-10 flex aspect-[941/1505] flex-col items-center px-3 pt-6 text-center sm:px-5 md:relative md:inset-auto md:aspect-auto md:h-[clamp(20rem,46vw,calc(100svh-8rem))] md:items-start md:justify-center md:px-8 md:pt-24 md:pb-14 md:text-left">
         <div className="flex w-full min-w-0 flex-col items-center md:max-w-[34rem] md:items-start md:translate-x-[4vw] lg:translate-x-[5vw]">
           <div className="hero-rise hero-rise-1 flex items-center justify-center gap-3 md:hidden">
             <span className="h-px w-6 bg-terracotta-soft" aria-hidden />
@@ -79,7 +79,7 @@ function Hero() {
             mejores momentos.
           </h1>
 
-          <div className="hero-rise hero-rise-5 absolute bottom-4 left-1/2 flex w-[min(22rem,calc(100%-2rem))] -translate-x-1/2 items-stretch justify-center gap-2 md:static md:inset-auto md:mt-5 md:w-auto md:translate-x-0 md:flex-col md:items-start lg:flex-row lg:items-center lg:gap-3">
+          <div className="hero-rise hero-rise-5 absolute bottom-3 left-1/2 flex w-[min(22rem,calc(100%-2rem))] -translate-x-1/2 items-stretch justify-center gap-2 md:static md:inset-auto md:bottom-auto md:mt-5 md:w-auto md:translate-x-0 md:flex-col md:items-start lg:flex-row lg:items-center lg:gap-3">
             <Button
               asChild
               variant="accent"
