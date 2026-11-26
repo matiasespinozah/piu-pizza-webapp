@@ -29,6 +29,9 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En el inicio, «Visítanos» muestra Restaurant Più Pizzas y Casa Più con su dirección, «Cómo llegar» y mapa. En escritorio van en dos columnas; en el celular, uno debajo del otro. Reservas y el schema del local siguen con Primera Transversal 2595.
+- En el celular, el hero del inicio es un poco más bajo por abajo y los botones Reservar y Ver la carta quedan centrados. El escritorio no cambia.
+- En el pie, «Síguenos» suma el Instagram de Casa Più (`casapiu.cl`) junto al de Restaurant Più Pizzas.
 - En el pie de página, «Nosotros» abre `/nosotros` en vez de bajar a la sección del inicio.
 - Costos: la campana de avisos del panel consulta cada 25 s con la pestaña a la vista y cada 2 minutos en segundo plano, en vez de cada 25 s siempre, y un fallo de red ya no la detiene. El barrido de avisos (`sweepNotices`, hasta 60 lecturas) corre como máximo una vez por minuto en cada instancia al listar avisos. Antes cada consulta de cada panel abierto lo ejecutaba, y las lecturas de Firestore subieron de ~150 a 45–115 mil al día desde el 18 de noviembre. El aviso de una reserva nueva puede tardar hasta 2 minutos si la pestaña está oculta.
 - En `/reservas`, el cliente no puede pedir una hora posterior a la última reserva en línea de Configuración. De lunes a jueves el tope queda en las 21:00 y viernes y sábado en las 22:00 cuando el día no tiene otra hora guardada. Un horario especial sin hora propia hereda ese tope. La solicitud se vuelve a revisar al guardarla.

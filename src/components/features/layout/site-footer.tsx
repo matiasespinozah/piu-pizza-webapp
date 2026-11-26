@@ -74,12 +74,12 @@ function SiteFooter({ hours }: { hours: HoursLine[] }) {
             </p>
             <ul className="mt-4 flex gap-2">
               {socialLinks.map((link) => (
-                <li key={link.name}>
+                <li key={link.id}>
                   <a
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`${link.name} de PIÙ, se abre en una pestaña nueva`}
+                    aria-label={`${link.label}, se abre en una pestaña nueva`}
                     className="inline-flex size-11 items-center justify-center rounded-xl outline-none transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cream"
                   >
                     <Image
