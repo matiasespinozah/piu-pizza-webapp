@@ -28,6 +28,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 
 ### Cambiado
 
+- En `/carta` se quitó la burbuja flotante de WhatsApp para no tapar la carta al navegar. Sigue en inicio, nosotros y reservas.
 - En `/reservas`, el cliente no puede pedir una hora posterior a la última reserva en línea de Configuración. De lunes a jueves el tope queda en las 21:00 y viernes y sábado en las 22:00 cuando el día no tiene otra hora guardada. Un horario especial sin hora propia hereda ese tope. La solicitud se vuelve a revisar al guardarla.
 - `/reservas` muestra antes el formulario en el celular. El horario queda plegado en «Ver horario» y se abre al tocarlo; en el escritorio sigue visible al costado. Se quitaron la frase de bajada, el aviso repetido en cada paso y la nota de privacidad de Tus datos. El texto de la casilla de promociones no cambia, porque es la versión `v1` del consentimiento.
 - El horario del footer y de `/reservas` sale de Configuración. La última reserva en línea parte a las 21:00 de lunes a jueves y a las 22:00 viernes y sábado, y se puede cambiar en el mismo horario. El footer lee un documento, con la caché de la carta.

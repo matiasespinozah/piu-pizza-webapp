@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 
-import { FloatingWhatsApp } from "@/components/features/layout/floating-whatsapp"
 import { PublicSiteFooter } from "@/components/features/layout/public-site-footer"
 import { CartaVisitMeter } from "@/components/features/menu/carta-visit"
 import { MenuExplorer } from "@/components/features/menu/menu-explorer"
@@ -27,7 +26,6 @@ export default async function CartaPage() {
   return (
     <div className="bg-cream">
       <SiteHeader page="carta" />
-      <FloatingWhatsApp />
       <div className="overflow-x-clip">
         <main className="pt-[calc(env(safe-area-inset-top)+4rem)]">
           <MenuHeader />
