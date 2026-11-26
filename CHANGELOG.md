@@ -30,6 +30,7 @@ Las reglas para mantenerlo están en [`.agents/rules/changelog.md`](.agents/rule
 ### Cambiado
 
 - En `/carta` se quitó la burbuja flotante de WhatsApp para no tapar la carta al navegar. Sigue en inicio, nosotros y reservas.
+- En el celular, las tarjetas de «Visítanos» muestran solo nombre, dirección, mapa más alto, horario y botones; referencia, sellos y etiquetas quedan desde escritorio.
 - En el inicio, «Visítanos» usa tarjetas por local: Restaurant Più Pizzas con horario de Configuración y reserva en línea; Casa Più con horario propio, sin reserva en línea y contacto por WhatsApp de Casa Più.
 - En el celular, el hero del inicio es un poco más bajo por abajo y los botones Reservar y Ver la carta quedan centrados. El escritorio no cambia.
 - En el pie, «Síguenos» suma el Instagram de Casa Più (`casapiu.cl`) junto al de Restaurant Più Pizzas.
